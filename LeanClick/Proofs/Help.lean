@@ -100,6 +100,25 @@ theorem help_lists_every_argument (cmd : Command σ) (s : Settings) (path : Stri
   unfold Command.formatHelp
   exact (((h.left _).right _).right _).right _
 
+theorem mem_sortedSubcommands_ins (c d : Command σ) :
+    ∀ l : List (Command σ), d ∈ Command.sortedSubcommands.ins c l ↔ d = c ∨ d ∈ l
+  | [] => by simp [Command.sortedSubcommands.ins]
+  | e :: es => by
+    unfold Command.sortedSubcommands.ins
+    split
+    · simp
+    · simp only [List.mem_cons, mem_sortedSubcommands_ins c d es]
+      constructor
+      · rintro (h | h | h) <;> simp [h]
+      · rintro (h | h | h) <;> simp [h]
+
+theorem mem_sortedSubcommands (cmd : Command σ) (c : Command σ) :
+    c ∈ cmd.sortedSubcommands ↔ c ∈ cmd.subcommands := by
+  unfold Command.sortedSubcommands
+  induction cmd.subcommands with
+  | nil => simp
+  | cons x xs ih => simp only [List.foldr_cons, mem_sortedSubcommands_ins, ih, List.mem_cons]
+
 /-- A group's help lists every visible subcommand. -/
 theorem help_lists_every_subcommand (cmd : Command σ) (s : Settings) (path : String) (c : Command σ)
     (hg : cmd.isGroup = true) (hc : c ∈ cmd.subcommands) (hh : c.spec.hidden = false) :
@@ -107,7 +126,7 @@ theorem help_lists_every_subcommand (cmd : Command σ) (s : Settings) (path : St
   have hrow : ∃ t, (c.name, t) ∈ cmd.commandRows s := by
     unfold Command.commandRows
     simp only [hg, Bool.not_true, Bool.false_eq_true, ite_false]
-    exact ⟨_, List.mem_map_of_mem (List.mem_filter.2 ⟨hc, by simp [hh]⟩)⟩
+    exact ⟨_, List.mem_map_of_mem (List.mem_filter.2 ⟨(mem_sortedSubcommands cmd c).2 hc, by simp [hh]⟩)⟩
   obtain ⟨t, hrow⟩ := hrow
   have h := renderSection_infix s.width "Commands" _ _ hrow
   unfold Command.formatHelp

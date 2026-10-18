@@ -390,7 +390,7 @@ theorem resolveParam_boolFlag (fs : String → Option FileInfo) (ans : Option St
     (b : Bool) (e : Entry) (h : resolveParam fs ans (some (.bool b)) env p = .ok e) :
     e.param = p ∧ e.source = .commandline ∧ e.toValue = .bool b := by
   obtain ⟨name, decl, type, required, default, envvar, help, metavar, hidden, showDefault,
-    showEnvvar, showChoices, prompt, eager, exposeValue, allowFromAutoenv, callback, fromDefaultMap, h_bool, h_count⟩ := p
+    showEnvvar, showChoices, prompt, eager, exposeValue, allowFromAutoenv, callback, shellComplete, fromDefaultMap, h_bool, h_count⟩ := p
   simp only at hd hea
   subst hd hea
   have ht : type = .bool := h_bool rfl

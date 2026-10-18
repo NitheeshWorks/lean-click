@@ -5,3 +5,4 @@ import LeanClick.RepoImpl.Command
 import LeanClick.RepoImpl.Help
 import LeanClick.RepoImpl.Resolve
 import LeanClick.RepoImpl.Parse
+import LeanClick.RepoImpl.Complete

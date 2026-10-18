@@ -100,6 +100,8 @@ structure Param where
   /-- click's parameter `callback`: sees the converted value, may replace it
   or reject it with a `BadParameter` message. -/
   callback : Option (Value → Except String Value) := none
+  /-- click's `shell_complete=`: completions for the incomplete word. -/
+  shellComplete : Option (String → List String) := none
   /-- The default came from the context's `default_map`. -/
   fromDefaultMap : Bool := false
   h_bool : decl.isBoolFlag = true → type = .bool := by

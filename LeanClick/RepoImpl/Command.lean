@@ -14,6 +14,13 @@ open Text
 
 variable {σ : Type}
 
+/-- The subcommands by name, as `Group.list_commands` returns them. -/
+def Command.sortedSubcommands (cmd : Command σ) : List (Command σ) :=
+  let rec ins (c : Command σ) : List (Command σ) → List (Command σ)
+    | [] => [c]
+    | d :: ds => if decide (c.name ≤ d.name) then c :: d :: ds else d :: ins c ds
+  cmd.subcommands.foldr (fun c acc => ins c acc) []
+
 /-- The help option: an eager boolean flag that never exposes a value. -/
 def helpParam (names : List String) : Param where
   name := "__help__"

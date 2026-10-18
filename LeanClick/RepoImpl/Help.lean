@@ -171,7 +171,7 @@ def Command.shortHelpStr (cmd : Command σ) (limit : Nat) : String :=
 /-- The rows of the Commands section of a group. -/
 def Command.commandRows (cmd : Command σ) (s : Settings) : List (String × String) :=
   if !cmd.isGroup then [] else
-  let subs := cmd.subcommands.filter (fun c => !c.spec.hidden)
+  let subs := cmd.sortedSubcommands.filter (fun c => !c.spec.hidden)
   let w := subs.foldl (fun m c => max m c.name.length) 0
   let limit := s.width - 6 - w
   subs.map fun c => (c.name, c.shortHelpStr limit)

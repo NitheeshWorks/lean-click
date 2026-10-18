@@ -1,6 +1,6 @@
 name = "LeanClick"
 version = "0.1.0"
-defaultTargets = ["LeanClick", "props", "conformance"]
+defaultTargets = ["LeanClick", "props", "conformance", "example", "hello"]
 
 # The verified library. Everything under LeanClick/ except Transport.lean is a
 # total function and the proof surface; see CONTRIBUTING.md.

@@ -1,4 +1,5 @@
 import LeanClick.APIs
+import LeanClick.RepoImpl.Complete
 import Std.Data.HashSet
 import Std.Data.HashMap
 
@@ -258,9 +259,40 @@ def report : Termination → IO Unit
   | .halted (.prompt _ _ _) => echo "Aborted!" (err := true)
   | .raised e => echo e.render (err := true) (nl := false)
 
+/-- Shell completion (`_PROG_COMPLETE=bash_source|bash_complete|...`):
+`some code` when the variable asked for it. -/
+def shellComplete (cmd : App σ) (prog : String) : IO (Option UInt32) := do
+  match ← IO.getEnv (completeVar prog) with
+  | none => return none
+  | some instr =>
+    let (shell, what) := match instr.splitOn "_" with
+      | sh :: rest => (sh, "_".intercalate rest)
+      | [] => ("", "")
+    if what == "source" then
+      match completionScript shell prog with
+      | some script => echo script (nl := false); return some 0
+      | none => return some 1
+    else if what == "complete" && (shell == "bash" || shell == "zsh" || shell == "fish") then
+      let words := splitArgString ((← IO.getEnv "COMP_WORDS").getD "")
+      let cwordVar := (← IO.getEnv "COMP_CWORD").getD ""
+      let (args, incomplete) :=
+        if shell == "fish" then
+          let inc := if cwordVar.isEmpty then "" else (splitArgString cwordVar).headD ""
+          let args := words.drop 1
+          let args := if !inc.isEmpty && args.getLast? == some inc then args.dropLast else args
+          (args, inc)
+        else
+          let cword := cwordVar.toNat?.getD 0
+          ((words.drop 1).take (cword - 1), words.getD cword "")
+      let items := cmd.complete prog args incomplete
+      echo ("\n".intercalate (items.map (CompletionItem.format shell)))
+      return some 0
+    else return some 1
+
 /-- `Command.main`: run with `argv`, report, and return the exit code. -/
 def main (cmd : App σ) (init : σ) (argv : List String) (prog : String := cmd.name)
     (defaultMap : Option DefaultMap := none) : IO UInt32 := do
+  if let some code ← shellComplete cmd prog then return code
   let width ← terminalWidth
   let t ← try
       runAux prog (argv.length + 1) cmd (some (rootParent prog width defaultMap)) prog prog argv none init

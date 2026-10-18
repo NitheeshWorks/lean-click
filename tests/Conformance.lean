@@ -592,7 +592,105 @@ def typedCases : List Case := [
     (has (helpPage serveT "serve") "--reload / --no-reload" && has (helpPage serveT "serve") "--workers INTEGER RANGE" && has (helpPage serveT "serve") "[PATH]  A path.")
 ]
 
-def cases : List Case := basicCases ++ optionCases ++ argCases ++ cmdCases ++ fastapiCases ++ typedCases
+/-! ## tests/test_shell_completion.py -/
+
+def words (c : Cmd) (args : List String) (inc : String) : List String :=
+  (c.complete c.name args inc).map (·.value)
+
+def completionCases : List Case := [
+  pc "tests/test_shell_completion.py::test_command" "option names"
+    (let c : Cmd := command "cli" [option ["-t", "--test"]]
+     words c [] "" == [] && words c [] "-" == ["-t", "--test", "--help"] && words c [] "--" == ["--test", "--help"] &&
+     words c [] "--t" == ["--test"] && words c ["-t", "a"] "-" == ["--help"]),
+  pc "tests/test_shell_completion.py::test_group" "group commands and options"
+    (let c : Cmd := group "cli" [option ["-a"]] [command "x", command "y"]
+     words c [] "" == ["x", "y"] && words c [] "-" == ["-a", "--help"]),
+  pc "tests/test_shell_completion.py::test_nested_group" "nested groups"
+    (let c : Cmd := group "cli" [] [group "get" [] [group "full" [option ["--verbose"]] [command "data" [option ["-a"]]]]]
+     words c [] "" == ["get"] && words c ["get"] "" == ["full"] && words c ["get", "full"] "" == ["data"] &&
+     words c ["get", "full"] "-" == ["--verbose", "--help"] && words c ["get", "full", "data"] "" == [] &&
+     words c ["get", "full", "data"] "-" == ["-a", "--help"]),
+  pc "tests/test_shell_completion.py::test_group_command_same_option" "group and command share an option"
+    (let c : Cmd := group "cli" [option ["-a"]] [command "x" [option ["-a"]]]
+     words c [] "-" == ["-a", "--help"] && words c ["-a", "a"] "-" == ["--help"] &&
+     words c ["-a", "a", "x"] "-" == ["-a", "--help"] && words c ["-a", "a", "x", "-a", "a"] "-" == ["--help"]),
+  pc "tests/test_shell_completion.py::test_chained" "chained group completion"
+    (let c : Cmd := group "cli" [] [command "set" [option ["-y"]], command "start", group "get" [] [command "full"]] (chain := true)
+     words c [] "" == ["get", "set", "start"] && words c [] "s" == ["set", "start"] &&
+     words c ["set", "start"] "" == ["get"] && words c ["get"] "" == ["full", "set", "start"] &&
+     words c ["get", "full"] "" == ["set", "start"] && words c ["get"] "s" == ["set", "start"]),
+  pc "tests/test_shell_completion.py::test_help_option" "help option completion"
+    (let c : Cmd := group "cli" [] [command "with", command "no" (addHelpOption := false)]
+     words c ["with"] "--" == ["--help"] && words c ["no"] "--" == []),
+  pc "tests/test_shell_completion.py::test_argument_order" "arguments complete in order"
+    (let c : Cmd := command "cli" [argument "plain", argument "c1" (type := Choice ["a1", "a2", "b"]),
+        argument "c2" (type := Choice ["c1", "c2", "d"])]
+     words c [] "" == [] && words c [] "a" == [] && words c ["x"] "a" == ["a1", "a2"] && words c ["x", "b"] "d" == ["d"]),
+  pc "tests/test_shell_completion.py::test_argument_default" "arguments with defaults still complete"
+    (let c : Cmd := command "cli" [argument "a" (type := Choice ["a"]) (default := "a"),
+        argument "b" (type := Choice ["b"]) (default := "b")] (addHelpOption := false)
+     words c [] "" == ["a"] && words c ["a"] "b" == ["b"] && words c ["x"] "b" == ["b"]),
+  pc "tests/test_shell_completion.py::test_type_choice" "choice option values"
+    (let c : Cmd := command "cli" [option ["-c"] (type := Choice ["a1", "a2", "b"])]
+     words c ["-c"] "" == ["a1", "a2", "b"] && words c ["-c"] "a" == ["a1", "a2"] && words c ["-c"] "a2" == ["a2"]),
+  pc "tests/test_shell_completion.py::test_choice_special_characters" "choices with special characters"
+    (let c : Cmd := command "cli" [option ["-c"] (type := Choice ["!1", "!2", "+3"])]
+     words c ["-c"] "" == ["!1", "!2", "+3"] && words c ["-c"] "!" == ["!1", "!2"] && words c ["-c"] "!2" == ["!2"]),
+  pc "tests/test_shell_completion.py::test_choice_conflicting_prefix" "a declared prefix wins over a choice"
+    (let c : Cmd := command "cli" [option ["-c"] (type := Choice ["!1", "!2", "+3"]), option ["+p"] (isFlag := true)]
+     words c ["-c"] "" == ["!1", "!2", "+3"] && words c ["-c"] "+" == ["+p"]),
+  pc "tests/test_shell_completion.py::test_option_count" "count options take no value"
+    (let c : Cmd := command "cli" [option ["-c"] (count := true)]
+     words c ["-c"] "" == [] && words c ["-c"] "-" == ["--help"]),
+  pc "tests/test_shell_completion.py::test_path_types" "path and file completion kinds"
+    (let k := fun (t : ParamType) => ((command "cli" [option ["-f"] (type := t)] : Cmd).complete "cli" ["-f"] "ab").map fun i => (i.value, i.type)
+     k (File) == [("ab", "file")] && k (Path) == [("ab", "file")] && k (Path (fileOkay := false)) == [("ab", "dir")]),
+  pc "tests/test_shell_completion.py::test_option_flag" "flag pair names, then the argument"
+    (let c : Cmd := command "cli" [option ["--on/--off"], argument "a" (type := Choice ["a1", "a2", "b"])] (addHelpOption := false)
+     words c [] "--" == ["--on", "--off"] && words c ["--on"] "a" == ["a1", "a2"]),
+  pc "tests/test_shell_completion.py::test_flag_option_with_nargs_option" "nargs option after a flag"
+    (let c : Cmd := command "cli" [argument "a" (type := Choice ["a1", "a2", "b"]), option ["--flag"] (isFlag := true),
+        option ["-c"] (type := Choice ["p", "q"]) (nargs := 2)] (addHelpOption := false)
+     words c ["a1", "--flag", "-c"] "" == ["p", "q"]),
+  pc "tests/test_shell_completion.py::test_option_custom" "custom completion function"
+    (let c : Cmd := command "cli" [argument "x", argument "y", argument "z" (shellComplete := some fun i => [i.toUpper])]
+     words c ["a", "b"] "" == [""] && words c ["a", "b"] "c" == ["C"]),
+  pc "tests/test_shell_completion.py::test_option_multiple" "multiple options are offered again"
+    (let c : Cmd := command "type" [option ["-m"] (type := Choice ["a", "b"]) (multiple := true), option ["-f"]]
+     words c ["-m"] "" == ["a", "b"] && (words c ["-m", "a"] "-").contains "-m" && words c ["-m", "a", "-m"] "" == ["a", "b"] &&
+     !(words c ["-f", "f"] "-").contains "-f"),
+  pc "tests/test_shell_completion.py::test_option_nargs" "nargs option values"
+    (let c : Cmd := command "cli" [option ["-c"] (type := Choice ["a", "b"]) (nargs := 2)]
+     words c ["-c"] "" == ["a", "b"] && words c ["-c", "a"] "" == ["a", "b"] && words c ["-c", "a", "b"] "" == []),
+  pc "tests/test_shell_completion.py::test_argument_nargs" "nargs arguments"
+    (let c : Cmd := command "cli" [argument "x" (type := Choice ["a", "b"]) (nargs := 2),
+        argument "y" (type := Choice ["c", "d"]) (nargs := -1), option ["-z"]]
+     words c [] "" == ["a", "b"] && words c ["a"] "" == ["a", "b"] && words c ["a", "b"] "" == ["c", "d"] &&
+     words c ["a", "b", "c"] "" == ["c", "d"] && words c ["a", "-z", "1"] "" == ["a", "b"] &&
+     words c ["a", "-z", "1", "b"] "" == ["c", "d"]),
+  pc "tests/test_shell_completion.py::test_double_dash" "after --, words are values"
+    (let c : Cmd := command "cli" [option ["--opt"], argument "name" (type := Choice ["name", "--", "-o", "--opt"])] (addHelpOption := false)
+     words c [] "-" == ["--opt"] && words c ["value"] "-" == ["--opt"] &&
+     words c [] "" == ["name", "--", "-o", "--opt"] && words c ["--"] "" == ["name", "--", "-o", "--opt"]),
+  pc "tests/test_shell_completion.py::test_hidden" "hidden commands and options"
+    (let c : Cmd := group "cli" [] [command "hidden" [option ["-a"], option ["-b"] (type := Choice ["a", "b"]) (hidden := true)]
+        (addHelpOption := false) (hidden := true)]
+     !(words c [] "").contains "hidden" && !(words c [] "hidden").contains "hidden" &&
+     words c ["hidden"] "-" == ["-a"] && words c ["hidden", "-b"] "" == ["a", "b"]),
+  pc "tests/test_shell_completion.py::test_full_complete" "bash and zsh output formats"
+    (CompletionItem.format "bash" { value := "a" } == "plain,a" &&
+     CompletionItem.format "zsh" { value := "a:b", help := some "h" } == "plain\na\\:b\nh" &&
+     CompletionItem.format "zsh" { value := "a" } == "plain\na\n_" &&
+     CompletionItem.format "fish" { value := "a", help := some "x\ty" } == "plain,a\tx y"),
+  pc "tests/test_shell_completion.py::test_completion_item_data" "complete variable name"
+    (completeVar "foo-bar" == "_FOO_BAR_COMPLETE" && (completionScript "bash" "foo-bar").isSome &&
+     (completionScript "elvish" "foo-bar").isNone),
+  pc "tests/test_parser.py::test_split_arg_string" "shell word splitting"
+    (splitArgString "cli a 'b c' \"d e\" f\\ g" == ["cli", "a", "b c", "d e", "f g"] &&
+     splitArgString "cli 'unterminated" == ["cli", "unterminated"])
+]
+
+def cases : List Case := basicCases ++ optionCases ++ argCases ++ cmdCases ++ fastapiCases ++ typedCases ++ completionCases
 
 def main : IO UInt32 := do
   let mut failures := 0
