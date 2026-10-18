@@ -16,10 +16,28 @@ to bytes:
 | `RepoImpl/` | executable definitions; total, structural recursion | subject of proofs |
 | `Specifications/` | the properties, in `Prop` | the contract |
 | `Proofs/` | theorems; `Proofs/Verified.lean` bundles one `Verified<Layer>` per layer | yes |
-| `APIs/` | the public surface, returning refinements | by construction |
-| `Transport.lean` (if present) | the only effectful module | no; tested |
+| `APIs/` | the public surface: builders, accessors, and `LeanClick.parse`, which returns `{r // ParsedFor cmd s r}` | the refinement, by `parseArgs_parsedFor` |
+| `Terminal.lean` | the only effectful module: environment, filesystem view, prompts, output, exit | no; tested |
 
-Everything except the transport module is a pure function. This is
+Everything except `Terminal.lean` is a pure function. A `Command κ` is
+generic in the type `κ` of its callbacks; the parser never inspects them, and
+only `Terminal` fixes `κ` to an `IO` action (`Terminal.App σ`).
+
+### Modules
+
+| Module | Holds |
+|---|---|
+| `DataTypes/Types.lean` | `ParamType`, its refined `Carrier` (choice membership, range bounds), `Dec` |
+| `DataTypes/Param.lean` | `Param`, `Decl`/`OptKind`, `Entry` (with `h_fits`), `Command`, `Context`, errors, `Env` |
+| `RepoImpl/Text.lean` | `repr`, `textwrap`, `difflib`, Python number parsing |
+| `RepoImpl/Convert.lean` | conversion of one token through a type |
+| `RepoImpl/Scan.lean` | the port of `parser.py`: the option table, events, `unpack` |
+| `RepoImpl/Command.lean` | `Command.allParams` (the table), settings, metavars, hints |
+| `RepoImpl/Help.lean` | the help page and usage line from `allParams` |
+| `RepoImpl/Resolve.lean` | one parameter: source precedence, prompt, conversion, required, eager |
+| `RepoImpl/Parse.lean` | `parseWith`, group dispatch, messages, exit codes |
+| `Specifications/Parse.lean` | the ten headline properties |
+| `Proofs/*.lean` | their proofs; `Verified.lean` bundles `VerifiedParser`/`VerifiedHelp` | This is
 load-bearing: a round-trip property of a function is an equation that
 `omega` and `simp` attack directly; the same property of a procedure would
 be a Hoare triple over a heap.
@@ -45,10 +63,55 @@ be a Hoare triple over a heap.
   `Quot.sound`, `Classical.choice`), `lake exe props`, `lake exe conformance`,
   the traceability check.
 
+### Proved
+
+`parse_deterministic`, `help_lists_every_param` (plus
+`help_lists_every_argument`, `help_lists_every_subcommand`),
+`undeclared_option_rejected`, `required_missing_error`, `nargs_arity`,
+`choice_in_set`, `bool_flag_pairs`, `envvar_fallback`,
+`group_dispatch_first_match`, `exit_code_range`, with their lemmas in
+`Proofs/`. The axiom gate's theorem count also includes the compiler's
+`inj`/`sizeOf_spec` lemmas; the hand-written theorems are the `theorem`
+declarations under `LeanClick/Proofs/`.
+
 ### Tested, not proved
 
 Listed here with the reason, and in `docs/traceability.toml` with
-`status = "tested"`. (Nothing yet.)
+`status = "tested"`.
+
+* Text wrapping (`Text.wrap`, `wrapParagraphs`): a port of Python's
+  `textwrap` greedy filler with hyphen breaking; its byte-exact layout is a
+  property of the algorithm, not of the parser, and is checked against the
+  upstream formatting tests and `Props.wrapWidth`/`wrapKeepsText`.
+* "Did you mean" hints (`Text.closeMatches`): `difflib` ratios; the choice of
+  suggestions only affects the message text (`Props.closeSubset`).
+* Python number parsing and printing (`parseInt`, `parseDec`, `showDec`):
+  round-trip property tests.
+* `Terminal.lean`: prompts, confirmation, the filesystem view, the exit code
+  reporting. Effectful; exercised by `examples/FastapiCli.lean`.
+
+### Deviations from upstream
+
+Recorded as `status = "deviation"` rows in `docs/traceability.toml`:
+`inf`/`nan` floats rejected and huge exponents kept exact; `hide_input` does
+not hide input; path permission checks assumed true; `nargs=0` arguments
+(UP-024) and options; falsy envvar on a `flag_value` option leaves it unset
+(UP-009); unbounded ranges show no range text (UP-023); `--help`/`--version`
+never read automatic environment variables (UP-011); parameters sharing a
+name are not arbitrated; boolean flags have no explicit `None` default; an
+option-looking unknown subcommand is re-scanned rather than re-parsed.
+Excluded: chained groups, `default_map`, `token_normalize_func`, shell
+completion, Windows console support, UUID/DateTime/Tuple/custom types,
+parameter callbacks, deprecation warnings, `prompt_required=False`.
+
+### Complexity
+
+The scanner appends to its accumulators (`largs ++ [tok]`), which is
+quadratic in the number of argv tokens; command lines are short, and the
+appending form is what the scanner proofs are stated against.
+`Terminal.pathCandidates` is linear in the total argv length (suffixes are
+taken only for option-looking tokens of at most 256 characters, and
+deduplication uses a hash set).
 
 ## Tests
 

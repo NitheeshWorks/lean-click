@@ -16,11 +16,273 @@ upstream_url = "https://github.com/pallets/click"
 upstream_commit = "2247b35ea1c47c727d7a06e51fa280e12a863ff6"
 upstream_license = "BSD-3-Clause"
 
-# [[requirement]]
-# id = "..."                  # stable id, e.g. "routing.first-match"
-# upstream = "tests/test_x.py::test_y"   # or a docs section
-# title = "..."
-# status = "implemented"
-# realises = ["LeanClick.Foo.bar"]
-# theorem = ["LeanClick.Foo.bar_spec"]
-# test = ["tests/Conformance.lean::name"]
+
+[[requirement]]
+id = "parser.undeclared-option"
+upstream = "tests/test_options.py::test_unknown_options"
+title = "An undeclared option is an error (No such option), with did-you-mean hints"
+status = "implemented"
+realises = ["LeanClick.processOpt", "LeanClick.scanLoop"]
+theorem = ["LeanClick.undeclared_option_rejected", "LeanClick.scanLoop_undeclared"]
+test = ["tests/Conformance.lean::unknown long option"]
+
+[[requirement]]
+id = "parser.deterministic"
+upstream = "docs: Parameters / Values from Environment Variables"
+title = "The parser reads the environment only through the declared variable names"
+status = "implemented"
+realises = ["LeanClick.Command.parseWith", "LeanClick.Command.parseArgs"]
+theorem = ["LeanClick.parse_deterministic", "LeanClick.parseWith_congr"]
+test = ["tests/Props.lean::declaredAccepted"]
+
+[[requirement]]
+id = "parser.required"
+upstream = "tests/test_basic.py::test_required_option"
+title = "Required parameters with no value are reported as missing; a successful parse never leaves one missing"
+status = "implemented"
+realises = ["LeanClick.resolveParam", "LeanClick.Param.missingError"]
+theorem = ["LeanClick.required_missing_error", "LeanClick.resolveParam_missing", "LeanClick.parse_ok_required_present"]
+test = ["tests/Conformance.lean::required option missing"]
+
+[[requirement]]
+id = "parser.nargs"
+upstream = "tests/test_arguments.py::test_nargs_tup"
+title = "nargs=n yields exactly n values per occurrence"
+status = "implemented"
+realises = ["LeanClick.takeValues", "LeanClick.Entry"]
+theorem = ["LeanClick.nargs_arity", "LeanClick.takeValues_length", "LeanClick.entry_tuple_length", "LeanClick.entry_many_length"]
+test = ["tests/Conformance.lean::nargs=2 argument"]
+
+[[requirement]]
+id = "types.choice"
+upstream = "tests/test_basic.py::test_choice_option"
+title = "Choice values are refined to members of the choices; the first normalised match is returned"
+status = "implemented"
+realises = ["LeanClick.matchChoice", "LeanClick.ParamType.Carrier"]
+theorem = ["LeanClick.choice_in_set", "LeanClick.convert_choice"]
+test = ["tests/Conformance.lean::choice option value"]
+
+[[requirement]]
+id = "types.range"
+upstream = "tests/test_options.py::test_counting"
+title = "IntRange/FloatRange values carry their bounds proof; out of range is an error, clamp clamps"
+status = "implemented"
+realises = ["LeanClick.convertIntRange", "LeanClick.convertFloatRange"]
+test = ["tests/Conformance.lean::count out of range"]
+
+[[requirement]]
+id = "flags.pairs"
+upstream = "tests/test_basic.py::test_boolean_switch"
+title = "--x stores true, --no-x stores false"
+status = "implemented"
+realises = ["LeanClick.Param.flag", "LeanClick.cmdRaw"]
+theorem = ["LeanClick.bool_flag_pairs"]
+test = ["tests/Conformance.lean::switch --off, unset", "tests/Props.lean::lastWins"]
+
+[[requirement]]
+id = "sources.precedence"
+upstream = "tests/test_options.py::test_multiple_envvar"
+title = "Command line beats environment variable beats default"
+status = "implemented"
+realises = ["LeanClick.consume", "LeanClick.envString"]
+theorem = ["LeanClick.envvar_fallback", "LeanClick.consume_commandline", "LeanClick.consume_environment", "LeanClick.consume_default", "LeanClick.resolveParam_source"]
+test = ["tests/Conformance.lean::command line beats PORT"]
+
+[[requirement]]
+id = "groups.dispatch"
+upstream = "tests/test_commands.py::test_group_with_args"
+title = "A group dispatches to the first subcommand with the name"
+status = "implemented"
+realises = ["LeanClick.Command.parseLevel", "LeanClick.Command.findSub"]
+theorem = ["LeanClick.group_dispatch_first_match"]
+test = ["tests/Conformance.lean::first subcommand of a name wins"]
+
+[[requirement]]
+id = "exit.codes"
+upstream = "tests/test_commands.py::test_command_no_args_is_help"
+title = "Exit codes: 0 success/help/version, 1 abort/ClickException, 2 usage error, Exit(n) mod 256"
+status = "implemented"
+realises = ["LeanClick.Termination.exitCode"]
+theorem = ["LeanClick.exit_code_range", "LeanClick.usage_error_exit_2"]
+test = ["tests/Conformance.lean::no_args_is_help exits 2 with the help"]
+
+[[requirement]]
+id = "help.table"
+upstream = "tests/test_basic.py::test_choice_option"
+title = "Help is rendered from Command.allParams, the parser's table: every visible option, documented argument and visible subcommand is listed"
+status = "implemented"
+realises = ["LeanClick.Command.formatHelp", "LeanClick.Command.allParams"]
+theorem = ["LeanClick.help_lists_every_param", "LeanClick.help_lists_every_argument", "LeanClick.help_lists_every_subcommand"]
+test = ["tests/Props.lean::helpListsSpellings", "tests/Conformance.lean::help paragraphs and \\b blocks"]
+
+[[requirement]]
+id = "parser.prefixes"
+upstream = "tests/test_options.py::test_prefixes"
+title = "Option prefixes other than '-' (++, /) are collected from the declared spellings"
+status = "implemented"
+realises = ["LeanClick.optPrefixes", "LeanClick.ScanCfg.isOptTok"]
+theorem = ["LeanClick.scanCfg_prefixes"]
+test = ["tests/Conformance.lean::++ prefix options", "tests/Conformance.lean::slash options and the '; ' separator"]
+
+[[requirement]]
+id = "text.wrap"
+upstream = "tests/test_formatting.py::test_basic_functionality"
+title = "textwrap-compatible wrapping of usage, help text and definition lists"
+status = "tested"
+realises = ["LeanClick.Text.wrap", "LeanClick.Text.wrapParagraphs"]
+test = ["tests/Props.lean::wrapWidth", "tests/Conformance.lean::usage line wraps under the prefix"]
+
+[[requirement]]
+id = "text.difflib"
+upstream = "tests/test_options.py::test_suggest_possible_options"
+title = "difflib.get_close_matches for Did you mean hints"
+status = "tested"
+realises = ["LeanClick.Text.closeMatches"]
+test = ["tests/Props.lean::closeSubset", "tests/Conformance.lean::--bounds suggests both"]
+
+[[requirement]]
+id = "text.numbers"
+upstream = "tests/test_basic.py::test_float_option"
+title = "Python int()/float() parsing and str(float) printing"
+status = "tested"
+realises = ["LeanClick.Text.parseInt", "LeanClick.Text.parseDec", "LeanClick.Text.showDec"]
+test = ["tests/Props.lean::intRoundtrip", "tests/Props.lean::decRoundtrip"]
+
+[[requirement]]
+id = "terminal.prompts"
+upstream = "tests/test_termui.py::test_prompts"
+title = "Prompts, confirmation, re-prompt on invalid input, Aborted! on EOF"
+status = "tested"
+realises = ["LeanClick.Terminal.promptParam", "LeanClick.Terminal.confirm", "LeanClick.Terminal.parseInteractive"]
+test = ["examples/FastapiCli.lean"]
+
+[[requirement]]
+id = "terminal.main"
+upstream = "tests/test_testing.py::test_exit_code_and_output_from_sys_exit"
+title = "Command.main: report and exit code"
+status = "tested"
+realises = ["LeanClick.Terminal.main", "LeanClick.Terminal.runAux"]
+test = ["examples/FastapiCli.lean"]
+
+[[requirement]]
+id = "dev.fastapi-cli"
+upstream = "fastapi-cli tests/test_cli.py::test_dev"
+title = "The fastapi dev/run option shape parses as in fastapi-cli"
+status = "tested"
+realises = ["LeanClick.parse"]
+test = ["tests/Conformance.lean::dev defaults", "tests/Conformance.lean::dev with every option"]
+
+[[requirement]]
+id = "dev.float-inf"
+upstream = "tests/test_basic.py::test_float_option"
+title = "inf/nan float inputs are rejected; overflowing exponents (1e400) are kept exact rather than becoming inf; |exponent| > 4096 rejected"
+status = "deviation"
+realises = ["LeanClick.Text.parseDec"]
+test = ["tests/Props.lean::decRoundtrip"]
+
+[[requirement]]
+id = "dev.hide-input"
+upstream = "tests/test_termui.py::test_prompt_hide_input"
+title = "hide_input does not suppress terminal echo (no portable echo control in Lean core)"
+status = "deviation"
+realises = ["LeanClick.Terminal.promptParam"]
+
+[[requirement]]
+id = "dev.fs-permissions"
+upstream = "tests/test_basic.py::test_path_option"
+title = "Path readable/writable/executable checks assume true: Lean core metadata has no permission bits"
+status = "deviation"
+realises = ["LeanClick.Terminal.statPath", "LeanClick.convertPath"]
+test = ["tests/Conformance.lean::dash is a path when allowed"]
+
+[[requirement]]
+id = "dev.nargs-zero"
+upstream = "UP-024"
+title = "An argument with nargs=0 reads as unset and later arguments are filled; click crashes with IndexError"
+status = "deviation"
+realises = ["LeanClick.unpackFront"]
+test = ["tests/Props.lean::unpackConserves"]
+
+[[requirement]]
+id = "dev.option-nargs-zero"
+upstream = "tests/test_options.py::test_invalid_nargs"
+title = "An option with nargs=0 given an attached value (--x=v) is a BadOptionUsage error; click turns v into a positional"
+status = "deviation"
+realises = ["LeanClick.takeValues"]
+
+[[requirement]]
+id = "dev.flag-value-falsy-env"
+upstream = "UP-009"
+title = "A falsy environment value for a flag_value option leaves it unset; click stores the string 'False'"
+status = "deviation"
+realises = ["LeanClick.envRaw"]
+test = ["tests/Conformance.lean::falsy envvar leaves a flag_value option unset (UP-009)"]
+
+[[requirement]]
+id = "dev.unbounded-range"
+upstream = "UP-023"
+title = "An unbounded IntRange/FloatRange shows no range text in help; click shows [x<=None]"
+status = "deviation"
+realises = ["LeanClick.Param.helpExtra"]
+test = ["tests/Conformance.lean::unbounded range shows no range (UP-023)"]
+
+[[requirement]]
+id = "dev.eager-autoenv"
+upstream = "UP-011"
+title = "--help and --version never read automatic environment variables; click lets PREFIX vars trigger them"
+status = "deviation"
+realises = ["LeanClick.helpParam", "LeanClick.Param.versionOption"]
+test = ["tests/Conformance.lean::help and version never read auto envvars (UP-011)"]
+
+[[requirement]]
+id = "dev.shared-names"
+upstream = "tests/test_options.py::test_bool_flag_group_competition"
+title = "Parameters sharing a name (feature-switch groups) are not arbitrated; give each parameter a unique name"
+status = "deviation"
+realises = ["LeanClick.cmdRaw"]
+
+[[requirement]]
+id = "dev.flag-none-default"
+upstream = "tests/test_basic.py::test_boolean_flag"
+title = "A boolean flag cannot have an explicit None default (three-state flags); absent defaults resolve to False"
+status = "deviation"
+realises = ["LeanClick.implicitRaw"]
+test = ["tests/Conformance.lean::switch absent, unset"]
+
+[[requirement]]
+id = "dev.group-reparse"
+upstream = "tests/test_commands.py::test_unknown_command"
+title = "An option-looking unknown subcommand name is re-scanned (not fully re-parsed) before No such command"
+status = "deviation"
+realises = ["LeanClick.Command.parseLevel"]
+test = ["tests/Conformance.lean::unknown command"]
+
+[[requirement]]
+id = "excluded.chain"
+upstream = "tests/test_chain.py"
+title = "Chained groups (chain=True), result callbacks"
+status = "excluded"
+
+[[requirement]]
+id = "excluded.default-map"
+upstream = "tests/test_defaults.py"
+title = "default_map (config-file defaults) and token_normalize_func"
+status = "excluded"
+
+[[requirement]]
+id = "excluded.completion"
+upstream = "tests/test_shell_completion.py"
+title = "Shell completion"
+status = "excluded"
+
+[[requirement]]
+id = "excluded.windows"
+upstream = "tests/test_compat.py"
+title = "Windows console, colorama, click.testing pty emulation (plan exclusion)"
+status = "excluded"
+
+[[requirement]]
+id = "excluded.types"
+upstream = "tests/test_types"
+title = "UUID, DateTime, Tuple and custom ParamType classes; callbacks on parameters; deprecated parameters; prompt_required=False optional values"
+status = "excluded"

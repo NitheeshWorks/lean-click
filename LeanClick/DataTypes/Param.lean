@@ -270,19 +270,19 @@ structure CommandSpec where
   /-- Group only. -/
   subcommandMetavar : Option String := none
 
-/-- A command or a group. The callback receives the context and returns the
-object handed to the subcommand's context. -/
-inductive Command (σ : Type) where
-  | mk (spec : CommandSpec) (isGroup : Bool)
-      (callback : Context σ → ExceptT ClickError IO σ) (subcommands : List (Command σ))
+/-- A command or a group. `κ` is the type of its callback: the parser never
+looks at it, so the pure layers are generic in `κ`, and only
+`LeanClick.Terminal` fixes it to an `IO` action (`Terminal.App`). -/
+inductive Command (κ : Type) where
+  | mk (spec : CommandSpec) (isGroup : Bool) (callback : κ) (subcommands : List (Command κ))
 
 namespace Command
-variable {σ : Type}
-def spec : Command σ → CommandSpec | .mk s _ _ _ => s
-def isGroup : Command σ → Bool | .mk _ g _ _ => g
-def callback : Command σ → Context σ → ExceptT ClickError IO σ | .mk _ _ c _ => c
-def subcommands : Command σ → List (Command σ) | .mk _ _ _ s => s
-def name (c : Command σ) : String := c.spec.name
+variable {κ : Type}
+def spec : Command κ → CommandSpec | .mk s _ _ _ => s
+def isGroup : Command κ → Bool | .mk _ g _ _ => g
+def callback : Command κ → κ | .mk _ _ c _ => c
+def subcommands : Command κ → List (Command κ) | .mk _ _ _ s => s
+def name (c : Command κ) : String := c.spec.name
 end Command
 
 /-- Context settings inherited from the parent context. -/

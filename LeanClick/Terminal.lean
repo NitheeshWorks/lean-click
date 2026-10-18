@@ -1,4 +1,6 @@
 import LeanClick.APIs
+import Std.Data.HashSet
+import Std.Data.HashMap
 
 /-!
 # Terminal: the one effectful module
@@ -23,6 +25,24 @@ variable {σ : Type}
 
 /-- The monad callbacks run in. -/
 abbrev ClickM := ExceptT ClickError IO
+
+/-- A callback: receives the context, returns the object handed to the
+subcommand's context. -/
+abbrev Callback (σ : Type) := Context σ → ClickM σ
+
+/-- A command whose callbacks run in `IO`. -/
+abbrev App (σ : Type) := Command (Callback σ)
+
+instance {σ : Type} : Inhabited (Callback σ) := ⟨fun c => pure c.obj⟩
+
+/-- `click.command` with an `IO` callback. -/
+def App.command {σ : Type} (spec : CommandSpec) (callback : Callback σ := fun c => pure c.obj) : App σ :=
+  .mk spec false callback []
+
+/-- `click.group` with an `IO` callback. -/
+def App.group {σ : Type} (spec : CommandSpec) (subcommands : List (App σ))
+    (callback : Callback σ := fun c => pure c.obj) : App σ :=
+  .mk spec true callback subcommands
 
 /-- `click.echo`. -/
 def echo (msg : String) (err : Bool := false) (nl : Bool := true) : IO Unit := do
@@ -70,8 +90,8 @@ def confirm (text : String) (default : Option Bool := some false) (fuel : Nat :=
 
 /-- `click.prompt` for a parameter: shows the default and the choices,
 re-asks until the value converts, and asks twice with a confirmation
-prompt. `none` means abort. Input is not hidden (`hide_input` is a recorded
-deviation: Lean core has no portable way to turn off terminal echo). -/
+prompt. `none` means abort. Input is not hidden (`hide_input` is deviation
+`dev.hide-input`: Lean core has no portable way to turn off terminal echo). -/
 def promptParam (fs : String → Option FileInfo) (p : Param) (dflt : Option String)
     (fuel : Nat := 100) : IO (Option String) := do
   let ps := p.prompt.getD { text := p.name }
@@ -133,11 +153,19 @@ def pathCandidates (ps : List Param) (argv : List String) (envVals : List String
   let fromTok := fun (t : String) =>
     let cs := t.toList
     let eq := match (splitEq t).2 with | some v => [v] | none => []
-    let attached := (List.range cs.length).map fun i => String.ofList (cs.drop (i + 2))
+    -- attached short-option values (`-ofile`) only for option-looking
+    -- tokens of reasonable length, so the view stays linear in argv
+    let attached := if looksLikeOption t && cs.length ≤ 256 then
+        (List.range (cs.length - 1)).map fun i => String.ofList (cs.drop (i + 2))
+      else []
     t :: eq ++ attached
   let defaults := ps.flatMap fun p => p.default.getD []
   let envPieces := envVals.flatMap fun v => v :: splitWs v ++ splitChar v ':'
-  (argv.flatMap fromTok ++ envPieces ++ defaults).eraseDups
+  let all := argv.flatMap fromTok ++ envPieces ++ defaults
+  -- deduplicate with a hash set (linear) instead of `eraseDups` (quadratic)
+  let (_, out) := all.foldl (fun (acc : Std.HashSet String × Array String) c =>
+    if acc.1.contains c then acc else (acc.1.insert c, acc.2.push c)) ({}, #[])
+  out.toList
 
 /-- The terminal width click would use: `COLUMNS` (else 80), clamped to
 80, minus 2, at least 50. -/
@@ -146,7 +174,7 @@ def terminalWidth : IO Nat := do
   return max (min cols 80 - 2) 50
 
 /-- Build the `Env` one level of parsing reads. -/
-def levelEnv (cmd : Command σ) (s : Settings) (argv : List String)
+def levelEnv (cmd : App σ) (s : Settings) (argv : List String)
     (answers : List ((String × String) × String)) : IO Env := do
   let ps := cmd.allParams s
   let names := (ps.flatMap (envNames s)).eraseDups
@@ -154,17 +182,17 @@ def levelEnv (cmd : Command σ) (s : Settings) (argv : List String)
   for n in names do
     if let some v ← IO.getEnv n then vars := vars ++ [(n, v)]
   let needsFs := ps.any fun p => match p.type with | .path _ | .file _ => true | _ => false
-  let mut table : List (String × FileInfo) := []
+  let mut table : Std.HashMap String FileInfo := {}
   if needsFs then
     for c in pathCandidates ps argv (vars.map (·.2)) do
-      if let some info ← statPath c then table := table ++ [(c, info)]
+      if let some info ← statPath c then table := table.insert c info
   let tbl := table
-  return { vars, fs := fun p => tbl.lookup p, answers, width := s.width }
+  return { vars, fs := fun p => tbl.get? p, answers, width := s.width }
 
 /-- Parse one level, prompting for missing values until the parser has
 every answer it asked for. `none` means the user aborted a prompt. -/
-def parseInteractive (cmd : Command σ) (s : Settings) (path : String) (argv : List String) :
-    Nat → List ((String × String) × String) → IO (Option (Except Stop (Level σ)))
+def parseInteractive (cmd : App σ) (s : Settings) (path : String) (argv : List String) :
+    Nat → List ((String × String) × String) → IO (Option (Except Stop (Level (Callback σ))))
   | 0, _ => pure (some (.error (.error ⟨.usage "Too many prompts.", none⟩)))
   | f + 1, answers => do
     let env ← levelEnv cmd s argv answers
@@ -177,7 +205,7 @@ def parseInteractive (cmd : Command σ) (s : Settings) (path : String) (argv : L
 
 /-- Run an invocation level by level: parse, run the callback, descend. -/
 def runAux (prog : String) :
-    Nat → Command σ → Option Settings → String → String → List String →
+    Nat → App σ → Option Settings → String → String → List String →
     Option (Context σ) → σ → IO Termination
   | 0, _, _, _, _, _, _, _ => pure (.halted (.error ⟨.usage "Command nesting exceeds the argument count.", none⟩))
   | fuel + 1, cmd, parent, infoName, path, argv, parentCtx, obj => do
@@ -211,7 +239,7 @@ def report : Termination → IO Unit
   | .raised e => echo e.render (err := true) (nl := false)
 
 /-- `Command.main`: run with `argv`, report, and return the exit code. -/
-def main (cmd : Command σ) (init : σ) (argv : List String) (prog : String := cmd.name) :
+def main (cmd : App σ) (init : σ) (argv : List String) (prog : String := cmd.name) :
     IO UInt32 := do
   let width ← terminalWidth
   let t ← try

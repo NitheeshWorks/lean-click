@@ -10,7 +10,7 @@ search for "Did you mean" hints. All total; loops recurse on an explicit fuel
 that bounds the work.
 
 These are tested, not proved (see `tests/Props.lean`); the proofs about the
-parser only use `splitOpt` and `startsDashDash`, which are simple enough to
+parser only use `splitEq` and `startsDashDash`, which are simple enough to
 reason about directly.
 -/
 
@@ -153,7 +153,9 @@ def parseInt (s : String) : Option Int :=
   | some ds => let n : Int := digitsValue ds; some (if neg then -n else n)
 
 /-- Python's `float(s)` for finite decimal strings; `inf`/`nan` are not
-representable as `Dec` and are rejected (a recorded deviation). -/
+representable as `Dec` and are rejected, and a huge exponent stays exact
+instead of overflowing to `inf` (deviation `dev.float-inf` in
+`docs/traceability.toml`). -/
 def parseDec (s : String) : Option Dec :=
   let cs := (strip s).toList
   let (neg, body) := match cs with

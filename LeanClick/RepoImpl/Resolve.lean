@@ -245,7 +245,10 @@ def resolveParam (fs : String → Option FileInfo) (answer : Option String)
     (cmd : Option Raw) (env : Option String) (p : Param) : Except Stop Entry :=
   let rs := pickSource p answer cmd env
   if p.wantsPrompt rs.1 rs.2 && rs.2 != .prompt then
-    .error (.prompt p (match rs.1 with | some (.tokens [d]) => some d | _ => none))
+    .error (.prompt p (match rs.1.or (implicitRaw p) with
+      | some (.tokens [d]) => some d
+      | some (.bool b) => some (if b then "true" else "false")
+      | _ => none))
   else finishParam fs p rs.1 rs.2
 
 /-- The value of an entry with its refinements erased. A `multiple`

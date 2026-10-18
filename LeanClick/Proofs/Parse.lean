@@ -180,27 +180,45 @@ theorem lookupLong_none (tbl : List Spelling) (o : String) (h : ∀ sp ∈ tbl, 
     lookupLong tbl o = none :=
   lookup_none _ o (fun sp hsp => h sp (List.mem_filter.1 hsp).1)
 
-theorem looksLikeOption_of_dashDash (tok : String) (h : startsDashDash tok = true) :
-    looksLikeOption tok = true := by
+/-- The configuration of a command always knows `-` and `--`. -/
+theorem scanCfg_prefixes (cmd : Command σ) (s : Settings) :
+    ['-'] ∈ (cmd.scanCfg s).prefixes ∧ ['-', '-'] ∈ (cmd.scanCfg s).prefixes := by
+  simp [Command.scanCfg, optPrefixes]
+
+theorem isOptTok_of_dashDash (cfg : ScanCfg) (tok : String) (h : startsDashDash tok = true)
+    (hp : ['-'] ∈ cfg.prefixes) : cfg.isOptTok tok = true := by
   unfold startsDashDash at h
-  unfold looksLikeOption
+  unfold ScanCfg.isOptTok
   split at h
-  · rename_i rest heq; rw [heq]; rfl
+  · rename_i rest heq
+    have hl : tok.length = tok.toList.length := String.length_toList.symm
+    rw [hl, heq]
+    simp [hp]
+  · cases h
+
+theorem longPrefixed_of_dashDash (cfg : ScanCfg) (tok : String) (h : startsDashDash tok = true)
+    (hp : ['-', '-'] ∈ cfg.prefixes) : cfg.longPrefixed tok = true := by
+  unfold startsDashDash at h
+  unfold ScanCfg.longPrefixed
+  split at h
+  · rename_i rest heq
+    rw [heq]
+    simp [hp]
   · cases h
 
 theorem processOpt_undeclared (cfg : ScanCfg) (tok : String) (rest : List String)
     (hig : cfg.ignoreUnknown = false) (hdd : startsDashDash tok = true) (heq : '=' ∉ tok.toList)
-    (hnot : ∀ sp ∈ cfg.tbl, sp.opt ≠ tok) :
+    (hnot : ∀ sp ∈ cfg.tbl, sp.opt ≠ tok) (hp : ['-', '-'] ∈ cfg.prefixes) :
     processOpt cfg tok rest = .error ⟨.noSuchOption tok (closeMatches tok (longOpts cfg.tbl)), none⟩ := by
   unfold processOpt
   rw [splitEq_noEq tok heq]
   dsimp only
   rw [lookupLong_none cfg.tbl tok hnot]
-  simp [hdd, hig]
+  simp [longPrefixed_of_dashDash cfg tok hdd hp, hig]
 
 theorem scanLoop_positional (cfg : ScanCfg) (hi : cfg.interspersed = true) :
     ∀ (pre rest : List String) (evs : List Event) (largs : List String),
-    (∀ t ∈ pre, looksLikeOption t = false ∧ t ≠ "--") →
+    (∀ t ∈ pre, cfg.isOptTok t = false ∧ t ≠ "--") →
     scanLoop cfg (pre ++ rest) evs largs = scanLoop cfg rest evs (largs ++ pre)
   | [], rest, evs, largs, _ => by simp
   | t :: pre, rest, evs, largs, h => by
@@ -213,23 +231,25 @@ theorem scanLoop_positional (cfg : ScanCfg) (hi : cfg.interspersed = true) :
 
 theorem scanLoop_undeclared (cfg : ScanCfg) (tok : String) (post : List String) (evs : List Event)
     (largs : List String) (hig : cfg.ignoreUnknown = false) (hdd : startsDashDash tok = true)
-    (hne : tok ≠ "--") (heq : '=' ∉ tok.toList) (hnot : ∀ sp ∈ cfg.tbl, sp.opt ≠ tok) :
+    (hne : tok ≠ "--") (heq : '=' ∉ tok.toList) (hnot : ∀ sp ∈ cfg.tbl, sp.opt ≠ tok)
+    (hp : ['-'] ∈ cfg.prefixes ∧ ['-', '-'] ∈ cfg.prefixes) :
     scanLoop cfg (tok :: post) evs largs =
       .error ⟨.noSuchOption tok (closeMatches tok (longOpts cfg.tbl)), none⟩ := by
   rw [scanLoop]
   have h1 : (tok == "--") = false := by simpa using hne
-  simp only [h1, looksLikeOption_of_dashDash tok hdd, Bool.false_eq_true, ite_false, ite_true]
-  rw [processOpt_undeclared cfg tok post hig hdd heq hnot]
+  simp only [h1, isOptTok_of_dashDash cfg tok hdd hp.1, Bool.false_eq_true, ite_false, ite_true]
+  rw [processOpt_undeclared cfg tok post hig hdd heq hnot hp.2]
 
 theorem undeclared_option_rejected : UndeclaredOptionRejected (σ := σ) := by
   intro cmd s path env pre post tok hig hdd hne heq hnot hpre hint
+  have hp := scanCfg_prefixes cmd s
   have hscan : scan (cmd.scanCfg s) (pre ++ tok :: post) =
       .error ⟨.noSuchOption tok (closeMatches tok (longOpts (cmd.scanCfg s).tbl)), none⟩ := by
     unfold scan
     rcases hint with rfl | hint
-    · exact scanLoop_undeclared (cmd.scanCfg s) tok post [] [] hig hdd hne heq hnot
+    · exact scanLoop_undeclared (cmd.scanCfg s) tok post [] [] hig hdd hne heq hnot hp
     · rw [scanLoop_positional (cmd.scanCfg s) hint pre (tok :: post) [] [] hpre]
-      exact scanLoop_undeclared (cmd.scanCfg s) tok post [] _ hig hdd hne heq hnot
+      exact scanLoop_undeclared (cmd.scanCfg s) tok post [] _ hig hdd hne heq hnot hp
   refine ⟨closeMatches tok (longOpts (cmd.scanCfg s).tbl), ?_⟩
   unfold Command.parseArgs Command.parseWith
   have hnil : (pre ++ tok :: post).isEmpty = false := by simp
@@ -257,7 +277,7 @@ theorem lookupLong_unique (tbl : List Spelling) (o : String) (x : Spelling)
   simp
 
 theorem scan_single_flag (cfg : ScanCfg) (o d : String) (b : Bool)
-    (hl : lookupLong cfg.tbl o = some ⟨o, d, .flag b⟩) (hlo : looksLikeOption o = true)
+    (hl : lookupLong cfg.tbl o = some ⟨o, d, .flag b⟩) (hlo : cfg.isOptTok o = true)
     (hne : o ≠ "--") (heq : '=' ∉ o.toList) :
     scan cfg [o] = .ok ⟨[⟨d, .flag b⟩], [], []⟩ := by
   unfold scan

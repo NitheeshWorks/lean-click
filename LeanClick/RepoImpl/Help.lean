@@ -104,6 +104,11 @@ def Param.defaultText (p : Param) (s : Settings) : Option String :=
     | .option _ .count, none => some "0"
     | _, none => none
     | _, some ds =>
+      -- click shows `str()` of the converted default; fall back to the raw
+      -- text when it does not convert (an invalid default still shows)
+      let ds := ds.map fun d => match convert (fun _ => none) p.type d with
+        | .ok v => p.type.show v
+        | .error _ => d
       if p.multiNargs || (match p.decl with | .option _ (.value _ true) => true | .option _ (.constFlag _ true) => true | _ => false)
       then some (", ".intercalate ds)
       else match ds with
@@ -124,10 +129,11 @@ def Param.helpExtra (p : Param) (s : Settings) : List String :=
   let dflt := match p.defaultText s with
     | some d => ["default: " ++ d]
     | none => []
+  -- an unbounded range has nothing to say (click prints `x<=None`, UP-023)
   let range := match p.type, p.decl with
     | .intRange r, .option _ .count => if r.min == some 0 && r.max == none then [] else [r.describe]
-    | .intRange r, _ => [r.describe]
-    | .floatRange r, _ => [r.describe]
+    | .intRange r, _ => if r.min.isNone && r.max.isNone then [] else [r.describe]
+    | .floatRange r, _ => if r.min.isNone && r.max.isNone then [] else [r.describe]
     | _, _ => []
   let req := if p.required then ["required"] else []
   env ++ dflt ++ range ++ req

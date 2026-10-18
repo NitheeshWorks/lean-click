@@ -97,12 +97,30 @@ structure Event where
   occ : Occ
   deriving DecidableEq, Repr, Inhabited
 
+/-- `_opt_prefixes`: `-` and `--`, plus the prefix of every declared
+spelling and its first character (so `+w` or `/debug` options work). -/
+def optPrefixes (tbl : List Spelling) : List (List Char) :=
+  [['-'], ['-', '-']] ++ tbl.flatMap fun sp =>
+    let p := (splitOptList sp.opt.toList).1
+    if p.isEmpty then [] else [p.take 1, p]
+
 /-- Scanner configuration, from the command and its context. -/
 structure ScanCfg where
   tbl : List Spelling
   interspersed : Bool := true
   ignoreUnknown : Bool := false
+  prefixes : List (List Char) := [['-'], ['-', '-']]
   deriving Inhabited
+
+/-- Does the token start an option: a declared prefix character and more
+than one character in all? -/
+def ScanCfg.isOptTok (cfg : ScanCfg) (tok : String) : Bool :=
+  decide (tok.length > 1) && cfg.prefixes.contains (tok.toList.take 1)
+
+/-- Do the first two characters form a declared prefix (`--`)? Such a
+token is never split into short options. -/
+def ScanCfg.longPrefixed (cfg : ScanCfg) (tok : String) : Bool :=
+  cfg.prefixes.contains (tok.toList.take 2)
 
 /-- What the scanner produces. -/
 structure Scanned where
@@ -176,7 +194,7 @@ def processOpt (cfg : ScanCfg) (tok : String) (rest : List String) :
         .error ⟨.badOptionUsage longOpt s!"Option {pyRepr longOpt} does not take a value.", none⟩
       else .ok ([⟨sp.dest, a.occ⟩], 0, [])
   | none =>
-    if !startsDashDash tok then
+    if !cfg.longPrefixed tok then
       match tok.toList with
       | p :: cs => do
         let (evs, k, unk) ← matchShort cfg p cs rest [] []
@@ -190,7 +208,7 @@ def scanLoop (cfg : ScanCfg) : List String → List Event → List String → Ex
   | [], evs, largs => .ok ⟨evs, largs, []⟩
   | tok :: rest, evs, largs =>
     if tok == "--" then .ok ⟨evs, largs, rest⟩
-    else if looksLikeOption tok then
+    else if cfg.isOptTok tok then
       match processOpt cfg tok rest with
       | .error e => .error e
       | .ok (newEvs, k, pass) => scanLoop cfg (rest.drop k) (evs ++ newEvs) (largs ++ pass)

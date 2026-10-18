@@ -84,7 +84,7 @@ def versionOption (version : String) (decls : List String := ["--version"])
   let (_, opts, _) := parseDecls decls
   { name := "__version__", decl := .option opts (.boolFlag []), type := .bool,
     help := some "Show the version and exit.", eager := some (.version version template),
-    exposeValue := false }
+    exposeValue := false, allowFromAutoenv := false }
 
 def withHelp (p : Param) (h : String) : Param := { p with help := some h }
 /-- Set the default. An argument with a default is no longer required. -/
@@ -112,16 +112,15 @@ def withNamePrompt (p : Param) : Param :=
 end Param
 
 namespace Command
-variable {σ : Type}
+variable {κ : Type}
 
 /-- `click.command`. -/
-def command (spec : CommandSpec) (callback : Context σ → ExceptT ClickError IO σ := fun c => pure c.obj) :
-    Command σ :=
+def command [Inhabited κ] (spec : CommandSpec) (callback : κ := default) : Command κ :=
   .mk spec false callback []
 
 /-- `click.group`. -/
-def group (spec : CommandSpec) (subcommands : List (Command σ))
-    (callback : Context σ → ExceptT ClickError IO σ := fun c => pure c.obj) : Command σ :=
+def group [Inhabited κ] (spec : CommandSpec) (subcommands : List (Command κ))
+    (callback : κ := default) : Command κ :=
   .mk spec true callback subcommands
 
 end Command

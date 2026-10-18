@@ -22,6 +22,7 @@ def helpParam (names : List String) : Param where
   help := some "Show this message and exit."
   eager := some .help
   exposeValue := false
+  allowFromAutoenv := false
 
 /-- The help option names left after removing those a parameter already
 uses (`get_help_option_names`). -/
@@ -61,6 +62,7 @@ def Command.scanCfg (cmd : Command σ) (s : Settings) : ScanCfg where
   tbl := table (cmd.allParams s)
   interspersed := cmd.interspersed
   ignoreUnknown := cmd.spec.ignoreUnknownOptions
+  prefixes := optPrefixes (table (cmd.allParams s))
 
 /-! ## Metavars, hints, spellings in help -/
 
@@ -143,7 +145,10 @@ def Param.helpSpec (p : Param) : String :=
     let write := fun (opts : List String) =>
       joinOptions opts ++ (if p.isFlagLike then "" else " " ++ p.makeMetavar)
     let first := write p.primaryOpts
-    if p.secondaryOpts.isEmpty then first else first ++ " / " ++ write p.secondaryOpts
+    -- click joins with `; ` when a spelling uses the `/` prefix (`/debug; /no-debug`)
+    let slash := (p.primaryOpts ++ p.secondaryOpts).any fun o => (splitOpt o).1 == "/"
+    if p.secondaryOpts.isEmpty then first
+    else first ++ (if slash then "; " else " / ") ++ write p.secondaryOpts
   else p.makeMetavar
 
 /-- `get_usage_pieces`. -/

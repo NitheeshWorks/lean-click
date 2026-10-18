@@ -1,7 +1,6 @@
 import LeanClick.APIs
 import LeanClick.Terminal
 
-
 /-!
 # LeanClick
 
@@ -13,5 +12,9 @@ Layering, bottom to top (each layer imports only the ones below it):
 * `RepoImpl/`       the executable definitions; total, structural recursion
 * `Specifications/` the properties, stated in `Prop`
 * `Proofs/`         the theorems; `Proofs/Verified.lean` bundles them
-* `APIs/`           what users call; returns refinements `{r // Post r}`
+* `APIs/`           what users call: builders (`Param.opt`, `Command.group`),
+                    accessors, and `LeanClick.parse`, which returns
+                    `{r : ParsedArgs // ParsedFor cmd s r}`
+* `Terminal.lean`   the one effectful module: environment, filesystem view,
+                    prompts, output, exit codes (`Terminal.main`)
 -/

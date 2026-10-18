@@ -256,6 +256,37 @@ def optionCases : List Case := [
   pc "tests/test_options.py::test_aliases_for_flags" "secondary spelling of a pair"
     (let c := mkCmd "cli" [Param.flag ["--warnings/--no-warnings", "-w/-W"]]
      (run c ["-W"]).val "warnings" == "False" && (run c ["-w"]).val "warnings" == "True"),
+  pc "tests/test_options.py::test_prefixes" "++ prefix options"
+    (let c := mkCmd "cli" [(Param.flag ["++foo"]).withHelp "das foo", (Param.flag ["--bar"]).withHelp "das bar"]
+     let r := run c ["++foo", "--bar"]
+     r.val "foo" == "True" && r.val "bar" == "True" && has (run c ["--help"]).out "++foo   das foo"),
+  pc "tests/test_options.py::test_winstyle_options" "slash options and the '; ' separator"
+    (let c : Cmd := Command.command {
+        name := "cmd", helpOptionNames := some ["/?"],
+        params := [(Param.flag ["/debug;/no-debug"]).withHelp "Enables or disables debug mode."] }
+     (run c ["/debug"]).val "debug" == "True" && (run c ["/no-debug"]).val "debug" == "False" &&
+     (run c []).val "debug" == "False" &&
+     has (run c ["/?"]).out "/debug; /no-debug  Enables or disables debug mode." &&
+     has (run c ["/?"]).out "/?                 Show this message and exit."),
+  pc "tests/test_options.py::test_legacy_options" "single-dash long option"
+    (let c := mkCmd "cmd" [Param.opt ["-whatever"]]
+     (run c ["-whatever", "42"]).val "whatever" == "42" && (run c ["-whatever=23"]).val "whatever" == "23"),
+  pc "tests/test_options.py::test_show_default_precedence" "shown default is the converted value"
+    (has (run (mkCmd "cli" [(Param.opt ["--f"] .float).withDefault "1e20" |>.showDefaultParam]) ["--help"]).out
+      "[default: 1e+20]"),
+  pc "tests/test_options.py::test_intrange_default_help_text" "unbounded range shows no range (UP-023)"
+    (!has (run (mkCmd "cli" [(Param.opt ["--n"] (.intRange {})).withDefault "1" |>.showDefaultParam]) ["--help"]).out "None"),
+  pc "tests/test_options.py::test_toupper_envvar_prefix" "help and version never read auto envvars (UP-011)"
+    (let c : Cmd := Command.command {
+        name := "cli", autoEnvvarPrefix := some "APP",
+        params := [Param.versionOption "1.2", Param.opt ["--name"]] }
+     let r := run c [] (envOf [("APP___VERSION__", "1"), ("APP___HELP__", "1"), ("APP_VERSION", "1")])
+     r.code == 0 && r.out == "" && r.frames.length == 1),
+  pc "tests/test_options.py::test_envvar_string_flag_value" "falsy envvar leaves a flag_value option unset (UP-009)"
+    (let c := mkCmd "cli" [(Param.flagValue ["--upper"] "upper").withEnvvar ["MODE"]]
+     (run c [] (envOf [("MODE", "upper")])).val "upper" == "upper" &&
+     (run c [] (envOf [("MODE", "1")])).val "upper" == "upper" &&
+     (run c [] (envOf [("MODE", "0")])).val "upper" == "None"),
   pc "tests/test_options.py::test_option_names" "name from the longest spelling"
     ((parseDecls ["-a", "--aggressive"]).1 == "aggressive" && (parseDecls ["--root-path"]).1 == "root_path" &&
      (parseDecls ["-a", "-b"]).1 == "a" && (parseDecls ["--x", "name"]).1 == "name")

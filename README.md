@@ -31,10 +31,39 @@ scripts/check.sh      # the whole CI gate, locally
 
 Toolchain: `leanprover/lean4:v4.35.0` (pinned in `lean-toolchain`; `elan` installs it).
 
+## Usage
+
+```lean
+import LeanClick
+open LeanClick LeanClick.Terminal
+
+def dev : App Unit := App.command {
+    name := "dev", help := some "Run a FastAPI app in development mode.",
+    params := [
+      (Param.arg "path" (.path { exists_ := true })).requiredParam false,
+      (Param.opt ["--host"]).withDefault "127.0.0.1",
+      (Param.opt ["--port"] .int).withDefault "8000" |>.withEnvvar ["PORT"],
+      (Param.flag ["--reload/--no-reload"]).withDefault "true"] }
+  (fun ctx => do echo s!"port {ctx.params.getInt? "port"}")
+
+def main (args : List String) : IO UInt32 := Terminal.main dev () args
+```
+
+The pure parser is `LeanClick.parse cmd argv env`, returning the parsed
+arguments with their postcondition; `Command.dispatch` parses a whole group
+invocation; `helpPage cmd` renders `--help`. See `examples/FastapiCli.lean`
+(`lake exe example`).
+
 ## Status
 
-Milestone 0: skeleton, CI gate, cross-repo pins. See the stack plan in
-lean-fastapi for the milestones that fill this in.
+Milestone 10 slice: options and arguments (string, int, float, bool, choice,
+path, file, int/float ranges), `nargs`, `multiple`, `required`, defaults,
+envvars and automatic envvar prefixes, boolean flag pairs, constant and count
+flags, commands and groups with `Context`, help and usage rendering, click's
+error messages and exit codes, `--help`/`--version`, prompts and
+confirmation. Proved: the ten headline theorems listed in
+[CONTRIBUTING.md](CONTRIBUTING.md#verification); tested: text wrapping,
+close-match hints, number parsing and the `Terminal` module.
 
 ## License
 

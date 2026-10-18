@@ -40,7 +40,7 @@ def UndeclaredOptionRejected : Prop :=
     cmd.spec.ignoreUnknownOptions = false →
     Text.startsDashDash tok = true → tok ≠ "--" → '=' ∉ tok.toList →
     (∀ sp ∈ table (cmd.allParams s), sp.opt ≠ tok) →
-    (∀ t ∈ pre, Text.looksLikeOption t = false ∧ t ≠ "--") →
+    (∀ t ∈ pre, (cmd.scanCfg s).isOptTok t = false ∧ t ≠ "--") →
     (pre = [] ∨ cmd.interspersed = true) →
     ∃ ps, cmd.parseArgs s path (pre ++ tok :: post) env =
       .error (.error ⟨.noSuchOption tok ps, some (cmd.ctxInfo s path)⟩)
@@ -85,7 +85,7 @@ def BoolFlagPairs : Prop :=
     p ∈ cmd.allParams s → p.decl = .option opts (.boolFlag sec) →
     (if b then o ∈ opts else o ∈ sec) →
     (table (cmd.allParams s)).filter (fun sp => sp.opt == o) = [⟨o, p.name, .flag b⟩] →
-    isShortSpelling o = false → Text.looksLikeOption o = true → o ≠ "--" → '=' ∉ o.toList →
+    isShortSpelling o = false → (cmd.scanCfg s).isOptTok o = true → o ≠ "--" → '=' ∉ o.toList →
     p.eager = none →
     cmd.parseArgs s path [o] env = .ok r →
     ∃ e ∈ r.entries, e.param = p ∧ e.source = .commandline ∧ e.toValue = .bool b
