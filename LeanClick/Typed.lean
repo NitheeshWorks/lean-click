@@ -23,10 +23,13 @@ click_command run
 
 `click_command` generates `run.main` (the typed function) and `run :
 Terminal.App Unit` (the click command calling it). The doc comment is the
-help text, as a docstring is in click. It also proves `run.unambiguous :
-Command.Unambiguous run {}` (no two parameters share a spelling, the
-hypothesis of `bool_flag_pairs` and `commandline_beats_envvar`) by kernel
-`decide`, so a clash is a compile error and users never discharge it.
+help text, as a docstring is in click. It also proves `run.unambiguous : ∀ s :
+Settings, s.helpOptionNames.Nodup → Command.Unambiguous run s` (no two
+parameters share a spelling, in any context, including help names inherited
+from a parent group such as fastapi-cli's `-h`; the hypothesis of
+`bool_flag_pairs` and `commandline_beats_envvar`), from
+`Command.unambiguous_of` and a kernel `decide` on the command's own
+spellings, so a clash is a compile error and users never discharge it.
 -/
 
 namespace LeanClick
@@ -260,8 +263,11 @@ macro_rules
     -- the flag and precedence theorems), checked when the command is compiled
     let unambId := mkIdentFrom name (name.getId ++ `unambiguous)
     let c3 ← `(command|
-      /-- No two parameters of the command share a spelling. -/
-      theorem $unambId : LeanClick.Command.Unambiguous $name {} := by decide)
+      /-- No two parameters of the command share a spelling, in any context
+      whose help option names are distinct (inherited ones included). -/
+      theorem $unambId : ∀ s : LeanClick.Settings, s.helpOptionNames.Nodup →
+          LeanClick.Command.Unambiguous $name s :=
+        fun s h => LeanClick.Command.unambiguous_of $name s (by decide) h)
     return mkNullNode #[c1, c2, c3]
 
 end LeanClick

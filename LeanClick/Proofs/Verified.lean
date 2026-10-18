@@ -1,5 +1,6 @@
 import LeanClick.Proofs.Help
 import LeanClick.Proofs.Precedence
+import LeanClick.Proofs.Unambiguous
 
 /-!
 # The harness: one `Verified<Layer>` structure per layer
