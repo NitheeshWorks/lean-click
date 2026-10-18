@@ -87,6 +87,18 @@ def resolveWith (fs : String → Option FileInfo) (answers : List ((String × St
   | .error st => .error (st.withCtx info)
   | .ok e => .ok e
 
+/-- Run the parameter callbacks, in processing order, on the converted
+values; a rejected value is click's `BadParameter`. -/
+def runCallbacks : List Entry → Except UsageError (List (String × Value))
+  | [] => .ok []
+  | e :: es =>
+    match e.param.callback with
+    | none => runCallbacks es
+    | some f =>
+      match f e.toValue with
+      | .error msg => .error (e.param.badParameter msg)
+      | .ok v => (runCallbacks es).map ((e.param.name, v) :: ·)
+
 /-- click's `Command.parse_args`, reading the environment only through
 `envOf`. -/
 def Command.parseWith (cmd : Command σ) (s : Settings) (path : String) (argv : List String)
@@ -109,7 +121,9 @@ def Command.parseWith (cmd : Command σ) (s : Settings) (path : String) (argv : 
       | .error st => .error st
       | .ok entries =>
         if !leftover.isEmpty && !cmd.allowExtraArgs then .error (fail ⟨.usage (extraArgsMsg leftover), none⟩)
-        else .ok ⟨entries, leftover⟩
+        else match runCallbacks (order.filterMap fun p => entries.find? (·.param.name == p.name)) with
+          | .error e => .error (fail e)
+          | .ok ov => .ok { entries, extra := leftover, overrides := ov }
 
 /-- Every environment variable name the command's parameters read. -/
 def Command.envNames (cmd : Command σ) (s : Settings) : List String :=

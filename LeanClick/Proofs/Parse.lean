@@ -95,12 +95,14 @@ theorem parseWith_ok_entries (cmd : Command σ) (s : Settings) (path : String) (
         · rename_i entries hpa
           split at h
           · cases h
-          · cases h
-            refine ⟨sc, araws, hsc, ?_⟩
-            unfold processAll at hpa
-            split at hpa
-            · cases hpa
-            · exact hpa
+          · split at h
+            · cases h
+            · cases h
+              refine ⟨sc, araws, hsc, ?_⟩
+              unfold processAll at hpa
+              split at hpa
+              · cases hpa
+              · exact hpa
 
 theorem resolveParam_ok_entry (fs : String → Option FileInfo) (ans : Option String)
     (cmd : Option Raw) (env : Option String) (p : Param) (e : Entry)
@@ -388,7 +390,7 @@ theorem resolveParam_boolFlag (fs : String → Option FileInfo) (ans : Option St
     (b : Bool) (e : Entry) (h : resolveParam fs ans (some (.bool b)) env p = .ok e) :
     e.param = p ∧ e.source = .commandline ∧ e.toValue = .bool b := by
   obtain ⟨name, decl, type, required, default, envvar, help, metavar, hidden, showDefault,
-    showEnvvar, showChoices, prompt, eager, exposeValue, allowFromAutoenv, fromDefaultMap, h_bool, h_count⟩ := p
+    showEnvvar, showChoices, prompt, eager, exposeValue, allowFromAutoenv, callback, fromDefaultMap, h_bool, h_count⟩ := p
   simp only at hd hea
   subst hd hea
   have ht : type = .bool := h_bool rfl

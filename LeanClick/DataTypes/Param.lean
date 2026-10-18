@@ -97,6 +97,9 @@ structure Param where
   eager : Option Eager := none
   exposeValue : Bool := true
   allowFromAutoenv : Bool := true
+  /-- click's parameter `callback`: sees the converted value, may replace it
+  or reject it with a `BadParameter` message. -/
+  callback : Option (Value → Except String Value) := none
   /-- The default came from the context's `default_map`. -/
   fromDefaultMap : Bool := false
   h_bool : decl.isBoolFlag = true → type = .bool := by
@@ -165,6 +168,8 @@ and its arguments). -/
 structure ParsedArgs where
   entries : List Entry
   extra : List String
+  /-- Values replaced by parameter callbacks, by parameter name. -/
+  overrides : List (String × Value) := []
   deriving Inhabited
 
 /-- What a usage error knows about the command it happened in, for

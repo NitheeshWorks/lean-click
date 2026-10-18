@@ -153,7 +153,8 @@ def spellingsOf (isFlag : Bool) (name : String) (decls : List String) : List Str
 def option (α : Type) [ClickType α] (name : String) (default : Option α := none) (help : String := "")
     (envvar : List String := []) (decls : List String := []) (hidden : Bool := false)
     (showDefault : Bool := false) (prompt : Option String := none) (metavar : Option String := none)
-    (type : Option ParamType := none) : Param :=
+    (type : Option ParamType := none) (callback : Option (Value → Except String Value) := none) :
+    Param :=
   let (prim, sec) := spellingsOf (ClickType.isFlag α) name decls
   let base : Param :=
     if ClickType.isFlag α then { name, decl := .option prim (.boolFlag sec), type := .bool }
@@ -165,7 +166,7 @@ def option (α : Type) [ClickType α] (name : String) (default : Option α := no
     required := default.isNone && prompt.isNone && !ClickType.optional α && !ClickType.multiple α &&
       !ClickType.isFlag α,
     envvar, hidden, metavar, showDefault := if showDefault then .yes else .auto,
-    prompt := prompt.map fun t => { text := t } }
+    prompt := prompt.map fun t => { text := t }, callback }
 
 /-- The parameter a typed argument binder declares. -/
 def argument (α : Type) [ClickType α] (name : String) (default : Option α := none) (help : String := "")

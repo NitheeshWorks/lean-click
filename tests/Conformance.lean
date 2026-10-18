@@ -306,6 +306,16 @@ def optionCases : List Case := [
      (run c [] (envOf [("MODE", "upper")])).val "upper" == "upper" &&
      (run c [] (envOf [("MODE", "1")])).val "upper" == "upper" &&
      (run c [] (envOf [("MODE", "0")])).val "upper" == "None"),
+  pc "tests/test_options.py::test_custom_validation" "parameter callback validates"
+    (let pos : Value → Except String Value := fun v => match v with
+        | .int n => if n < 0 then .error "Value needs to be positive" else .ok v
+        | v => .ok v
+     let c : Cmd := command "cmd" [option ["--foo"] (default := 1) (callback := some pos)]
+     has (run c ["--foo", "-1"]).out "Invalid value for '--foo': Value needs to be positive" &&
+     (run c ["--foo", "42"]).val "foo" == "42"),
+  pc "tests/test_basic.py::test_evaluation_order" "parameter callback can replace the value"
+    (let up : Value → Except String Value := fun v => match v with | .str s => .ok (.str s.toUpper) | v => .ok v
+     (run (command "cmd" [option ["--name"] (callback := some up)] : Cmd) ["--name", "ann"]).val "name" == "ANN"),
   pc "tests/test_options.py::test_option_names" "name from the longest spelling"
     ((parseDecls ["-a", "--aggressive"]).1 == "aggressive" && (parseDecls ["--root-path"]).1 == "root_path" &&
      (parseDecls ["-a", "-b"]).1 == "a" && (parseDecls ["--x", "name"]).1 == "name")

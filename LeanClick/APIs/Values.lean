@@ -17,9 +17,12 @@ def entry? (a : ParsedArgs) (name : String) : Option Entry :=
 
 /-- The value for a parameter name (`.none` when absent or unknown). -/
 def get (a : ParsedArgs) (name : String) : Value :=
-  match a.entry? name with
-  | some e => e.toValue
-  | none => .none
+  match a.overrides.lookup name with
+  | some v => v
+  | none =>
+    match a.entry? name with
+    | some e => e.toValue
+    | none => .none
 
 /-- Where the value for a parameter came from. -/
 def source? (a : ParsedArgs) (name : String) : Option Source :=
@@ -49,7 +52,7 @@ def getStrings (a : ParsedArgs) (name : String) : List String :=
 /-- The values exposed to the callback (click's `ctx.params`): every
 parameter except the help and version options. -/
 def params (a : ParsedArgs) : List (String × Value) :=
-  (a.entries.filter (·.param.exposeValue)).map fun e => (e.param.name, e.toValue)
+  (a.entries.filter (·.param.exposeValue)).map fun e => (e.param.name, a.get e.param.name)
 
 end ParsedArgs
 
