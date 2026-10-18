@@ -1,1 +1,2 @@
-import LeanClick.DataTypes.Basic
+import LeanClick.DataTypes.Types
+import LeanClick.DataTypes.Param

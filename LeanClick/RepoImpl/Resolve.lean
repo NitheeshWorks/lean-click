@@ -1,0 +1,244 @@
+import LeanClick.RepoImpl.Help
+
+/-!
+# Resolving one parameter
+
+click's `consume_value` / `process_value` for one parameter:
+
+1. the raw value, from the first source that has one, in the order
+   command line, environment variable, default (`consume`); a prompt
+   replaces a missing or default value when the option prompts;
+2. conversion through the type, into the declared shape, with the shape
+   proof (`convertShape`);
+3. the required check (`Missing option` / `Missing argument`);
+4. eager parameters (`--help`, `--version`) stop processing when set.
+-/
+
+namespace LeanClick
+
+open Text
+
+/-- A raw value before conversion. -/
+inductive Raw where
+  | tokens (xs : List String)
+  | multi (xss : List (List String))
+  | bool (b : Bool)
+  | count (n : Nat)
+  deriving DecidableEq, Repr, Inhabited
+
+/-- Why processing stopped early. -/
+inductive Stop where
+  | error (e : UsageError)
+  | eager (e : Eager)
+  /-- An option needs an interactive answer that `Env.answers` lacks. -/
+  | prompt (p : Param) (defaultShown : Option String)
+
+/-- The command-line raw value of an option, from the scanner events. -/
+def cmdRaw (events : List Event) (p : Param) : Option Raw :=
+  let occs := (events.filter (fun e => e.dest == p.name)).map (·.occ)
+  let vals := occs.filterMap fun o => match o with | .values xs => some xs | _ => none
+  match p.decl with
+  | .option _ (.value _ false) => vals.getLast?.map .tokens
+  | .option _ (.value _ true) => if vals.isEmpty then none else some (.multi vals)
+  | .option _ (.boolFlag _) =>
+    (occs.filterMap fun o => match o with | .flag b => some b | _ => none).getLast?.map .bool
+  | .option _ (.constFlag c false) => if occs.isEmpty then none else some (.tokens [c])
+  | .option _ (.constFlag c true) => if occs.isEmpty then none else some (.multi (occs.map fun _ => [c]))
+  | .option _ .count => if occs.isEmpty then none else some (.count occs.length)
+  | .argument _ => none
+
+/-- Split into chunks of `n`, dropping an incomplete tail (Python's
+`batch`). -/
+def batch (n : Nat) (xs : List String) : List (List String) :=
+  let rec go : Nat → List String → List (List String)
+    | 0, _ => []
+    | f + 1, xs => if n == 0 || xs.length < n then [] else xs.take n :: go f (xs.drop n)
+  go (xs.length + 1) xs
+
+/-- The environment variable value of a parameter: the first non-empty of
+its `envvar` names, then (options only) the automatic
+`PREFIX_NAME` variable. -/
+def envString (get : String → Option String) (s : Settings) (p : Param) : Option String :=
+  let nonEmpty := fun (v : Option String) => match v with
+    | some x => if x.isEmpty then none else some x
+    | none => none
+  match p.envvar.findSome? (fun n => nonEmpty (get n)) with
+  | some v => some v
+  | none =>
+    if p.isOption && p.allowFromAutoenv then
+      match s.autoEnvvarPrefix with
+      | some pre => nonEmpty (get (pre ++ "_" ++ upper p.name))
+      | none => none
+    else none
+
+/-- The names a parameter's environment lookup reads. -/
+def envNames (s : Settings) (p : Param) : List String :=
+  p.envvar ++ (if p.isOption && p.allowFromAutoenv then
+    match s.autoEnvvarPrefix with
+    | some pre => [pre ++ "_" ++ upper p.name]
+    | none => []
+    else [])
+
+/-- `value_from_envvar`: shape the environment string. -/
+def envRaw (p : Param) (v : String) : Option Raw :=
+  match p.decl with
+  | .option _ (.constFlag c mult) =>
+    let on := v == c || strToBool v == some true
+    if !on then none else if mult then some (.multi [[c]]) else some (.tokens [c])
+  | .option _ (.value n mult) =>
+    if n == 1 && !mult then some (.tokens [v])
+    else
+      let parts := p.type.splitEnvvar v
+      if mult then some (.multi (if n == 1 then parts.map ([·]) else batch n parts))
+      else some (.tokens parts)
+  | .option _ _ => some (.tokens [v])
+  | .argument (.exactly 1) => some (.tokens [v])
+  | .argument _ => some (.tokens (p.type.splitEnvvar v))
+
+/-- The default as a raw value. -/
+def defaultRaw (p : Param) : Option Raw :=
+  match p.default with
+  | none => none
+  | some ds =>
+    match p.shape with
+    | .many n => some (.multi (if n == 1 then ds.map ([·]) else batch n ds))
+    | _ => some (.tokens ds)
+
+/-- `consume_value` without the prompt: command line, then environment,
+then default. -/
+def consume (cmd : Option Raw) (env : Option String) (p : Param) : Option Raw × Source :=
+  match cmd with
+  | some r => (some r, .commandline)
+  | none =>
+    match env.bind (envRaw p) with
+    | some r => (some r, .environment)
+    | none => (defaultRaw p, .default)
+
+/-- A boolean flag occurrence under the parameter type. -/
+def boolValue (fs : String → Option FileInfo) : (t : ParamType) → Bool → Except String t.Carrier
+  | .bool, b => .ok b
+  | t, b => convert fs t (if b then "true" else "false")
+
+/-- A count under the parameter type. -/
+def countValue (fs : String → Option FileInfo) : (t : ParamType) → Nat → Except String t.Carrier
+  | .intRange r, n => convertIntRange r n
+  | .int, n => .ok (n : Int)
+  | t, n => convert fs t (toString n)
+
+def takesMsg (n k : Nat) : String :=
+  if k == 1 then s!"Takes {n} values but 1 was given." else s!"Takes {n} values but {k} were given."
+
+/-- Convert each occurrence of a multiple option, checking its arity. -/
+def convertMany (fs : String → Option FileInfo) (t : ParamType) (n : Nat) :
+    (xss : List (List String)) → Except String {yss : List (List t.Carrier) // ∀ ys ∈ yss, ys.length = n}
+  | [] => .ok ⟨[], by simp⟩
+  | xs :: xss =>
+    if h : xs.length = n then do
+      let ⟨ys, hy⟩ ← convertList fs t xs
+      let ⟨yss, hyss⟩ ← convertMany fs t n xss
+      return ⟨ys :: yss, by
+        intro zs hz
+        simp only [List.mem_cons] at hz
+        rcases hz with rfl | hz
+        · omega
+        · exact hyss zs hz⟩
+    else .error (takesMsg n xs.length)
+
+/-- `type_cast_value` into the declared shape, with the shape proof. -/
+def convertShape (fs : String → Option FileInfo) (t : ParamType) :
+    (s : Shape) → Raw → Except String {v : PValue t // v.Fits s}
+  | .single, .tokens [x] => do let y ← convert fs t x; return ⟨.one y, trivial⟩
+  | .single, .tokens xs => .error (takesMsg 1 xs.length)
+  | .single, .bool b => do let y ← boolValue fs t b; return ⟨.one y, trivial⟩
+  | .single, .count n => do let y ← countValue fs t n; return ⟨.one y, trivial⟩
+  | .tuple n, .tokens xs =>
+    if h : xs.length = n then do
+      let ⟨ys, hy⟩ ← convertList fs t xs
+      return ⟨.tuple ys, by simp only [PValue.Fits]; omega⟩
+    else .error (takesMsg n xs.length)
+  | .star, .tokens xs => do
+    let ⟨ys, _⟩ ← convertList fs t xs
+    return ⟨.tuple ys, trivial⟩
+  | .many n, .multi xss => do
+    let ⟨yss, h⟩ ← convertMany fs t n xss
+    return ⟨.many yss, h⟩
+  | .many n, .tokens xs => do
+    let ⟨yss, h⟩ ← convertMany fs t n (if n == 1 then xs.map ([·]) else batch n xs)
+    return ⟨.many yss, h⟩
+  | _, _ => .error "Value does not match the parameter's arity."
+
+/-- The value an absent parameter takes: `False` for an optional boolean
+flag, `0` for a count, an empty collection for a multi-value parameter,
+otherwise nothing. -/
+def absentValue (p : Param) : {v : PValue p.type // v.Fits p.shape} :=
+  match hs : p.shape with
+  | .many _ => ⟨.many [], by simp [PValue.Fits]⟩
+  | .star => ⟨.tuple [], by simp [PValue.Fits]⟩
+  | _ => ⟨.none, by simp [PValue.Fits]⟩
+
+/-- Is the value missing (`value_is_missing`)? -/
+def PValue.isMissing {t : ParamType} : PValue t → Bool
+  | .none => true
+  | .tuple [] => true
+  | .many [] => true
+  | _ => false
+
+/-- The missing-value text of a type (`get_missing_message`). -/
+def ParamType.missingMessage : ParamType → String
+  | .choice cs cS => "Choose from:\n\t" ++ ",\n\t".intercalate (cs.map (normChoice cS))
+  | _ => ""
+
+/-- The `MissingParameter` error of a parameter. -/
+def Param.missingError (p : Param) : UsageError :=
+  ⟨.missingParameter (if p.isOption then "option" else "argument") p.errorHint p.type.missingMessage, none⟩
+
+/-- The `BadParameter` error of a parameter. -/
+def Param.badParameter (p : Param) (msg : String) : UsageError :=
+  ⟨.badParameter (some p.errorHint) msg, none⟩
+
+/-- Does an option prompt, given where its value came from? -/
+def Param.wantsPrompt (p : Param) (raw : Option Raw) (src : Source) : Bool :=
+  match p.prompt with
+  | some ps => (raw.isNone || src == .default) && (p.required || ps.required)
+  | none => false
+
+/-- The value of an absent boolean flag or count, before conversion. -/
+def implicitRaw (p : Param) : Option Raw :=
+  match p.decl with
+  | .option _ (.boolFlag _) => if p.required then none else some (.bool false)
+  | .option _ .count => some (.count 0)
+  | _ => none
+
+/-- Process one parameter: pick the source, prompt if needed, convert,
+check required, stop on an active eager parameter. -/
+def resolveParam (fs : String → Option FileInfo) (answer : Option String)
+    (cmd : Option Raw) (env : Option String) (p : Param) : Except Stop Entry :=
+  let (raw, src) := consume cmd env p
+  let (raw, src) := if p.wantsPrompt raw src then
+      match answer with
+      | some a => (some (.tokens [a]), Source.prompt)
+      | none => (raw, src)
+    else (raw, src)
+  if p.wantsPrompt raw src && src != .prompt then
+    .error (.prompt p (match raw with | some (.tokens [d]) => some d | _ => none))
+  else
+  let raw := match raw with
+    | some r => some r
+    | none => implicitRaw p
+  let conv : Except String {v : PValue p.type // v.Fits p.shape} := match raw with
+    | none => .ok (absentValue p)
+    | some r => convertShape fs p.type p.shape r
+  match conv with
+  | .error msg => .error (.error (p.badParameter msg))
+  | .ok ⟨v, h⟩ =>
+    if p.required && v.isMissing then .error (.error p.missingError)
+    else
+      let entry : Entry := ⟨p, v, src, h⟩
+      match p.eager with
+      | some e =>
+        match p.type, v with
+        | .bool, .one true => .error (.eager e)
+        | _, _ => .ok entry
+      | none => .ok entry
+
+end LeanClick

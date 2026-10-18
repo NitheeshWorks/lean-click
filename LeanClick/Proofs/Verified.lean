@@ -1,4 +1,4 @@
-import LeanClick.Proofs.Basic
+import LeanClick.RepoImpl
 
 /-!
 # The harness: one `Verified<Layer>` structure per layer
