@@ -109,9 +109,7 @@ not hide input; path permission checks assumed true; `nargs=0` arguments
 (UP-009); unbounded ranges show no range text (UP-023); `--help`/`--version`
 never read automatic environment variables (UP-011); parameters sharing a
 name are not arbitrated; boolean flags have no explicit `None` default; an
-option-looking unknown subcommand is re-scanned rather than re-parsed;
-the help page has the `Positional arguments` section of the upstream source
-read as the spec (click main), which released click 8.5.0 does not print.
+option-looking unknown subcommand is re-scanned rather than re-parsed.
 Excluded: chained groups, `default_map`, `token_normalize_func`, shell
 completion, Windows console support, UUID/DateTime/Tuple/custom types,
 parameter callbacks, deprecation warnings, `prompt_required=False`.

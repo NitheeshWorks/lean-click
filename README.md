@@ -89,8 +89,9 @@ any axiom beyond `propext`, `Quot.sound`, `Classical.choice`.
 
 `Absent cmd s p argv` says no token of `argv` names one of `p`'s
 spellings, as a long option or inside a short-option cluster.
-`Command.Unambiguous` (no two parameters share a spelling) is checked by
-`click_command` when the command is compiled. Choice values are `{c // c ∈ choices}` and range values carry their bounds
+`Command.Unambiguous` (no two parameters share a spelling) is proved by
+`click_command` for every command it builds (`<name>.unambiguous`, by
+`decide`), so users never discharge it. Choice values are `{c // c ∈ choices}` and range values carry their bounds
 proof, by type. What is tested rather than proved (text wrapping, close-match
 hints, number parsing, the `Terminal` module) is listed in
 [CONTRIBUTING.md](CONTRIBUTING.md#verification) and `docs/traceability.toml`.

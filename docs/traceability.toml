@@ -304,17 +304,17 @@ realises = ["LeanClick.option", "LeanClick.argument", "LeanClick.command", "Lean
 test = ["tests/Conformance.lean::string option default", "examples/Hello.lean"]
 
 [[requirement]]
-id = "dev.positional-arguments-section"
-upstream = "src/click/core.py:Command.format_arguments (upstream-spec HEAD 2247b35)"
-title = "Help prints a 'Positional arguments' section when an argument has help. This follows the upstream source read as the spec (click main, 8.6 dev); released click 8.5.0 prints no such section"
-status = "deviation"
+id = "help.positional-arguments-section"
+upstream = "src/click/core.py:Command.format_arguments"
+title = "Help prints a 'Positional arguments' section listing every argument when at least one argument has help, as click 8.5.0 does"
+status = "implemented"
 realises = ["LeanClick.Command.argumentRows"]
 test = ["tests/Conformance.lean::typed command help: option spellings from binder names"]
 
 [[requirement]]
 id = "usage.unambiguous-check"
 upstream = "src/click/core.py:Command.get_params (duplicate option warning)"
-title = "click_command checks at compile time that no two parameters share a spelling (Command.Unambiguous); click only warns at run time"
-status = "tested"
-realises = ["LeanClick.Command.Unambiguous"]
+title = "click_command proves Command.Unambiguous (no two parameters share a spelling) by kernel decide when the command is compiled; a clash is a compile error. click only warns at run time"
+status = "implemented"
+realises = ["LeanClick.Command.Unambiguous", "LeanClick.ClickType.spellingsOf"]
 test = ["tests/Conformance.lean::typed command values arrive typed"]

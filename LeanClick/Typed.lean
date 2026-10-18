@@ -23,10 +23,10 @@ click_command run
 
 `click_command` generates `run.main` (the typed function) and `run :
 Terminal.App Unit` (the click command calling it). The doc comment is the
-help text, as a docstring is in click. It also checks, when the file is
-compiled, that no two parameters share a spelling (`Command.Unambiguous`,
-the hypothesis of `bool_flag_pairs` and `commandline_beats_envvar`); a
-clash is a compile error.
+help text, as a docstring is in click. It also proves `run.unambiguous :
+Command.Unambiguous run {}` (no two parameters share a spelling, the
+hypothesis of `bool_flag_pairs` and `commandline_beats_envvar`) by kernel
+`decide`, so a clash is a compile error and users never discharge it.
 -/
 
 namespace LeanClick
@@ -105,22 +105,46 @@ instance {α : Type} [ClickType α] : ClickType (List α) where
 
 namespace ClickType
 
+/-- A binder name with `_` replaced by `-` (structural, so the kernel can
+evaluate it: `click_command` proves `Command.Unambiguous` by `decide`). -/
+def dashed (name : String) : String :=
+  String.ofList (name.toList.map fun c => if c == '_' then '-' else c)
+
 /-- The option spelling of a binder name: `root_path` is `--root-path`. -/
-def spelling (name : String) : String := "--" ++ replaceChar name '_' '-'
+def spelling (name : String) : String := "--" ++ dashed name
+
+/-- Split a flag declaration into its primary and secondary spelling at `/`
+(at `;` when the declaration itself starts with `/`, as click does). -/
+def flagSplit (d : String) : String × String :=
+  let sep := match d.toList with | '/' :: _ => ';' | _ => '/'
+  let rec go : List Char → List Char × List Char
+    | [] => ([], [])
+    | c :: rest => if c == sep then ([], rest) else let (a, b) := go rest; (c :: a, b)
+  let (a, b) := go d.toList
+  (String.ofList a, String.ofList b)
+
+/-- The primary and secondary spellings of a typed option. -/
+def spellingsOf (isFlag : Bool) (name : String) (decls : List String) : List String × List String :=
+  if decls.isEmpty then
+    if isFlag then ([spelling name], ["--no-" ++ dashed name]) else ([spelling name], [])
+  else if isFlag then
+    decls.foldr (fun d acc =>
+      let (a, b) := flagSplit d
+      (a :: acc.1, if b.isEmpty then acc.2 else b :: acc.2)) ([], [])
+  else (decls, [])
 
 /-- The parameter a typed option binder declares. -/
 def option (α : Type) [ClickType α] (name : String) (default : Option α := none) (help : String := "")
     (envvar : List String := []) (decls : List String := []) (hidden : Bool := false)
     (showDefault : Bool := false) (prompt : Option String := none) (metavar : Option String := none)
     (type : Option ParamType := none) : Param :=
-  let decls := if decls.isEmpty then
-      if ClickType.isFlag α then [spelling name ++ "/--no-" ++ (replaceChar name '_' '-')] else [spelling name]
-    else decls
+  let (prim, sec) := spellingsOf (ClickType.isFlag α) name decls
   let base : Param :=
-    if ClickType.isFlag α then Param.flag decls
-    else Param.opt decls (type.getD (ClickType.type α)) (multiple := ClickType.multiple α)
+    if ClickType.isFlag α then { name, decl := .option prim (.boolFlag sec), type := .bool }
+    else { name, decl := .option prim (.value 1 (ClickType.multiple α)),
+           type := type.getD (ClickType.type α) }
   { base with
-    name, default := (default.map ClickType.toTokens).filter (!·.isEmpty),
+    default := (default.map ClickType.toTokens).filter (!·.isEmpty),
     help := if help.isEmpty then none else some help,
     required := default.isNone && prompt.isNone && !ClickType.optional α && !ClickType.multiple α &&
       !ClickType.isFlag α,
@@ -131,7 +155,8 @@ def option (α : Type) [ClickType α] (name : String) (default : Option α := no
 def argument (α : Type) [ClickType α] (name : String) (default : Option α := none) (help : String := "")
     (envvar : List String := []) (metavar : Option String := none) (type : Option ParamType := none) :
     Param :=
-  let base := Param.arg name (type.getD (ClickType.type α)) (if ClickType.multiple α then .star else .exactly 1)
+  let nargs : ArgNargs := if ClickType.multiple α then .star else .exactly 1
+  let base : Param := { name, decl := .argument nargs, type := type.getD (ClickType.type α) }
   { base with
     default := (default.map ClickType.toTokens).filter (!·.isEmpty),
     help := if help.isEmpty then none else some help,
@@ -216,7 +241,10 @@ macro_rules
           (callback := fun $ctxId => $cb))
     -- no two parameters share a spelling (the `Unambiguous` hypothesis of
     -- the flag and precedence theorems), checked when the command is compiled
-    let c3 ← `(command| #guard decide (LeanClick.Command.Unambiguous $name {}))
+    let unambId := mkIdentFrom name (name.getId ++ `unambiguous)
+    let c3 ← `(command|
+      /-- No two parameters of the command share a spelling. -/
+      theorem $unambId : LeanClick.Command.Unambiguous $name {} := by decide)
     return mkNullNode #[c1, c2, c3]
 
 end LeanClick
