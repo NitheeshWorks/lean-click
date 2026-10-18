@@ -56,9 +56,11 @@ never strings looked up by name. `examples/FastapiCli.lean`
 (`lake exe example`) is `fastapi dev` / `fastapi run` in this style.
 
 The decorator vocabulary is there too, for groups and hand-built commands:
-`command`, `group`, `option`, `argument`, `versionOption`, the types
-`STRING` `INT` `FLOAT` `BOOL` `Choice` `Path` `File` `IntRange`
-`FloatRange`, and click's keyword arguments (`default`, `help`, `required`,
+`command`, `group` (with `chain := true`), `option`, `argument`,
+`versionOption`, the types `STRING` `INT` `FLOAT` `BOOL` `UUID` `DateTime`
+`Choice` `Path` `File` `IntRange` `FloatRange`, parameter `callback`s,
+`contextSettings` with `defaultMap`, and shell completion through
+`_PROG_COMPLETE` (bash, zsh, fish), and click's keyword arguments (`default`, `help`, `required`,
 `envvar`, `multiple`, `nargs`, `isFlag`, `flagValue`, `count`, `prompt`,
 `showDefault`, `hidden`, `metavar`, `contextSettings`). Errors, help pages
 and exit codes match click's text. The pure parser is

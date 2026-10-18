@@ -36,6 +36,7 @@ only `Terminal` fixes `κ` to an `IO` action (`Terminal.App σ`).
 | `RepoImpl/Help.lean` | the help page and usage line from `allParams` |
 | `RepoImpl/Resolve.lean` | one parameter: source precedence, prompt, conversion, required, eager |
 | `RepoImpl/Parse.lean` | `parseWith`, group dispatch, messages, exit codes |
+| `RepoImpl/Complete.lean` | shell completion: resolution, completions, formats, scripts |
 | `APIs/Click.lean` | click's decorator vocabulary: `command`, `option`, `argument`, types |
 | `Typed.lean` | `ClickType` and the `click_command` macro: commands as typed functions |
 | `Specifications/Parse.lean` | the ten headline properties |
@@ -110,9 +111,19 @@ not hide input; path permission checks assumed true; `nargs=0` arguments
 never read automatic environment variables (UP-011); parameters sharing a
 name are not arbitrated; boolean flags have no explicit `None` default; an
 option-looking unknown subcommand is re-scanned rather than re-parsed.
-Excluded: chained groups, `default_map`, `token_normalize_func`, shell
-completion, Windows console support, UUID/DateTime/Tuple/custom types,
-parameter callbacks, deprecation warnings, `prompt_required=False`.
+Parameter callbacks run after every parameter has been converted (click
+interleaves them), and the shell completion scripts are this port's own.
+Excluded, with reasons in `docs/traceability.toml`: `click.Tuple`
+(heterogeneous composites), `token_normalize_func`, group result
+callbacks, Windows console support, custom `ParamType` classes,
+deprecation warnings, `prompt_required=False`, lazy subcommand loading.
+
+Implemented beyond the first slice: chained groups (`group ... (chain :=
+true)`), `default_map` (`ContextSettings.defaultMap`, source
+`DEFAULT_MAP`), the `UUID` and `DateTime` types (refined by
+`uuidCanonical` and `Timestamp.valid`), parameter callbacks
+(`callback :=`), and shell completion (`_PROG_COMPLETE`, bash/zsh/fish,
+`RepoImpl/Complete.lean`).
 
 ### Complexity
 

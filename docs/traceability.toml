@@ -258,33 +258,9 @@ realises = ["LeanClick.Command.parseLevel"]
 test = ["tests/Conformance.lean::unknown command"]
 
 [[requirement]]
-id = "excluded.chain"
-upstream = "tests/test_chain.py"
-title = "Chained groups (chain=True), result callbacks"
-status = "excluded"
-
-[[requirement]]
-id = "excluded.default-map"
-upstream = "tests/test_defaults.py"
-title = "default_map (config-file defaults) and token_normalize_func"
-status = "excluded"
-
-[[requirement]]
-id = "excluded.completion"
-upstream = "tests/test_shell_completion.py"
-title = "Shell completion"
-status = "excluded"
-
-[[requirement]]
 id = "excluded.windows"
 upstream = "tests/test_compat.py"
 title = "Windows console, colorama, click.testing pty emulation (plan exclusion)"
-status = "excluded"
-
-[[requirement]]
-id = "excluded.types"
-upstream = "tests/test_types"
-title = "UUID, DateTime, Tuple and custom ParamType classes; callbacks on parameters; deprecated parameters; prompt_required=False optional values"
 status = "excluded"
 
 [[requirement]]
@@ -318,3 +294,90 @@ title = "click_command proves Command.Unambiguous (no two parameters share a spe
 status = "implemented"
 realises = ["LeanClick.Command.Unambiguous", "LeanClick.ClickType.spellingsOf"]
 test = ["tests/Conformance.lean::typed command values arrive typed"]
+
+[[requirement]]
+id = "groups.chain"
+upstream = "tests/test_chain.py::test_basic_chaining"
+title = "Chained groups: subcommands parsed in order, each with allow_extra_args and no interspersed args, taking the previous one's leftovers; the group's callback runs first with invoked_subcommand '*'"
+status = "tested"
+realises = ["LeanClick.Command.parseChain", "LeanClick.Command.asChained"]
+test = ["tests/Conformance.lean::chained group runs each command in order", "tests/Conformance.lean::chained help texts", "tests/Conformance.lean::chained commands with options", "tests/Conformance.lean::chained commands with arguments"]
+
+[[requirement]]
+id = "context.default-map"
+upstream = "tests/test_commands.py::test_default_maps"
+title = "default_map: context defaults by parameter name, nested maps by subcommand name, source DEFAULT_MAP; command line and envvar still win"
+status = "implemented"
+realises = ["LeanClick.DefaultMap", "LeanClick.Param.withDefaultMap", "LeanClick.Param.defaultSource"]
+theorem = ["LeanClick.default_when_absent"]
+test = ["tests/Conformance.lean::default_map for a subcommand", "tests/Conformance.lean::default_map for a flag pair, in help too", "tests/Conformance.lean::command line beats default_map"]
+
+[[requirement]]
+id = "types.uuid"
+upstream = "tests/test_basic.py::test_uuid_option"
+title = "UUID type: Python uuid.UUID parsing, canonical lower-case value refined by uuidCanonical"
+status = "tested"
+realises = ["LeanClick.parseUuid", "LeanClick.uuidCanonical"]
+test = ["tests/Conformance.lean::UUID option", "tests/Props.lean::uuidRoundtrip"]
+
+[[requirement]]
+id = "types.datetime"
+upstream = "tests/test_basic.py::test_datetime_option_default"
+title = "DateTime type: strptime with %Y %m %d %H %M %S %B %b %A %a %%, the first matching format, values refined by Timestamp.valid"
+status = "tested"
+realises = ["LeanClick.strptime", "LeanClick.convertDateTime", "LeanClick.Timestamp.valid"]
+test = ["tests/Conformance.lean::DateTime option, default formats", "tests/Conformance.lean::DateTime with custom format", "tests/Props.lean::dateRoundtrip"]
+
+[[requirement]]
+id = "params.callback"
+upstream = "tests/test_options.py::test_custom_validation"
+title = "Parameter callbacks validate or replace converted values; a rejection is BadParameter"
+status = "tested"
+realises = ["LeanClick.runCallbacks"]
+test = ["tests/Conformance.lean::parameter callback validates", "tests/Conformance.lean::parameter callback can replace the value"]
+
+[[requirement]]
+id = "dev.callback-order"
+upstream = "tests/test_basic.py::test_evaluation_order"
+title = "Parameter callbacks run after every parameter is converted (in processing order), so a conversion error of a later parameter is reported before a callback's rejection of an earlier one; callbacks receive the value, not (ctx, param, value)"
+status = "deviation"
+realises = ["LeanClick.runCallbacks"]
+
+[[requirement]]
+id = "completion.shell"
+upstream = "tests/test_shell_completion.py::test_chained"
+title = "Shell completion: _PROG_COMPLETE protocol for bash, zsh and fish; option, subcommand, chained-sibling, choice and path completions; custom shell_complete; output formats as click's"
+status = "tested"
+realises = ["LeanClick.Command.complete", "LeanClick.CompletionItem.format", "LeanClick.splitArgString", "LeanClick.Terminal.shellComplete"]
+test = ["tests/Conformance.lean::chained group completion", "tests/Conformance.lean::bash and zsh output formats", "tests/Props.lean::splitArgsWords"]
+
+[[requirement]]
+id = "dev.completion-scripts"
+upstream = "src/click/shell_completion.py (_SOURCE_BASH, _SOURCE_ZSH, _SOURCE_FISH)"
+title = "The bash, zsh and fish source scripts are written for this port (not upstream's text); they speak the same protocol. PowerShell completion and the Bash version check are not provided"
+status = "deviation"
+realises = ["LeanClick.completionScript"]
+
+[[requirement]]
+id = "excluded.tuple"
+upstream = "tests/test_options.py::test_nargs_tup_composite_mult"
+title = "click.Tuple (per-position types): homogeneous nargs is supported; a heterogeneous composite needs a value shape the arity theorems do not yet cover"
+status = "excluded"
+
+[[requirement]]
+id = "excluded.token-normalize"
+upstream = "tests/test_normalization.py"
+title = "token_normalize_func: a user function applied to every option, choice and command lookup; the scanner theorems are stated for exact spellings and would have to be restated over a normalized table"
+status = "excluded"
+
+[[requirement]]
+id = "excluded.result-callback"
+upstream = "tests/test_chain.py::test_no_command_result_callback"
+title = "Group result callbacks (result_callback) and callbacks' return values"
+status = "excluded"
+
+[[requirement]]
+id = "excluded.misc"
+upstream = "tests/test_types"
+title = "Custom ParamType classes, deprecated parameters and commands, prompt_required=False optional values, lazy loading of subcommands"
+status = "excluded"

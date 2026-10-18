@@ -164,9 +164,39 @@ def helpListsSpellings : Property := ⟨"help lists every spelling", fun r =>
   let spell := (cli.allParams (cli.settings none "cli")).flatMap Param.allOpts
   (if spell.all (fun o => (page.splitOn o).length > 1) then none else some page, r)⟩
 
+def hexDigit (r : Rng) : Char × Rng :=
+  let (i, r) := r.nat 16
+  ("0123456789abcdef".toList.getD i '0', r)
+
+def uuidRoundtrip : Property := ⟨"UUID: canonical text parses to itself, in any case and hyphenation", fun r =>
+  let (hs, r) := r.list 32 hexDigit
+  let canon := String.ofList (hs.take 8 ++ '-' :: (hs.drop 8).take 4 ++ '-' :: (hs.drop 12).take 4 ++ '-' :: (hs.drop 16).take 4 ++ '-' :: hs.drop 20)
+  let upper := "{" ++ (String.ofList (hs.map Char.toUpper)) ++ "}"
+  (match parseUuid canon, parseUuid upper with
+   | some a, some b => if a.val == canon && b.val == canon then none else some canon
+   | _, _ => some canon, r)⟩
+
+def dateRoundtrip : Property := ⟨"DateTime: str(datetime) parses back with the default formats", fun r =>
+  let (y, r) := r.nat 9000
+  let (m, r) := r.nat 12
+  let (d, r) := r.nat 28
+  let (hh, r) := r.nat 24
+  let (mm, r) := r.nat 60
+  let (ss, r) := r.nat 60
+  let t : Timestamp := ⟨y + 1000, m + 1, d + 1, hh, mm, ss⟩
+  (match convertDateTime ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"] (showDateTime t) with
+   | .ok v => if v.val == t then none else some (showDateTime t)
+   | .error e => some e, r)⟩
+
+def splitArgsWords : Property := ⟨"split_arg_string: plain words split on spaces", fun r =>
+  let (n, r) := r.nat 6
+  let (ws, r) := r.list n (fun r => r.pick ["a", "bb", "--x", "-y", "c=d", "e.f"])
+  (if splitArgString (" ".intercalate ws) == ws then none else some s!"{ws}", r)⟩
+
 def properties : List Property :=
   [wrapWidth, wrapKeepsText, intRoundtrip, decRoundtrip, closeSubset, declaredAccepted, lastWins,
-   countIsOccurrences, unpackConserves, shortHelpFits, helpListsSpellings]
+   countIsOccurrences, unpackConserves, shortHelpFits, helpListsSpellings, uuidRoundtrip, dateRoundtrip,
+   splitArgsWords]
 
 def main (args : List String) : IO UInt32 := do
   let seed := (args.head? >>= String.toNat?).getD 88172645463325252
