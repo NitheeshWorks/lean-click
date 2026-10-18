@@ -290,9 +290,10 @@ test = ["tests/Conformance.lean::typed command help: option spellings from binde
 [[requirement]]
 id = "usage.unambiguous-check"
 upstream = "src/click/core.py:Command.get_params (duplicate option warning)"
-title = "click_command proves Command.Unambiguous (no two parameters share a spelling) by kernel decide when the command is compiled; a clash is a compile error. click only warns at run time"
+title = "click_command proves Command.Unambiguous in every context with distinct help names (Command.unambiguous_of), so inherited help names such as fastapi-cli's -h are covered; earlier: proves Command.Unambiguous (no two parameters share a spelling) by kernel decide when the command is compiled; a clash is a compile error. click only warns at run time"
 status = "implemented"
 realises = ["LeanClick.Command.Unambiguous", "LeanClick.ClickType.spellingsOf"]
+theorem = ["LeanClick.Command.unambiguous_of"]
 test = ["tests/Conformance.lean::typed command values arrive typed"]
 
 [[requirement]]
@@ -352,12 +353,6 @@ status = "deviation"
 realises = ["LeanClick.completionScript"]
 
 [[requirement]]
-id = "excluded.tuple"
-upstream = "tests/test_options.py::test_nargs_tup_composite_mult"
-title = "click.Tuple (per-position types): homogeneous nargs is supported; a heterogeneous composite needs a value shape the arity theorems do not yet cover"
-status = "excluded"
-
-[[requirement]]
 id = "excluded.token-normalize"
 upstream = "tests/test_normalization.py"
 title = "token_normalize_func: a user function applied to every option, choice and command lookup; the scanner theorems are stated for exact spellings and would have to be restated over a normalized table"
@@ -374,3 +369,28 @@ id = "excluded.misc"
 upstream = "tests/test_types"
 title = "Custom ParamType classes, deprecated parameters and commands, prompt_required=False optional values, lazy loading of subcommands"
 status = "excluded"
+
+[[requirement]]
+id = "types.tuple"
+upstream = "tests/test_options.py::test_nargs_tup_composite_mult"
+title = "click.Tuple: per-position types, nargs = arity, one product value per occurrence; metavar <TEXT INTEGER>..., arity error texts as click's"
+status = "implemented"
+realises = ["LeanClick.ParamType.tuple", "LeanClick.convertComposite", "LeanClick.Tuple", "LeanClick.ParamType.components"]
+theorem = ["LeanClick.tuple_arity", "LeanClick.components_length"]
+test = ["tests/Conformance.lean::Tuple option, multiple", "tests/Conformance.lean::Tuple argument and option, as click 8.5.0"]
+
+[[requirement]]
+id = "groups.chain-nesting"
+upstream = "tests/test_chain.py::test_group_chaining (xfail upstream)"
+title = "A group inside a chained group is refused: the group builders reject it at compile time (as click's add_command and decorators raise 'It is not possible to add the group ... in chain mode'), and a tree built with the raw constructor is refused when parsed with click's 'Found the group ... This is not supported.' (exit 2). click 8.5.0 itself runs such a tree when built with Group(commands=[...])"
+status = "deviation"
+realises = ["LeanClick.Command.parseChain", "LeanClick.group"]
+test = ["tests/Conformance.lean::a group nested in a chained group is refused"]
+
+[[requirement]]
+id = "groups.chain-arguments"
+upstream = "tests/test_chain.py::test_group_arg_behavior"
+title = "A chained group cannot have optional arguments: rejected at compile time by the group builder (click raises RuntimeError at definition)"
+status = "implemented"
+realises = ["LeanClick.group"]
+test = ["tests/Conformance.lean::a chained group with a required argument"]

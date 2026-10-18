@@ -58,7 +58,7 @@ never strings looked up by name. `examples/FastapiCli.lean`
 The decorator vocabulary is there too, for groups and hand-built commands:
 `command`, `group` (with `chain := true`), `option`, `argument`,
 `versionOption`, the types `STRING` `INT` `FLOAT` `BOOL` `UUID` `DateTime`
-`Choice` `Path` `File` `IntRange` `FloatRange`, parameter `callback`s,
+`Tuple` `Choice` `Path` `File` `IntRange` `FloatRange`, parameter `callback`s,
 `contextSettings` with `defaultMap`, and shell completion through
 `_PROG_COMPLETE` (bash, zsh, fish), and click's keyword arguments (`default`, `help`, `required`,
 `envvar`, `multiple`, `nargs`, `isFlag`, `flagValue`, `count`, `prompt`,
@@ -80,6 +80,7 @@ any axiom beyond `propext`, `Quot.sound`, `Classical.choice`.
 | A required parameter with no value gives `Missing option` / `Missing argument` | `required_missing_error : … → resolveParam fs ans none env p = .error (.error p.missingError)` |
 | A successful parse leaves no required parameter missing | `required_present : cmd.parseArgs s path argv env = .ok r → ∀ e ∈ r.entries, e.param.required → e.value.isMissing = false` |
 | A `nargs = n` value holds exactly `n` values | `nargs_arity : e.param.shape = .tuple n → e.value = .tuple xs → xs.length = n` |
+| A `Tuple` value converts from exactly `arity` tokens and holds one value per position | `tuple_arity : convertComposite fs t xs = .ok y → xs.length = t.arity ∧ (t.components y).length = t.arity` |
 | A choice converts iff a declared choice matches, to the first match | `choice_in_set : (∃ c, convert fs (.choice cs cS) s = .ok c ∧ c.val = v) ↔ cs.find? (fun c => normChoice cS c == normChoice cS s) = some v` |
 | Over any sequence of a flag pair's spellings, the last one decides | `bool_flag_pairs : … → cmd.parseArgs s path argv env = .ok r → ∃ e ∈ r.entries, e.param = p ∧ e.source = .commandline ∧ e.toValue = .bool (decide (argv.getLast h ∈ opts))` |
 | The command line beats the environment variable: an option given as `--o v` / `--o=v`, any number of times, holds the last occurrence's value | `commandline_beats_envvar : … → cmd.parseArgs s path (occTokens occs) env = .ok r → ∃ e ∈ r.entries, e.param = p ∧ e.source = .commandline ∧ ∃ x, convert env.fs p.type (occs.getLast h).2.1 = .ok x ∧ e.toValue = p.type.erase x` |

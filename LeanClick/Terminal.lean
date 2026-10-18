@@ -42,7 +42,10 @@ def App.command {σ : Type} (spec : CommandSpec) (callback : Callback σ := fun 
 
 /-- `click.group` with an `IO` callback. -/
 def App.group {σ : Type} (spec : CommandSpec) (subcommands : List (App σ))
-    (callback : Callback σ := fun c => pure c.obj) : App σ :=
+    (callback : Callback σ := fun c => pure c.obj)
+    (_noNestedChain : spec.chain = false ∨ subcommands.all (fun c => !c.isGroup) = true := by
+      first | exact Or.inl rfl | decide | fail "It is not possible to add a group to another group that is in chain mode.") :
+    App σ :=
   .mk spec true callback subcommands
 
 /-- `click.echo`. -/

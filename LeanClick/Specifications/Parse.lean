@@ -78,6 +78,12 @@ def NargsArity : Prop :=
   ∀ (e : Entry) (n : Nat) (xs : List e.param.type.Carrier),
     e.param.shape = .tuple n → e.value = .tuple xs → xs.length = n
 
+/-- A `Tuple` value converts from exactly `arity` tokens, one per position,
+and holds one value per position. -/
+def TupleArity : Prop :=
+  ∀ (fs : String → Option FileInfo) (t : ParamType) (xs : List String) (y : t.Carrier),
+    convertComposite fs t xs = .ok y → xs.length = t.arity ∧ (t.components y).length = t.arity
+
 /-- A choice converts exactly when some declared choice matches it, and the
 result is the first such choice. -/
 def ChoiceInSet : Prop :=

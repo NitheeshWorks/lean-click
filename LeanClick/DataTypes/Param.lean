@@ -144,16 +144,17 @@ def PValue.Fits {t : ParamType} : PValue t → Shape → Prop
   | .many xss, .many n => ∀ xs ∈ xss, xs.length = n
   | _, _ => False
 
-/-- The shape a parameter's value takes. -/
+/-- The shape a parameter's value takes. A `Tuple` value is one value (a
+product), however many tokens it takes. -/
 def Param.shape (p : Param) : Shape :=
   match p.decl with
-  | .option _ (.value n false) => if n = 1 then .single else .tuple n
-  | .option _ (.value n true) => .many n
+  | .option _ (.value n false) => if n = 1 ∨ p.type.isComposite then .single else .tuple n
+  | .option _ (.value n true) => if p.type.isComposite then .many 1 else .many n
   | .option _ (.boolFlag _) => .single
   | .option _ (.constFlag _ false) => .single
   | .option _ (.constFlag _ true) => .many 1
   | .option _ .count => .single
-  | .argument (.exactly n) => if n = 1 then .single else .tuple n
+  | .argument (.exactly n) => if n = 1 ∨ p.type.isComposite then .single else .tuple n
   | .argument .star => .star
 
 /-- One parsed parameter: the declaration it answers, its typed value, the

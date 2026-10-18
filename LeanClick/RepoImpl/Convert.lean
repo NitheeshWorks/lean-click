@@ -13,7 +13,8 @@ namespace LeanClick
 
 open Text
 
-/-- click's `ParamType.name`. -/
+mutual
+/-- click's `ParamType.name`; a `Tuple` is `<text integer>`. -/
 def ParamType.name : ParamType → String
   | .string => "text"
   | .int => "integer"
@@ -29,6 +30,15 @@ def ParamType.name : ParamType → String
   | .floatRange _ => "float range"
   | .uuid => "uuid"
   | .dateTime _ => "datetime"
+  | .tupleNil => "<>"
+  | .tupleCons h t => "<" ++ " ".intercalate (h.name :: ParamType.componentNames t) ++ ">"
+
+/-- The names of a tuple's remaining components. -/
+def ParamType.componentNames : ParamType → List String
+  | .tupleNil => []
+  | .tupleCons h t => h.name :: ParamType.componentNames t
+  | t => [t.name]
+end
 
 /-- `_describe_range` for integer bounds. -/
 def IntBounds.describe (r : IntBounds) : String :=
@@ -225,6 +235,12 @@ def showDateTime (d : Timestamp) : String :=
   let pad := fun (n w : Nat) => let t := toString n; String.ofList (List.replicate (w - t.length) '0') ++ t
   s!"{pad d.year 4}-{pad d.month 2}-{pad d.day 2} {pad d.hour 2}:{pad d.minute 2}:{pad d.second 2}"
 
+/-- `Tuple.convert`'s arity message. -/
+def tupleArityMsg (want got : Nat) : String :=
+  if got == 1 then s!"{want} values are required, but 1 was given."
+  else s!"{want} values are required, but {got} were given."
+
+mutual
 /-- Convert one raw string to a value of the parameter type. -/
 def convert (fs : String → Option FileInfo) : (t : ParamType) → String → Except String t.Carrier
   | .string, s => .ok s
@@ -252,6 +268,42 @@ def convert (fs : String → Option FileInfo) : (t : ParamType) → String → E
     | some u => .ok u
     | none => .error s!"{pyRepr (strip s)} is not a valid UUID."
   | .dateTime fs, s => convertDateTime fs s
+  | .tupleNil, _ => .error (tupleArityMsg 0 1)
+  | .tupleCons h t, s => convertComponents fs (.tupleCons h t) [s]
+
+/-- Convert the values of a `Tuple`, one per position. -/
+def convertComponents (fs : String → Option FileInfo) : (t : ParamType) → List String → Except String t.Carrier
+  | .tupleNil, [] => .ok ()
+  | .tupleCons h t, x :: xs => do
+    let a ← convert fs h x
+    let b ← convertComponents fs t xs
+    return (a, b)
+  | t, xs => .error (tupleArityMsg t.arity xs.length)
+end
+
+/-- The per-position values of a value, erased (a non-`Tuple` value is one
+position). -/
+def ParamType.components : (t : ParamType) → t.Carrier → List Value
+  | .tupleNil, _ => []
+  | .tupleCons h t, (x, y) => h.erase x :: t.components y
+  | .string, x => [ParamType.erase .string x]
+  | .int, x => [ParamType.erase .int x]
+  | .float, x => [ParamType.erase .float x]
+  | .bool, x => [ParamType.erase .bool x]
+  | .choice cs c, x => [ParamType.erase (.choice cs c) x]
+  | .path sp, x => [ParamType.erase (.path sp) x]
+  | .file sp, x => [ParamType.erase (.file sp) x]
+  | .intRange r, x => [ParamType.erase (.intRange r) x]
+  | .floatRange r, x => [ParamType.erase (.floatRange r) x]
+  | .uuid, x => [ParamType.erase .uuid x]
+  | .dateTime f, x => [ParamType.erase (.dateTime f) x]
+
+/-- `Tuple.convert`: check the number of values, then convert each with its
+own type. -/
+def convertComposite (fs : String → Option FileInfo) (t : ParamType) (xs : List String) :
+    Except String t.Carrier :=
+  if xs.length = t.arity then convertComponents fs t xs
+  else .error (tupleArityMsg t.arity xs.length)
 
 /-- Convert a list, keeping its length in the type. -/
 def convertList (fs : String → Option FileInfo) (t : ParamType) :
@@ -275,5 +327,7 @@ def ParamType.show : (t : ParamType) → t.Carrier → String
   | .floatRange _, x => showDec x.val
   | .uuid, u => u.val
   | .dateTime _, d => showDateTime d.val
+  | .tupleNil, _ => "()"
+  | .tupleCons _ _, _ => "(...)"
 
 end LeanClick

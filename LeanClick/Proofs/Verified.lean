@@ -28,6 +28,7 @@ structure VerifiedParser (σ : Type) where
   requiredMissingError : RequiredMissingError
   requiredPresent : RequiredPresent (σ := σ)
   nargsArity : NargsArity
+  tupleArity : TupleArity
   choiceInSet : ChoiceInSet
   boolFlagPairs : BoolFlagPairs (σ := σ)
   commandlineBeatsEnvvar : CommandlineBeatsEnvvar (σ := σ)
@@ -47,6 +48,7 @@ theorem theVerifiedParser (σ : Type) : VerifiedParser σ where
   requiredMissingError := required_missing_error
   requiredPresent := required_present
   nargsArity := nargs_arity
+  tupleArity := tuple_arity
   choiceInSet := choice_in_set
   boolFlagPairs := bool_flag_pairs
   commandlineBeatsEnvvar := commandline_beats_envvar

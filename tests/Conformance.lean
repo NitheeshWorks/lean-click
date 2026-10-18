@@ -201,6 +201,22 @@ def optionCases : List Case := [
     ((run msgCmd ["-m", "foo", "-mbar"]).val "message" == "(foo, bar)"),
   pc "tests/test_options.py::test_multiple_required" "multiple required missing"
     (has (run msgCmd []).out "Error: Missing option '-m' / '--message'."),
+  pc "tests/test_options.py::test_nargs_tup_composite_mult" "Tuple option, multiple"
+    (let c : Cmd := command "copy" [option ["--item"] (type := Tuple [STRING, INT]) (multiple := true)]
+     (run c ["--item", "peter", "1", "--item", "max", "2"]).val "item" == "((peter, 1), (max, 2))" &&
+     has (run c ["--item", "peter", "x"]).out "Invalid value for '--item': 'x' is not a valid integer."),
+  pc "tests/test_arguments.py::test_nargs_tup_composite" "Tuple argument and option, as click 8.5.0"
+    (let c : Cmd := command "c" [option ["--item"] (type := Tuple [STRING, INT]) (multiple := true),
+        option ["--pt"] (type := Tuple [INT, FLOAT]) (default := ["1", "2.5"]) (showDefault := true),
+        argument "pair" (type := Tuple [STRING, INT])]
+     let r := run c ["a", "1"]
+     r.val "pair" == "(a, 1)" && r.val "pt" == "(1, 2.5)" && r.val "item" == "()" &&
+     (run c ["--pt", "1", "2", "a", "3"]).val "pt" == "(1, 2.0)" &&
+     lines (run c ["a", "x"]).out == ["Usage: c [OPTIONS] PAIR...", "Try 'c --help' for help.", "",
+       "Error: Invalid value for 'PAIR...': 'x' is not a valid integer."] &&
+     has (run c ["a"]).out "Error: Argument 'pair' takes 2 values." &&
+     has (run c ["--pt", "1"]).out "Error: Option '--pt' requires 2 arguments." &&
+     has (run c ["--help"]).out "  --item <TEXT INTEGER>...\n  --pt <INTEGER FLOAT>...   [default: 1, 2.5]\n"),
   pc "tests/test_options.py::test_nargs_tup_composite_mult" "multiple nargs=2 occurrences"
     ((run (mkCmd "copy" [Param.opt ["--item"] (nargs := 2) (multiple := true)]) ["--item", "peter", "1", "--item", "max", "2"]).val "item"
       == "((peter, 1), (max, 2))"),
@@ -426,6 +442,15 @@ def cmdCases : List Case := [
   pc "tests/test_chain.py::test_args_and_chain" "unknown command inside a chain"
     (let g : Cmd := group "cli" [] [command "a" []] (chain := true)
      let r := run g ["a", "b"]; r.code == 2 && has r.out "No such command 'b'."),
+  pc "tests/test_chain.py::test_group_arg_behavior" "a chained group with a required argument"
+    (let g : Cmd := group "cli" [argument "arg"] [command "a"] (chain := true)
+     let r := run g ["foo", "a"]
+     r.code == 0 && (r.frames.map (·.infoName)) == ["cli", "a"] && (r.frames.head?.map (·.args.get "arg" |>.render)) == some "foo"),
+  pc "tests/test_chain.py::test_group_chaining" "a group nested in a chained group is refused"
+    (let c : Cmd := .mk { name := "cli", chain := true } true () [group "sub" [] [command "leaf"], command "other"]
+     let r := run c ["sub", "leaf"]
+     r.code == 2 && has r.out "Found the group 'sub' as subcommand to another group  'cli' that is in chain mode. This is not supported." &&
+     (run c ["other"]).code == 0),
   pc "tests/test_commands.py::test_group_first_match" "first subcommand of a name wins"
     (let g : Cmd := Command.group { name := "cli" } [mkCmd "a" [Param.opt ["--x"]], mkCmd "a" [Param.opt ["--y"]]]
      (run g ["a", "--x", "1"]).val "x" == "1"),
@@ -621,7 +646,7 @@ def completionCases : List Case := [
      words c [] "-" == ["-a", "--help"] && words c ["-a", "a"] "-" == ["--help"] &&
      words c ["-a", "a", "x"] "-" == ["-a", "--help"] && words c ["-a", "a", "x", "-a", "a"] "-" == ["--help"]),
   pc "tests/test_shell_completion.py::test_chained" "chained group completion"
-    (let c : Cmd := group "cli" [] [command "set" [option ["-y"]], command "start", group "get" [] [command "full"]] (chain := true)
+    (let c : Cmd := .mk { name := "cli", chain := true } true () [command "set" [option ["-y"]], command "start", group "get" [] [command "full"]]
      words c [] "" == ["get", "set", "start"] && words c [] "s" == ["set", "start"] &&
      words c ["set", "start"] "" == ["get"] && words c ["get"] "" == ["full", "set", "start"] &&
      words c ["get", "full"] "" == ["set", "start"] && words c ["get"] "s" == ["set", "start"]),

@@ -140,7 +140,16 @@ def convertMany (fs : String → Option FileInfo) (t : ParamType) (n : Nat) :
     (xss : List (List String)) → Except String {yss : List (List t.Carrier) // ∀ ys ∈ yss, ys.length = n}
   | [] => .ok ⟨[], by simp⟩
   | xs :: xss =>
-    if h : xs.length = n then do
+    if hc : t.isComposite && n == 1 then do
+      let y ← convertComposite fs t xs
+      let ⟨yss, hyss⟩ ← convertMany fs t n xss
+      return ⟨[y] :: yss, by
+        intro zs hz
+        simp only [List.mem_cons] at hz
+        rcases hz with rfl | hz
+        · simp only [Bool.and_eq_true, beq_iff_eq] at hc; simp [hc.2]
+        · exact hyss zs hz⟩
+    else if h : xs.length = n then do
       let ⟨ys, hy⟩ ← convertList fs t xs
       let ⟨yss, hyss⟩ ← convertMany fs t n xss
       return ⟨ys :: yss, by
@@ -155,7 +164,9 @@ def convertMany (fs : String → Option FileInfo) (t : ParamType) (n : Nat) :
 def convertShape (fs : String → Option FileInfo) (t : ParamType) :
     (s : Shape) → Raw → Except String {v : PValue t // v.Fits s}
   | .single, .tokens [x] => do let y ← convert fs t x; return ⟨.one y, trivial⟩
-  | .single, .tokens xs => .error (takesMsg 1 xs.length)
+  | .single, .tokens xs =>
+    if t.isComposite then do let y ← convertComposite fs t xs; return ⟨.one y, trivial⟩
+    else .error (takesMsg 1 xs.length)
   | .single, .bool b => do let y ← boolValue fs t b; return ⟨.one y, trivial⟩
   | .single, .count n => do let y ← countValue fs t n; return ⟨.one y, trivial⟩
   | .tuple n, .tokens xs =>

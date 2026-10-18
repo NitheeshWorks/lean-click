@@ -112,15 +112,17 @@ never read automatic environment variables (UP-011); parameters sharing a
 name are not arbitrated; boolean flags have no explicit `None` default; an
 option-looking unknown subcommand is re-scanned rather than re-parsed.
 The shell completion scripts are this port's own.
-Excluded, with reasons in `docs/traceability.toml`: `click.Tuple`
-(heterogeneous composites), `token_normalize_func`, group result
+A group nested in a chained group is refused (at compile time by the
+builders, at parse time for raw constructors), where click 8.5.0's
+constructor path would run it. Excluded, with reasons in
+`docs/traceability.toml`: `token_normalize_func`, group result
 callbacks, Windows console support, custom `ParamType` classes,
 deprecation warnings, `prompt_required=False`, lazy subcommand loading.
 
 Implemented beyond the first slice: chained groups (`group ... (chain :=
 true)`), `default_map` (`ContextSettings.defaultMap`, source
-`DEFAULT_MAP`), the `UUID` and `DateTime` types (refined by
-`uuidCanonical` and `Timestamp.valid`), parameter callbacks
+`DEFAULT_MAP`), the `UUID`, `DateTime` and `Tuple` types (refined by
+`uuidCanonical` and `Timestamp.valid`; `tuple_arity`), parameter callbacks
 (`callback :=`), and shell completion (`_PROG_COMPLETE`, bash/zsh/fish,
 `RepoImpl/Complete.lean`).
 

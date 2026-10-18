@@ -144,6 +144,25 @@ theorem entry_many_length (e : Entry) (n : Nat) (xss : List (List e.param.type.C
   exact h
 
 
+/-! ## Tuples -/
+
+theorem components_length : ∀ (t : ParamType) (x : t.Carrier), (t.components x).length = t.arity
+  | .tupleNil, _ => rfl
+  | .tupleCons h t, (x, y) => by
+    simp only [ParamType.components, List.length_cons, ParamType.arity, components_length t y]
+  | .string, _ | .int, _ | .float, _ | .bool, _ | .choice _ _, _ | .path _, _ | .file _, _
+  | .intRange _, _ | .floatRange _, _ | .uuid, _ | .dateTime _, _ => rfl
+
+/-- A `Tuple` value converts from exactly `arity` tokens and holds one value
+per position. -/
+theorem tuple_arity : TupleArity := by
+  intro fs t xs y h
+  unfold convertComposite at h
+  split at h
+  · rename_i hl
+    exact ⟨hl, components_length t y⟩
+  · cases h
+
 /-! ## Choices -/
 
 theorem choice_mem (cs : List String) (cS : Bool) (x : (ParamType.choice cs cS).Carrier) : x.val ∈ cs :=

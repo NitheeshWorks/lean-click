@@ -142,7 +142,26 @@ inductive ParamType where
   | floatRange (bounds : FloatBounds)
   | uuid
   | dateTime (formats : List String := ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"])
+  /-- `click.Tuple`, as a cons list of per-position types (see `ParamType.tuple`). -/
+  | tupleNil
+  | tupleCons (head tail : ParamType)
   deriving DecidableEq, Repr, Inhabited
+
+/-- `click.Tuple(types)`. -/
+def ParamType.tuple : List ParamType → ParamType
+  | [] => .tupleNil
+  | t :: ts => .tupleCons t (ParamType.tuple ts)
+
+/-- Is the type a `Tuple` (click's `is_composite`)? -/
+def ParamType.isComposite : ParamType → Bool
+  | .tupleNil | .tupleCons _ _ => true
+  | _ => false
+
+/-- The number of values a type takes (click's `arity`). -/
+def ParamType.arity : ParamType → Nat
+  | .tupleNil => 0
+  | .tupleCons _ t => t.arity + 1
+  | _ => 1
 
 def ParamType.isIntRange : ParamType → Bool
   | .intRange _ => true
@@ -163,6 +182,8 @@ def ParamType.Carrier : ParamType → Type
   | .floatRange r => {x : Dec // r.contains x = true}
   | .uuid => {s : String // uuidCanonical s = true}
   | .dateTime _ => {d : Timestamp // d.valid = true}
+  | .tupleNil => Unit
+  | .tupleCons h t => h.Carrier × t.Carrier
 
 /-- A parsed value with its refinement erased: what callbacks read. -/
 inductive Value where
@@ -210,5 +231,9 @@ def ParamType.erase : (t : ParamType) → t.Carrier → Value
   | .floatRange _, x => .dec x.val
   | .uuid, u => .str u.val
   | .dateTime _, d => .dateTime d.val
+  | .tupleNil, _ => .list []
+  | .tupleCons h t, (x, y) => match t.erase y with
+    | .list vs => .list (h.erase x :: vs)
+    | v => .list [h.erase x, v]
 
 end LeanClick

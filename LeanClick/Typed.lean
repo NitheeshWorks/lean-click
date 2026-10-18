@@ -109,6 +109,12 @@ instance : ClickType Bool where
   toTokens b := [if b then "true" else "false"]
   isFlag := true
 
+/-- A pair is `Tuple [α, β]`: two values, each with its own type. -/
+instance {α β : Type} [ClickType α] [ClickType β] : ClickType (α × β) where
+  type := .tuple [ClickType.type α, ClickType.type β]
+  ofValue | .list [a, b] => do return (← ClickType.ofValue a, ← ClickType.ofValue b) | _ => none
+  toTokens p := ClickType.toTokens p.1 ++ ClickType.toTokens p.2
+
 instance {α : Type} [ClickType α] : ClickType (Option α) where
   type := ClickType.type α
   ofValue | .none => some none | v => (ClickType.ofValue v).map some
@@ -161,8 +167,9 @@ def option (α : Type) [ClickType α] (name : String) (default : Option α := no
   let (prim, sec) := spellingsOf (ClickType.isFlag α) name decls
   let base : Param :=
     if ClickType.isFlag α then { name, decl := .option prim (.boolFlag sec), type := .bool }
-    else { name, decl := .option prim (.value 1 (ClickType.multiple α)),
-           type := type.getD (ClickType.type α) }
+    else
+      let t := type.getD (ClickType.type α)
+      { name, decl := .option prim (.value (if t.isComposite then t.arity else 1) (ClickType.multiple α)), type := t }
   { base with
     default := (default.map ClickType.toTokens).filter (!·.isEmpty),
     help := if help.isEmpty then none else some help,
@@ -175,8 +182,9 @@ def option (α : Type) [ClickType α] (name : String) (default : Option α := no
 def argument (α : Type) [ClickType α] (name : String) (default : Option α := none) (help : String := "")
     (envvar : List String := []) (metavar : Option String := none) (type : Option ParamType := none) :
     Param :=
-  let nargs : ArgNargs := if ClickType.multiple α then .star else .exactly 1
-  let base : Param := { name, decl := .argument nargs, type := type.getD (ClickType.type α) }
+  let t := type.getD (ClickType.type α)
+  let nargs : ArgNargs := if ClickType.multiple α then .star else .exactly (if t.isComposite then t.arity else 1)
+  let base : Param := { name, decl := .argument nargs, type := t }
   { base with
     default := (default.map ClickType.toTokens).filter (!·.isEmpty),
     help := if help.isEmpty then none else some help,

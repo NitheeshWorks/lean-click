@@ -85,6 +85,10 @@ def UUID : ParamType := .uuid
 def DateTime (formats : List String := ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"]) : ParamType :=
   .dateTime formats
 
+/-- `click.Tuple(types)`, or `type=(str, int)`: one value per position,
+each with its own type; `nargs` is the number of types. -/
+def Tuple (types : List ParamType) : ParamType := ParamType.tuple types
+
 /-- `click.Choice(choices, case_sensitive=True)`. -/
 def Choice (choices : List String) (caseSensitive : Bool := true) : ParamType :=
   .choice choices caseSensitive
@@ -126,7 +130,9 @@ def option (decls : List String) (type : Option ParamType := none) (default : De
       | none =>
         if isFlag || !sec.isEmpty || (type.isNone && match default with | .bool _ => true | _ => false)
         then Param.flag decls
-        else Param.opt decls (type.getD default.impliedType) nargs multiple
+        else
+          let t := type.getD default.impliedType
+          Param.opt decls t (if t.isComposite then t.arity else nargs) multiple
   { base with
     default := default.tokens, help := if help.isEmpty then none else some help, required,
     envvar, hidden, metavar, showEnvvar, showChoices,
@@ -141,8 +147,9 @@ def argument (name : String) (type : Option ParamType := none) (default : Defaul
     (help : String := "") (metavar : Option String := none)
     (callback : Option (Value → Except String Value) := none)
     (shellComplete : Option (String → List String) := none) : Param :=
-  let n : ArgNargs := if nargs < 0 then .star else .exactly nargs.toNat
-  let base := Param.arg name (type.getD default.impliedType) n
+  let t := type.getD default.impliedType
+  let n : ArgNargs := if nargs < 0 then .star else .exactly (if t.isComposite then t.arity else nargs.toNat)
+  let base := Param.arg name t n
   { base with
     default := default.tokens, envvar, metavar, help := if help.isEmpty then none else some help,
     required := required.getD (base.required && default.tokens.isNone), callback, shellComplete }
@@ -184,7 +191,12 @@ def group {κ : Type} [Inhabited κ] (name : String) (params : List Param := [])
     (commands : List (Command κ) := []) (callback : κ := default) (help : String := "") (shortHelp : Option String := none)
     (epilog : Option String := none) (contextSettings : ContextSettings := {})
     (invokeWithoutCommand : Bool := false) (noArgsIsHelp : Option Bool := none)
-    (hidden : Bool := false) (chain : Bool := false) : Command κ :=
+    (hidden : Bool := false) (chain : Bool := false)
+    (_noNestedChain : chain = false ∨ commands.all (fun c => !c.isGroup) = true := by
+      first | exact Or.inl rfl | decide | fail "It is not possible to add a group to another group that is in chain mode.")
+    (_chainArgsRequired : chain = false ∨ params.all (fun p => !p.isArgument || p.required) = true := by
+      first | exact Or.inl rfl | decide | fail "A group in chain mode cannot have optional arguments.") :
+    Command κ :=
   .mk { name, params, help := if help.isEmpty then none else some help, shortHelp, epilog, hidden,
         invokeWithoutCommand, noArgsIsHelp, chain,
         helpOptionNames := contextSettings.helpOptionNames,

@@ -163,6 +163,10 @@ def Command.parseChain (cmd : Command σ) (s : Settings) (path : String) (env : 
   | 0, _ :: _ => .error (.error ⟨.usage "Chained commands exceed the argument count.", none⟩)
   | fuel + 1, name :: rest => do
     let c ← cmd.resolveSub s path name rest
+    -- click refuses a group inside a chained group (`_check_nested_chain`)
+    if c.isGroup then
+      .error (.error { kind := .usage s!"Found the group {pyRepr name} as subcommand to another group  {pyRepr cmd.name} that is in chain mode. This is not supported.", ctx := some (cmd.ctxInfo s path) })
+    else
     let cs := c.settings (some s) name
     let cpath := cmd.childPath s path name
     let pa ← match c.asChained.parseArgs cs cpath rest env with
