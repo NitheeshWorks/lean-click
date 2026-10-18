@@ -123,6 +123,25 @@ def basicCases : List Case := [
      has (run methodArg ["meh"]).out "Invalid value for '{foo|bar|baz}': 'meh' is not one of 'foo', 'bar', 'baz'."),
   pc "tests/test_basic.py::test_choice_argument" "choice argument metavar in help"
     (has (run methodArg ["--help"]).out "{foo|bar|baz}"),
+  pc "tests/test_basic.py::test_uuid_option" "UUID option"
+    (let c : Cmd := command "cli" [option ["--u"] (type := UUID) (default := "ba122011-349f-423b-873b-9d6a79c688ab")]
+     (run c []).val "u" == "ba122011-349f-423b-873b-9d6a79c688ab" &&
+     (run c ["--u=821592C1C50E49719CD6E89DC6832F86"]).val "u" == "821592c1-c50e-4971-9cd6-e89dc6832f86" &&
+     has (run c ["--u=x"]).out "Error: Invalid value for '--u': 'x' is not a valid UUID."),
+  pc "tests/test_basic.py::test_datetime_option_default" "DateTime option, default formats"
+    (let c : Cmd := command "cli" [option ["--start_date"] (type := DateTime)]
+     (run c ["--start_date=2015-09-29"]).val "start_date" == "2015-09-29 00:00:00" &&
+     (run c ["--start_date=2015-09-29T09:11:22"]).val "start_date" == "2015-09-29 09:11:22" &&
+     has (run c ["--start_date=2015-09"]).out
+       "Invalid value for '--start_date': '2015-09' does not match the formats '%Y-%m-%d', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M:%S'." &&
+     has (run c ["--help"]).out "--start_date [%Y-%m-%d|%Y-%m-%dT%H:%M:%S|%Y-%m-%d %H:%M:%S]" &&
+     (run c ["--start_date=2015-02-30"]).code == 2),
+  pc "tests/test_basic.py::test_datetime_option_custom" "DateTime with custom format"
+    ((run (command "cli" [option ["--start_date"] (type := DateTime ["%A %B %d, %Y"])] : Cmd)
+      ["--start_date=Wednesday June 05, 2010"]).val "start_date" == "2010-06-05 00:00:00"),
+  pc "tests/test_basic.py::test_datetime_argument_optional_metavar" "optional DateTime argument metavar"
+    (let c : Cmd := command "cli" [argument "when" (type := DateTime ["%Y-%m-%d"]) (required := false)]
+     has (run c ["--help"]).out "Usage: cli [OPTIONS] [%Y-%m-%d]\n" && !has (run c ["--help"]).out "[[%Y-%m-%d]]"),
   pc "tests/test_basic.py::test_required_option" "required option missing"
     (let r := run (mkCmd "cli" [(Param.opt ["--foo"]).requiredParam]) []; r.code == 2 && has r.out "Missing option '--foo'"),
   pc "tests/test_basic.py::test_evaluation_order" "eager first, then invocation order, then declaration order"

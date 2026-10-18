@@ -96,6 +96,39 @@ structure FileArg where
   mode : String
   deriving DecidableEq, Repr, Inhabited
 
+/-- A calendar date and time (click's `DateTime` values, naive). -/
+structure Timestamp where
+  year : Nat
+  month : Nat
+  day : Nat
+  hour : Nat := 0
+  minute : Nat := 0
+  second : Nat := 0
+  deriving DecidableEq, Repr, Inhabited
+
+def Timestamp.isLeap (y : Nat) : Bool := (y % 4 == 0 && y % 100 != 0) || y % 400 == 0
+
+def Timestamp.daysIn (y m : Nat) : Nat :=
+  match m with
+  | 2 => if Timestamp.isLeap y then 29 else 28
+  | 4 | 6 | 9 | 11 => 30
+  | _ => 31
+
+/-- A real date: month 1-12, a day the month has, a time of day. -/
+def Timestamp.valid (d : Timestamp) : Bool :=
+  1 ≤ d.year && 1 ≤ d.month && d.month ≤ 12 && 1 ≤ d.day && d.day ≤ Timestamp.daysIn d.year d.month &&
+  d.hour < 24 && d.minute < 60 && d.second < 60
+
+/-- Canonical UUID text: 36 characters, hyphens at 8, 13, 18 and 23,
+lower-case hex digits elsewhere (Python's `str(uuid.UUID(...))`). -/
+def uuidCanonical (s : String) : Bool :=
+  let cs := s.toList
+  cs.length == 36 &&
+  (List.range 36).all fun i =>
+    let c := cs.getD i ' '
+    if i == 8 || i == 13 || i == 18 || i == 23 then c == '-'
+    else c.isDigit || ('a' ≤ c && c ≤ 'f')
+
 /-- The parameter types. -/
 inductive ParamType where
   | string
@@ -107,6 +140,8 @@ inductive ParamType where
   | file (spec : FileSpec := {})
   | intRange (bounds : IntBounds)
   | floatRange (bounds : FloatBounds)
+  | uuid
+  | dateTime (formats : List String := ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"])
   deriving DecidableEq, Repr, Inhabited
 
 def ParamType.isIntRange : ParamType → Bool
@@ -126,6 +161,8 @@ def ParamType.Carrier : ParamType → Type
   | .file _ => FileArg
   | .intRange r => {n : Int // r.contains n = true}
   | .floatRange r => {x : Dec // r.contains x = true}
+  | .uuid => {s : String // uuidCanonical s = true}
+  | .dateTime _ => {d : Timestamp // d.valid = true}
 
 /-- A parsed value with its refinement erased: what callbacks read. -/
 inductive Value where
@@ -135,6 +172,7 @@ inductive Value where
   | dec (d : Dec)
   | bool (b : Bool)
   | file (f : FileArg)
+  | dateTime (d : Timestamp)
   | list (vs : List Value)
   deriving Inhabited
 
@@ -147,6 +185,7 @@ def Value.reprPrec : Value → Nat → Std.Format
   | .dec d, p => Repr.addAppParen ("LeanClick.Value.dec " ++ reprArg d) p
   | .bool b, p => Repr.addAppParen ("LeanClick.Value.bool " ++ repr b) p
   | .file f, p => Repr.addAppParen ("LeanClick.Value.file " ++ reprArg f) p
+  | .dateTime d, p => Repr.addAppParen ("LeanClick.Value.dateTime " ++ reprArg d) p
   | .list vs, p =>
     Repr.addAppParen ("LeanClick.Value.list " ++
       Std.Format.bracket "[" (Std.Format.joinSep (vs.attach.map fun ⟨v, _⟩ => Value.reprPrec v 0)
@@ -169,5 +208,7 @@ def ParamType.erase : (t : ParamType) → t.Carrier → Value
   | .file _, f => .file f
   | .intRange _, n => .int n.val
   | .floatRange _, x => .dec x.val
+  | .uuid, u => .str u.val
+  | .dateTime _, d => .dateTime d.val
 
 end LeanClick

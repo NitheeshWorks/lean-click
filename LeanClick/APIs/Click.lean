@@ -79,6 +79,12 @@ def INT : ParamType := .int
 def FLOAT : ParamType := .float
 def BOOL : ParamType := .bool
 
+def UUID : ParamType := .uuid
+
+/-- `click.DateTime(formats=None)`. -/
+def DateTime (formats : List String := ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"]) : ParamType :=
+  .dateTime formats
+
 /-- `click.Choice(choices, case_sensitive=True)`. -/
 def Choice (choices : List String) (caseSensitive : Bool := true) : ParamType :=
   .choice choices caseSensitive

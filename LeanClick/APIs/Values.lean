@@ -61,6 +61,7 @@ def Value.render : Value → String
   | .dec d => Text.showDec d
   | .bool b => if b then "True" else "False"
   | .file f => f.name
+  | .dateTime d => showDateTime d
   | .list vs => "(" ++ ", ".intercalate (vs.attach.map fun ⟨v, _⟩ => Value.render v) ++ ")"
 termination_by v => sizeOf v
 decreasing_by

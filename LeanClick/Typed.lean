@@ -84,6 +84,22 @@ instance : ClickType Float where
   ofValue | .dec d => some d.toFloat | _ => none
   toTokens f := [toString f]
 
+/-- A UUID in canonical text form. -/
+abbrev Uuid := {s : String // uuidCanonical s = true}
+
+instance : ClickType Uuid where
+  type := .uuid
+  ofValue | .str s => if h : uuidCanonical s = true then some ⟨s, h⟩ else none | _ => none
+  toTokens u := [u.val]
+
+/-- A real calendar date and time. -/
+abbrev ValidDateTime := {d : LeanClick.Timestamp // d.valid = true}
+
+instance : ClickType ValidDateTime where
+  type := .dateTime
+  ofValue | .dateTime d => if h : d.valid = true then some ⟨d, h⟩ else none | _ => none
+  toTokens d := [showDateTime d.val]
+
 instance : ClickType Bool where
   type := .bool
   ofValue | .bool b => some b | _ => none

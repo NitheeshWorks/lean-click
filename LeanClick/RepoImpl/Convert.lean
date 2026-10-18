@@ -27,6 +27,8 @@ def ParamType.name : ParamType → String
   | .file _ => "filename"
   | .intRange _ => "integer range"
   | .floatRange _ => "float range"
+  | .uuid => "uuid"
+  | .dateTime _ => "datetime"
 
 /-- `_describe_range` for integer bounds. -/
 def IntBounds.describe (r : IntBounds) : String :=
@@ -147,6 +149,82 @@ def convertFile (fs : String → Option FileInfo) (spec : FileSpec) (s : String)
       else if !info.readable then .error s!"{pyRepr s}: Permission denied"
       else .ok ⟨s, spec.mode⟩
 
+/-- Python's `uuid.UUID(s)`: optional `urn:` / `uuid:` prefix and braces,
+hyphens anywhere, 32 hex digits; the canonical lower-case text. -/
+def parseUuid (s : String) : Option {u : String // uuidCanonical u = true} :=
+  let cs := (strip s).toList
+  let dropPre := fun (pre : List Char) (l : List Char) => if pre.isPrefixOf l then l.drop pre.length else l
+  let cs := dropPre "urn:".toList cs
+  let cs := dropPre "uuid:".toList cs
+  let cs := (cs.dropWhile (fun c => c == '{' || c == '}')).reverse.dropWhile (fun c => c == '{' || c == '}') |>.reverse
+  let hex := (cs.filter (· != '-')).map Char.toLower
+  if hex.length == 32 && hex.all (fun c => c.isDigit || ('a' ≤ c && c ≤ 'f')) then
+    let u := String.ofList (hex.take 8 ++ '-' :: (hex.drop 8).take 4 ++ '-' :: (hex.drop 12).take 4 ++
+      '-' :: (hex.drop 16).take 4 ++ '-' :: hex.drop 20)
+    if h : uuidCanonical u = true then some ⟨u, h⟩ else none
+  else none
+
+def monthNames : List String :=
+  ["january", "february", "march", "april", "may", "june", "july", "august", "september",
+   "october", "november", "december"]
+
+def dayNames : List String :=
+  ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+/-- Match a (full or three-letter) English name case-insensitively at the
+start of `cs`: its 1-based index and the rest. -/
+def matchName (names : List String) (full : Bool) (cs : List Char) : Option (Nat × List Char) :=
+  let low := cs.map Char.toLower
+  (names.zipIdx.findSome? fun (n, i) =>
+    let key := if full then n.toList else n.toList.take 3
+    if key.isPrefixOf low then some (i + 1, cs.drop key.length) else none)
+
+/-- `datetime.strptime(value, format)` for the directives `%Y %m %d %H %M %S
+%B %b %A %a %%`; other characters match themselves. -/
+def strptime (value fmt : String) : Option Timestamp :=
+  -- read up to `maxD` digits (at least `minD`)
+  let digits := fun (cs : List Char) (minD maxD : Nat) =>
+    let ds := (cs.takeWhile Char.isDigit).take maxD
+    if ds.length < minD then none else some (digitsValue ds, cs.drop ds.length)
+  let rec go : List Char → List Char → Timestamp → Nat → Option Timestamp
+    | _, _, _, 0 => none
+    | [], [], d, _ => some d
+    | '%' :: '%' :: f, '%' :: v, d, fuel + 1 => go f v d fuel
+    | '%' :: 'B' :: f, v, d, fuel + 1 => (matchName monthNames true v).bind fun (m, v') => go f v' { d with month := m } fuel
+    | '%' :: 'b' :: f, v, d, fuel + 1 => (matchName monthNames false v).bind fun (m, v') => go f v' { d with month := m } fuel
+    | '%' :: 'A' :: f, v, d, fuel + 1 => (matchName dayNames true v).bind fun (_, v') => go f v' d fuel
+    | '%' :: 'a' :: f, v, d, fuel + 1 => (matchName dayNames false v).bind fun (_, v') => go f v' d fuel
+    | '%' :: c :: f, v, d, fuel + 1 =>
+      let (minD, maxD) := if c == 'Y' then (4, 4) else (1, 2)
+      match digits v minD maxD with
+      | none => none
+      | some (n, v') =>
+        match c with
+        | 'Y' => go f v' { d with year := n } fuel
+        | 'm' => go f v' { d with month := n } fuel
+        | 'd' => go f v' { d with day := n } fuel
+        | 'H' => go f v' { d with hour := n } fuel
+        | 'M' => go f v' { d with minute := n } fuel
+        | 'S' => go f v' { d with second := n } fuel
+        | _ => none
+    | c :: f, x :: v, d, fuel + 1 => if c == x then go f v d fuel else none
+    | _, _, _, _ => none
+  go fmt.toList value.toList { year := 1900, month := 1, day := 1 } (fmt.length + value.length + 1)
+
+/-- `DateTime.convert`: the first format that parses to a real date. -/
+def convertDateTime (formats : List String) (s : String) : Except String {d : Timestamp // d.valid = true} :=
+  match formats.findSome? (fun f => (strptime s f).bind fun d => if h : d.valid = true then some ⟨d, h⟩ else none) with
+  | some d => .ok d
+  | none =>
+    let fs := ", ".intercalate (formats.map pyRepr)
+    if formats.length == 1 then .error s!"{pyRepr s} does not match the format {fs}."
+    else .error s!"{pyRepr s} does not match the formats {fs}."
+
+/-- Python's `str(datetime)`: `YYYY-MM-DD HH:MM:SS`. -/
+def showDateTime (d : Timestamp) : String :=
+  let pad := fun (n w : Nat) => let t := toString n; String.ofList (List.replicate (w - t.length) '0') ++ t
+  s!"{pad d.year 4}-{pad d.month 2}-{pad d.day 2} {pad d.hour 2}:{pad d.minute 2}:{pad d.second 2}"
+
 /-- Convert one raw string to a value of the parameter type. -/
 def convert (fs : String → Option FileInfo) : (t : ParamType) → String → Except String t.Carrier
   | .string, s => .ok s
@@ -170,6 +248,10 @@ def convert (fs : String → Option FileInfo) : (t : ParamType) → String → E
   | .floatRange r, s => match parseDec s with
     | some d => convertFloatRange r d
     | none => .error s!"{pyRepr s} is not a valid float range."
+  | .uuid, s => match parseUuid s with
+    | some u => .ok u
+    | none => .error s!"{pyRepr (strip s)} is not a valid UUID."
+  | .dateTime fs, s => convertDateTime fs s
 
 /-- Convert a list, keeping its length in the type. -/
 def convertList (fs : String → Option FileInfo) (t : ParamType) :
@@ -191,5 +273,7 @@ def ParamType.show : (t : ParamType) → t.Carrier → String
   | .file _, f => (show FileArg from f).name
   | .intRange _, n => toString n.val
   | .floatRange _, x => showDec x.val
+  | .uuid, u => u.val
+  | .dateTime _, d => showDateTime d.val
 
 end LeanClick

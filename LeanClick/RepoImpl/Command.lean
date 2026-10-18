@@ -87,6 +87,7 @@ def Param.typeMetavar (p : Param) : Option String :=
     let inner := if p.isOption && !p.showChoices then "TEXT"
       else "|".intercalate (cs.map (normChoice cS))
     if p.required && p.isArgument then some ("{" ++ inner ++ "}") else some ("[" ++ inner ++ "]")
+  | .dateTime fs => some ("[" ++ "|".intercalate fs ++ "]")
   | _ => none
 
 /-- Does the parameter take more than one value per occurrence? -/
