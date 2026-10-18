@@ -1,4 +1,5 @@
 import LeanClick.RepoImpl.Parse
+import LeanClick.APIs.Values
 
 /-!
 # Specifications
@@ -162,6 +163,15 @@ def GroupDispatchFirstMatch : Prop :=
     (lv : Level σ) (c : Command σ) (name : String) (rest : List String),
     cmd.parseLevel s path argv env = .ok lv → lv.sub = some (c, name, rest) →
     cmd.subcommands.find? (fun d => d.name == name) = some c
+
+/-- What a handler reads (`ParsedArgs.get`) is the parsed entry's converted
+value when the parameter has no callback, so every theorem about entries
+holds for it. -/
+def GetIsConverted : Prop :=
+  ∀ (cmd : Command σ) (s : Settings) (path : String) (argv : List String) (env : Env)
+    (r : ParsedArgs) (name : String) (e : Entry),
+    cmd.parseArgs s path argv env = .ok r → r.entry? name = some e → e.param.callback = none →
+    r.get name = e.toValue
 
 /-- Exit codes are bytes. -/
 def ExitCodeRange : Prop := ∀ t : Termination, t.exitCode < 256

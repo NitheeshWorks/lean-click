@@ -139,6 +139,12 @@ deduplication uses a hash set).
 * `tests/Props.lean`: seeded property tests, no dependencies, under a second.
 * `tests/Conformance.lean`: cases re-expressed from the upstream suite; each
   names the upstream test (`tests/test_x.py::test_y`).
+* `tests/golden/`: `generate.py` runs every error and help scenario (and the
+  quickstart as a real process with piped stdin) on click 8.5.0 and records
+  exit code, stdout and stderr in `click.json`; the conformance runner
+  replays each one on the twin Lean fixture and compares all three byte for
+  byte. Regenerate with `upstream-spec/.venv/bin/python -I
+  tests/golden/generate.py > tests/golden/click.json` (never run in CI).
 * `tests/pbt/`: a separate Lake package, the one place an external dependency
   (`plausible`) is taken.
 

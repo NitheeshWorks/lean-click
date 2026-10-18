@@ -62,6 +62,14 @@ def extraArgsMsg (xs : List String) : String :=
   if xs.length == 1 then s!"Got unexpected extra argument ({" ".intercalate xs})"
   else s!"Got unexpected extra arguments ({" ".intercalate xs})"
 
+/-- A scanner error as click raises it: `NoSuchOption` carries the context
+(so the usage line and the help hint print), `BadOptionUsage` and
+`BadArgumentUsage` do not (only the `Error:` line prints). -/
+def parserStop (c : CtxInfo) (e : UsageError) : Stop :=
+  match e.kind with
+  | .noSuchOption _ _ => .error { e with ctx := some c }
+  | _ => .error e
+
 def Stop.withCtx (c : CtxInfo) : Stop → Stop
   | .error e => .error { e with ctx := some c }
   | s => s
@@ -97,12 +105,12 @@ def Command.parseWith (cmd : Command σ) (s : Settings) (path : String) (argv : 
   if argv.isEmpty && cmd.noArgsIsHelp then .error (fail ⟨.noArgsIsHelp (cmd.getHelp s path), none⟩)
   else
   match scan (cmd.scanCfg s) argv with
-  | .error e => .error (fail e)
+  | .error e => .error (parserStop info e)
   | .ok sc =>
     let ps := cmd.allParams s
     let args := ps.filter Param.isArgument
     match argRaws args (sc.largs ++ sc.rargs) with
-    | .error e => .error (fail e)
+    | .error e => .error (.error e)
     | .ok (araws, leftover) =>
       let order := processingOrder ps (sc.events.map (·.dest) ++ args.map (·.name))
       match processAll order ps (resolveWith fs answers path info sc araws envOf) with
@@ -147,7 +155,7 @@ def Command.resolveSub (cmd : Command σ) (s : Settings) (path : String) (name :
     let nsc := fail ⟨.noSuchCommand name (closeMatches name names), none⟩
     if (splitOpt name).1.isEmpty then .error nsc
     else match scan (cmd.scanCfg s) (name :: rest) with
-      | .error e => .error (fail e)
+      | .error e => .error (parserStop info e)
       | .ok _ => .error nsc
 
 /-- A subcommand as a chained group parses it: extra arguments allowed

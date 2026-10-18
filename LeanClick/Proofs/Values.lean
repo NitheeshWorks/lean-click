@@ -92,6 +92,15 @@ theorem resolveParam_ok (fs : String → Option FileInfo) (ans : Option String) 
       · cases h
       · simp only [Except.ok.injEq] at h; subst h; exact ⟨e0, _, rfl, rfl⟩
 
+theorem resolveParam_source_core (fs : String → Option FileInfo) (ans : Option String) (cmd : Option Raw)
+    (env : Option String) (p : Param) (e : Entry) (h : resolveCore fs ans cmd env p = .ok e) :
+    e.param = p := by
+  unfold resolveCore at h
+  dsimp only at h
+  split at h
+  · cases h
+  · exact (finishParam_ok fs p _ _ e h).1
+
 /-- The entry `resolveParam` builds answers `p`, with the source `consume`
 chose (when the option does not prompt). -/
 theorem resolveParam_source (fs : String → Option FileInfo) (ans : Option String) (cmd : Option Raw)

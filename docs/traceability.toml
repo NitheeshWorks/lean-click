@@ -394,3 +394,19 @@ title = "A chained group cannot have optional arguments: rejected at compile tim
 status = "implemented"
 realises = ["LeanClick.group"]
 test = ["tests/Conformance.lean::a chained group with a required argument"]
+
+[[requirement]]
+id = "errors.exact-output"
+upstream = "src/click/exceptions.py (UsageError.show, ClickException.show)"
+title = "Every error class prints exactly as click 8.5.0: NoSuchOption, BadParameter, MissingParameter, extra arguments, missing/unknown command carry the usage line and help hint; BadOptionUsage (requires an argument, does not take a value) and BadArgumentUsage (takes N values) print only the Error line; help and version on stdout, errors and no_args_is_help on stderr; prompt errors on stdout; Aborted! on stderr"
+status = "tested"
+realises = ["LeanClick.parserStop", "LeanClick.UsageError.render", "LeanClick.Terminal.report"]
+test = ["tests/golden/click.json", "tests/golden/generate.py", "tests/Conformance.lean::goldenCases"]
+
+[[requirement]]
+id = "values.get"
+upstream = "src/click/core.py:Context.params"
+title = "What a callback reads (ParsedArgs.get) is the parsed entry's converted value when the parameter has no callback, and the callback's result when it has one"
+status = "implemented"
+realises = ["LeanClick.ParsedArgs.get"]
+theorem = ["LeanClick.parse_get_eq_toValue", "LeanClick.get_entry", "LeanClick.parse_callbackResult"]

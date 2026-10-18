@@ -279,6 +279,7 @@ theorem undeclared_option_rejected : UndeclaredOptionRejected (σ := σ) := by
   have hnil : (pre ++ tok :: post).isEmpty = false := by simp
   simp only [hnil, Bool.false_and, Bool.false_eq_true, ite_false]
   rw [hscan]
+  rfl
 
 /-! ## Boolean flag pairs -/
 

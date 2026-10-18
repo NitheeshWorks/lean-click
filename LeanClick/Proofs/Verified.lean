@@ -1,6 +1,7 @@
 import LeanClick.Proofs.Help
 import LeanClick.Proofs.Precedence
 import LeanClick.Proofs.Unambiguous
+import LeanClick.Proofs.Get
 
 /-!
 # The harness: one `Verified<Layer>` structure per layer
@@ -35,6 +36,7 @@ structure VerifiedParser (σ : Type) where
   envvarBeatsDefault : EnvvarBeatsDefault (σ := σ)
   defaultWhenAbsent : DefaultWhenAbsent (σ := σ)
   groupDispatchFirstMatch : GroupDispatchFirstMatch (σ := σ)
+  getIsConverted : GetIsConverted (σ := σ)
   exitCodeRange : ExitCodeRange
   frameworkExitCodes : FrameworkExitCodes
 
@@ -55,6 +57,7 @@ theorem theVerifiedParser (σ : Type) : VerifiedParser σ where
   envvarBeatsDefault := envvar_beats_default
   defaultWhenAbsent := default_when_absent
   groupDispatchFirstMatch := group_dispatch_first_match
+  getIsConverted := fun cmd s path argv env r name e h he hn => parse_get_eq_toValue cmd s path argv env r h name e he hn
   exitCodeRange := exit_code_range
   frameworkExitCodes := framework_exit_codes
 

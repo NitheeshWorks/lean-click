@@ -1,0 +1,1470 @@
+[
+ {
+  "fixture": "sopt",
+  "argv": [
+   "--s"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Error: Option '--s' requires an argument.\n"
+ },
+ {
+  "fixture": "sopt",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "fixture": "sopt",
+  "argv": [
+   "--s="
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "fixture": "iopt",
+  "argv": [
+   "--i=x"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: Invalid value for '--i': 'x' is not a valid integer.\n"
+ },
+ {
+  "fixture": "fopt",
+  "argv": [
+   "--f=x"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: Invalid value for '--f': 'x' is not a valid float.\n"
+ },
+ {
+  "fixture": "methodopt",
+  "argv": [
+   "--method=meh"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: Invalid value for '--method': 'meh' is not one of 'foo', 'bar', 'baz'.\n"
+ },
+ {
+  "fixture": "methodopt",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  --method [foo|bar|baz]\n  --help                  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "methodarg",
+  "argv": [
+   "meh"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS] {foo|bar|baz}\nTry 'cli --help' for help.\n\nError: Invalid value for '{foo|bar|baz}': 'meh' is not one of 'foo', 'bar', 'baz'.\n"
+ },
+ {
+  "fixture": "methodarg",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS] {foo|bar|baz}\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "methodarg",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS] {foo|bar|baz}\nTry 'cli --help' for help.\n\nError: Missing argument '{foo|bar|baz}'. Choose from:\n\tfoo,\n\tbar,\n\tbaz\n"
+ },
+ {
+  "fixture": "reqopt",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: Missing option '--foo'.\n"
+ },
+ {
+  "fixture": "hiddenopt",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "hiddencmd",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "summary",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  cmd  Summary line without period\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "invaliddefault",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  -a PATH  [default: not found]\n  --help   Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "basicgroup",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS] COMMAND [ARGS]...\n\n  This is the root.\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  subcommand  This is a subcommand.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "basicgroup",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS] COMMAND [ARGS]...\n\n  This is the root.\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  subcommand  This is a subcommand.\n"
+ },
+ {
+  "fixture": "basicgroup",
+  "argv": [
+   "subcommand"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "fixture": "count",
+  "argv": [
+   "-vvvv"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: Invalid value for '-v': 4 is not in the range 0<=x<=3.\n"
+ },
+ {
+  "fixture": "count",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  -v      Verbosity  [0<=x<=3]\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "count",
+  "argv": [
+   "-vvv"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "fixture": "empty",
+  "argv": [
+   "--foo"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: No such option '--foo'.\n"
+ },
+ {
+  "fixture": "empty",
+  "argv": [
+   "-f"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: No such option '-f'.\n"
+ },
+ {
+  "fixture": "boundcount",
+  "argv": [
+   "--cat"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: No such option '--cat'. Did you mean '--count'?\n"
+ },
+ {
+  "fixture": "boundcount",
+  "argv": [
+   "--bounds"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: No such option '--bounds'. (Did you mean one of: '--bound', '--count'?)\n"
+ },
+ {
+  "fixture": "boundcount",
+  "argv": [
+   "--bount"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: No such option '--bount'. (Did you mean one of: '--bound', '--count'?)\n"
+ },
+ {
+  "fixture": "msg",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: Missing option '-m' / '--message'.\n"
+ },
+ {
+  "fixture": "msg",
+  "argv": [
+   "-m",
+   "foo",
+   "-mbar"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "fixture": "shout",
+  "argv": [],
+  "env": {
+   "SHOUT": "tr ue"
+  },
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: Invalid value for '--shout': 'tr ue' is not a valid boolean. Recognized values: , 0, 1, f, false, n, no, off, on, t, true, y, yes\n"
+ },
+ {
+  "fixture": "shout",
+  "argv": [],
+  "env": {
+   "SHOUT": "10"
+  },
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: Invalid value for '--shout': '10' is not a valid boolean. Recognized values: , 0, 1, f, false, n, no, off, on, t, true, y, yes\n"
+ },
+ {
+  "fixture": "shout",
+  "argv": [],
+  "env": {
+   "SHOUT": "x:y"
+  },
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: Invalid value for '--shout': 'x:y' is not a valid boolean. Recognized values: , 0, 1, f, false, n, no, off, on, t, true, y, yes\n"
+ },
+ {
+  "fixture": "multidefault",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cmd [OPTIONS]\n\nOptions:\n  --arg1 TEXT     [default: foo, bar]\n  --arg2 INTEGER  [default: 1, 2]\n  --help          Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "showenvvar",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cmd [OPTIONS]\n\nOptions:\n  --arg1 TEXT  [env var: ARG1]\n  --help       Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "showenvvarauto",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cmd [OPTIONS]\n\nOptions:\n  --arg1 TEXT  [env var: TEST_ARG1]\n  --help       Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "dashgroup",
+  "argv": [
+   "foo-bar",
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli foo-bar [OPTIONS]\n\nOptions:\n  --baz TEXT  [env var: TEST_FOO_BAR_BAZ]\n  --help      Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "reqflag",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: Missing option '--on'.\n"
+ },
+ {
+  "fixture": "misschoice",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cmd [OPTIONS]\nTry 'cmd --help' for help.\n\nError: Missing option '--foo'. Choose from:\n\tfoo,\n\tbar\n"
+ },
+ {
+  "fixture": "missenv1",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: Missing option '--foo'.\n"
+ },
+ {
+  "fixture": "missenv2",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: Missing option '--foo' (env var: 'bar').\n"
+ },
+ {
+  "fixture": "casechoice",
+  "argv": [
+   "--foo",
+   "x"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cmd [OPTIONS]\nTry 'cmd --help' for help.\n\nError: Invalid value for '--foo': 'x' is not one of 'orange', 'apple'.\n"
+ },
+ {
+  "fixture": "casechoice2",
+  "argv": [
+   "--foo",
+   "apple"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cmd [OPTIONS]\nTry 'cmd --help' for help.\n\nError: Invalid value for '--foo': 'apple' is not one of 'Orange', 'Apple'.\n"
+ },
+ {
+  "fixture": "flagdefault",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  --cache / --no-cache  Enable the cache.  [default: no-cache]\n  --help                Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "showdefaulttext",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  --limit TEXT  [default: (unlimited)]\n  --help        Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "emptydefault",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  --limit TEXT  [default: \"\"]\n  --help        Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "nodefault",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  --limit TEXT\n  --help        Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "intrange",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  --count INTEGER RANGE  [1<=x<=32]\n  --help                 Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "intrange",
+  "argv": [
+   "--count",
+   "40"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: Invalid value for '--count': 40 is not in the range 1<=x<=32.\n"
+ },
+ {
+  "fixture": "countdefault",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  --verbose\n  --help     Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "copyx",
+  "argv": [
+   "foo",
+   "bar"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: copy [OPTIONS] X\nTry 'copy --help' for help.\n\nError: Got unexpected extra argument (bar)\n"
+ },
+ {
+  "fixture": "copyx",
+  "argv": [
+   "foo",
+   "bar",
+   "baz"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: copy [OPTIONS] X\nTry 'copy --help' for help.\n\nError: Got unexpected extra arguments (bar baz)\n"
+ },
+ {
+  "fixture": "missarg",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cmd [OPTIONS] ARG\nTry 'cmd --help' for help.\n\nError: Missing argument 'ARG'.\n"
+ },
+ {
+  "fixture": "tupitem",
+  "argv": [
+   "a"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Error: Argument 'item' takes 2 values.\n"
+ },
+ {
+  "fixture": "star",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cmd [OPTIONS] ARG...\nTry 'cmd --help' for help.\n\nError: Missing argument 'ARG...'.\n"
+ },
+ {
+  "fixture": "filearg",
+  "argv": [
+   "missing.txt"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cmd [OPTIONS] INPUT\nTry 'cmd --help' for help.\n\nError: Invalid value for 'INPUT': 'missing.txt': No such file or directory\n"
+ },
+ {
+  "fixture": "noargshelp",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\n\nOptions:\n  --help  Show this message and exit.\n"
+ },
+ {
+  "fixture": "grpsub",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  sub\n"
+ },
+ {
+  "fixture": "grpargs",
+  "argv": [
+   "obj1"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS] OBJ COMMAND [ARGS]...\nTry 'cli --help' for help.\n\nError: Missing command.\n"
+ },
+ {
+  "fixture": "grpargs",
+  "argv": [
+   "obj1",
+   "move"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "fixture": "unknowncmd",
+  "argv": [
+   "unknown"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS] COMMAND [ARGS]...\nTry 'cli --help' for help.\n\nError: No such command 'unknown'.\n"
+ },
+ {
+  "fixture": "suggest",
+  "argv": [
+   "pause"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS] COMMAND [ARGS]...\nTry 'cli --help' for help.\n\nError: No such command 'pause'. Did you mean 'push'?\n"
+ },
+ {
+  "fixture": "suggest",
+  "argv": [
+   "decline"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS] COMMAND [ARGS]...\nTry 'cli --help' for help.\n\nError: No such command 'decline'. (Did you mean one of: 'declare', 'refine'?)\n"
+ },
+ {
+  "fixture": "suggest",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  declare\n  push\n  refine\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "fmtbasic",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 60,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\n  First paragraph.\n\n  This is a very long second paragraph and not correctly\n  wrapped but it will be rewrapped.\n\n  This is\n  a paragraph\n  without rewrapping.\n\n  1\n   2\n    3\n\n  And this is a paragraph that will be rewrapped again.\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "longopts",
+  "argv": [
+   "a-very-long",
+   "command",
+   "--help"
+  ],
+  "env": {},
+  "width": 54,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli a-very-long command [OPTIONS] FIRST SECOND\n                               THIRD FOURTH FIFTH\n                               SIXTH\n\n  A command.\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "longname",
+  "argv": [
+   "a-very-very-very-long",
+   "command",
+   "--help"
+  ],
+  "env": {},
+  "width": 54,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli a-very-very-very-long command \n           [OPTIONS] FIRST SECOND THIRD FOURTH FIFTH\n           SIXTH\n\n  A command.\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "metavarmiss",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cmd [OPTIONS] metavar\nTry 'cmd --help' for help.\n\nError: Missing argument 'metavar'.\n"
+ },
+ {
+  "fixture": "metavarbad",
+  "argv": [
+   "3.14"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cmd [OPTIONS] metavar\nTry 'cmd --help' for help.\n\nError: Invalid value for 'metavar': '3.14' is not a valid integer.\n"
+ },
+ {
+  "fixture": "nested",
+  "argv": [
+   "foo"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cmd foo [OPTIONS] BAR\nTry 'cmd foo --help' for help.\n\nError: Missing argument 'BAR'.\n"
+ },
+ {
+  "fixture": "nohelp",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cmd [OPTIONS] ARG\n\nError: Missing argument 'ARG'.\n"
+ },
+ {
+  "fixture": "customhelp",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cmd [OPTIONS] ARG\nTry 'cmd --man' for help.\n\nError: Missing argument 'ARG'.\n"
+ },
+ {
+  "fixture": "version",
+  "argv": [
+   "--version"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "cli, version 1.0\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "version",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  --version  Show the version and exit.\n  --help     Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "prefixes",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  ++foo   das foo\n  --bar   das bar\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "prefixes",
+  "argv": [
+   "++foo",
+   "--bar"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "fixture": "winstyle",
+  "argv": [
+   "/?"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cmd [OPTIONS]\n\nOptions:\n  /debug; /no-debug  Enables or disables debug mode.\n  /?                 Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "winstyle",
+  "argv": [
+   "/debug"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "fixture": "float1e20",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  --f FLOAT  [default: 1e+20]\n  --help     Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "callbacks",
+  "argv": [
+   "--a",
+   "1",
+   "--b",
+   "x"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: c [OPTIONS]\nTry 'c --help' for help.\n\nError: Invalid value for '--a': no\n"
+ },
+ {
+  "fixture": "callbacks",
+  "argv": [
+   "--b",
+   "x",
+   "--a",
+   "1"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: c [OPTIONS]\nTry 'c --help' for help.\n\nError: Invalid value for '--b': 'x' is not a valid integer.\n"
+ },
+ {
+  "fixture": "callbacks",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: c [OPTIONS]\nTry 'c --help' for help.\n\nError: Invalid value for '--a': no\n"
+ },
+ {
+  "fixture": "validation",
+  "argv": [
+   "--foo",
+   "-1"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cmd [OPTIONS]\nTry 'cmd --help' for help.\n\nError: Invalid value for '--foo': Value needs to be positive\n"
+ },
+ {
+  "fixture": "validation",
+  "argv": [
+   "--foo",
+   "42"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "fixture": "chainhelp",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...\n\n  ROOT HELP\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  bdist  BDIST HELP\n  sdist  SDIST HELP\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "chainhelp",
+  "argv": [
+   "sdist",
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli sdist [OPTIONS]\n\n  SDIST HELP\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "chainhelp",
+  "argv": [
+   "bdist",
+   "sdist",
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli sdist [OPTIONS]\n\n  SDIST HELP\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "chainhelp",
+  "argv": [
+   "bdist",
+   "sdist",
+   "bdist"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "fixture": "chainunknown",
+  "argv": [
+   "a",
+   "b"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...\nTry 'cli --help' for help.\n\nError: No such command 'b'.\n"
+ },
+ {
+  "fixture": "uuid",
+  "argv": [
+   "--u=x"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: Invalid value for '--u': 'x' is not a valid UUID.\n"
+ },
+ {
+  "fixture": "uuid",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  --u UUID\n  --help    Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "datetime",
+  "argv": [
+   "--start_date=2015-09"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: Invalid value for '--start_date': '2015-09' does not match the formats '%Y-%m-%d', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M:%S'.\n"
+ },
+ {
+  "fixture": "datetime",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  --start_date [%Y-%m-%d|%Y-%m-%dT%H:%M:%S|%Y-%m-%d %H:%M:%S]\n  --help                          Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "datetimearg",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS] [%Y-%m-%d]\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "tuple",
+  "argv": [
+   "a",
+   "x"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: c [OPTIONS] PAIR...\nTry 'c --help' for help.\n\nError: Invalid value for 'PAIR...': 'x' is not a valid integer.\n"
+ },
+ {
+  "fixture": "tuple",
+  "argv": [
+   "a"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Error: Argument 'pair' takes 2 values.\n"
+ },
+ {
+  "fixture": "tuple",
+  "argv": [
+   "--pt",
+   "1"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Error: Option '--pt' requires 2 arguments.\n"
+ },
+ {
+  "fixture": "tuple",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: c [OPTIONS] PAIR...\n\nOptions:\n  --item <TEXT INTEGER>...\n  --pt <INTEGER FLOAT>...   [default: 1, 2.5]\n  --help                    Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "tuple",
+  "argv": [
+   "a",
+   "1"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "fixture": "fastapi",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: fastapi [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --verbose / --no-verbose\n  -h, --help                Show this message and exit.\n\nCommands:\n  dev  Run a FastAPI app in development mode.\n  run  Run a FastAPI app in development mode.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "fastapi",
+  "argv": [
+   "dev",
+   "-h"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: fastapi dev [OPTIONS] [PATH]\n\n  Run a FastAPI app in development mode.\n\nOptions:\n  --host TEXT                     The host to serve on.\n  --port INTEGER                  The port to serve on.\n  --reload / --no-reload          Enable auto-reload.\n  --root-path TEXT\n  --app TEXT\n  -e, --entrypoint TEXT\n  --proxy-headers / --no-proxy-headers\n  -v, --verbose\n  -h, --help                      Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "fastapi",
+  "argv": [
+   "run",
+   "-h"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: fastapi run [OPTIONS] [PATH]\n\n  Run a FastAPI app in development mode.\n\nOptions:\n  --host TEXT                     The host to serve on.\n  --port INTEGER                  The port to serve on.\n  --reload / --no-reload          Enable auto-reload.\n  --root-path TEXT\n  --app TEXT\n  -e, --entrypoint TEXT\n  --proxy-headers / --no-proxy-headers\n  -v, --verbose\n  -h, --help                      Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "fastapi",
+  "argv": [
+   "dev",
+   "--port",
+   "eighty"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: fastapi dev [OPTIONS] [PATH]\nTry 'fastapi dev --help' for help.\n\nError: Invalid value for '--port': 'eighty' is not a valid integer.\n"
+ },
+ {
+  "fixture": "fastapi",
+  "argv": [
+   "dev",
+   "--prot",
+   "1"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: fastapi dev [OPTIONS] [PATH]\nTry 'fastapi dev --help' for help.\n\nError: No such option '--prot'. (Did you mean one of: '--host', '--port'?)\n"
+ },
+ {
+  "fixture": "fastapi",
+  "argv": [
+   "dev",
+   "--port"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Error: Option '--port' requires an argument.\n"
+ },
+ {
+  "fixture": "fastapi",
+  "argv": [
+   "dev",
+   "a",
+   "b"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: fastapi dev [OPTIONS] [PATH]\nTry 'fastapi dev --help' for help.\n\nError: Got unexpected extra argument (b)\n"
+ },
+ {
+  "fixture": "fastapi",
+  "argv": [],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: fastapi [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --verbose / --no-verbose\n  -h, --help                Show this message and exit.\n\nCommands:\n  dev  Run a FastAPI app in development mode.\n  run  Run a FastAPI app in development mode.\n"
+ },
+ {
+  "fixture": "fastapi",
+  "argv": [
+   "deve"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: fastapi [OPTIONS] COMMAND [ARGS]...\nTry 'fastapi --help' for help.\n\nError: No such command 'deve'. Did you mean 'dev'?\n"
+ },
+ {
+  "fixture": "tuple",
+  "argv": [
+   "--item",
+   "peter",
+   "x",
+   "a",
+   "1"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: c [OPTIONS] PAIR...\nTry 'c --help' for help.\n\nError: Invalid value for '--item': 'x' is not a valid integer.\n"
+ },
+ {
+  "fixture": "hint1",
+  "argv": [
+   "foo"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli foo [OPTIONS] REQUIRED_ARG\nTry 'cli foo --help' for help.\n\nError: Missing argument 'REQUIRED_ARG'.\n"
+ },
+ {
+  "fixture": "hint2",
+  "argv": [
+   "foo"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli foo [OPTIONS] REQUIRED_ARG\nTry 'cli foo --help' for help.\n\nError: Missing argument 'REQUIRED_ARG'.\n"
+ },
+ {
+  "fixture": "hint3",
+  "argv": [
+   "foo"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli foo [OPTIONS] REQUIRED_ARG\nTry 'cli foo -h' for help.\n\nError: Missing argument 'REQUIRED_ARG'.\n"
+ },
+ {
+  "fixture": "hint4",
+  "argv": [
+   "foo"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: cli foo [OPTIONS] REQUIRED_ARG\n\nError: Missing argument 'REQUIRED_ARG'.\n"
+ },
+ {
+  "fixture": "flagmap",
+  "argv": [
+   "foo",
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: cli foo [OPTIONS]\n\nOptions:\n  --name / --no-name  name flag  [default: no-name]\n  --help              Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "flagmap",
+  "argv": [
+   "foo",
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": {
+   "foo": {
+    "name": true
+   }
+  },
+  "code": 0,
+  "stdout": "Usage: cli foo [OPTIONS]\n\nOptions:\n  --name / --no-name  name flag  [default: name]\n  --help              Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "typedserve",
+  "argv": [
+   "--help"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 0,
+  "stdout": "Usage: serve [OPTIONS] [PATH]\n\n  Serve an app.\n\nPositional arguments:\n  [PATH]  A path.\n\nOptions:\n  --host TEXT              The host.\n  --port INTEGER RANGE     The port.  [x>=0]\n  --reload / --no-reload   Reload.\n  --workers INTEGER RANGE  [x>=0]\n  --tag TEXT\n  --level INTEGER RANGE    [0<=x<=3]\n  --help                   Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "fixture": "typedserve",
+  "argv": [
+   "--level",
+   "5"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: serve [OPTIONS] [PATH]\nTry 'serve --help' for help.\n\nError: Invalid value for '--level': 5 is not in the range 0<=x<=3.\n"
+ },
+ {
+  "fixture": "typedserve",
+  "argv": [
+   "--port",
+   "x"
+  ],
+  "env": {},
+  "width": 80,
+  "default_map": null,
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: serve [OPTIONS] [PATH]\nTry 'serve --help' for help.\n\nError: Invalid value for '--port': 'x' is not a valid integer range.\n"
+ },
+ {
+  "process": "hello",
+  "argv": [
+   "--count=3"
+  ],
+  "input": "Click\n",
+  "code": 0,
+  "stdout": "Your name: Hello, Click!\nHello, Click!\nHello, Click!\n",
+  "stderr": ""
+ },
+ {
+  "process": "hello",
+  "argv": [],
+  "input": "",
+  "code": 1,
+  "stdout": "Your name: ",
+  "stderr": "Aborted!\n"
+ },
+ {
+  "process": "hello",
+  "argv": [
+   "--count=x"
+  ],
+  "input": "",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: hello [OPTIONS]\nTry 'hello --help' for help.\n\nError: Invalid value for '--count': 'x' is not a valid integer.\n"
+ },
+ {
+  "process": "hello",
+  "argv": [
+   "--help"
+  ],
+  "input": "",
+  "code": 0,
+  "stdout": "Usage: hello [OPTIONS]\n\n  Simple program that greets NAME for a total of COUNT times.\n\nOptions:\n  --count INTEGER  Number of greetings.\n  --name TEXT      The person to greet.\n  --help           Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "hello",
+  "argv": [
+   "--count",
+   "2"
+  ],
+  "input": "Ann\n",
+  "code": 0,
+  "stdout": "Your name: Hello, Ann!\nHello, Ann!\n",
+  "stderr": ""
+ },
+ {
+  "process": "hello",
+  "argv": [
+   "--bogus"
+  ],
+  "input": "",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: hello [OPTIONS]\nTry 'hello --help' for help.\n\nError: No such option '--bogus'.\n"
+ }
+]

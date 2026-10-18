@@ -1,4 +1,5 @@
 import LeanClick
+import Lean.Data.Json
 
 /-!
 # Conformance cases
@@ -32,18 +33,21 @@ def mkCmd (name : String) (params : List Param) (help : Option String := none) :
 /-- What a `CliRunner.invoke` observes: the output, the exit code, and the
 parsed levels. -/
 structure Run where
+  /-- stdout and stderr together, for value checks. -/
   out : String
   code : Nat
   frames : List (Frame Unit)
+  stdout : String := ""
+  stderr : String := ""
 
 def run (c : Cmd) (argv : List String) (env : Env := {}) (defaultMap : Option DefaultMap := none) : Run :=
   let d := c.dispatch c.name argv env defaultMap
   match d.halt with
-  | none => ⟨"", 0, d.frames⟩
-  | some (.error e) => ⟨e.render, 2, d.frames⟩
-  | some (.help t) => ⟨t ++ "\n", 0, d.frames⟩
-  | some (.message t) => ⟨t ++ "\n", 0, d.frames⟩
-  | some (.prompt _ p _) => ⟨s!"PROMPT {p.name}", 1, d.frames⟩
+  | none => ⟨"", 0, d.frames, "", ""⟩
+  | some (.error e) => ⟨e.render, 2, d.frames, "", e.render⟩
+  | some (.help t) => ⟨t ++ "\n", 0, d.frames, t ++ "\n", ""⟩
+  | some (.message t) => ⟨t ++ "\n", 0, d.frames, t ++ "\n", ""⟩
+  | some (.prompt _ p _) => ⟨s!"PROMPT {p.name}", 1, d.frames, "", s!"PROMPT {p.name}"⟩
 
 /-- The value the innermost command received, rendered as click echoes it. -/
 def Run.val (r : Run) (name : String) : String :=
@@ -56,7 +60,6 @@ def Run.src (r : Run) (name : String) : Option Source :=
   | some f => f.args.source? name
   | none => none
 
-def has (s sub : String) : Bool := (s.splitOn sub).length > 1
 
 def lines (s : String) : List String := Text.splitLines s
 
@@ -83,18 +86,12 @@ def basicGroup : Cmd :=
 def basicCases : List Case := [
   pc "tests/test_basic.py::test_string_option" "string option default" ((run sOpt []).val "s" == "no value"),
   pc "tests/test_basic.py::test_string_option" "string option --s=42" ((run sOpt ["--s=42"]).val "s" == "42"),
-  pc "tests/test_basic.py::test_string_option" "string option needs a value"
-    (has (run sOpt ["--s"]).out "Error: Option '--s' requires an argument." && (run sOpt ["--s"]).code == 2),
   pc "tests/test_basic.py::test_string_option" "string option --s= is empty" ((run sOpt ["--s="]).val "s" == ""),
   pc "tests/test_basic.py::test_string_option" "string option unicode" ((run sOpt ["--s=☃"]).val "s" == "☃"),
   pc "tests/test_basic.py::test_int_option" "int option default" ((run iOpt []).val "i" == "42"),
   pc "tests/test_basic.py::test_int_option" "int option --i=23" ((run iOpt ["--i=23"]).val "i" == "23"),
-  pc "tests/test_basic.py::test_int_option" "int option bad value"
-    (has (run iOpt ["--i=x"]).out "Error: Invalid value for '--i': 'x' is not a valid integer."),
   pc "tests/test_basic.py::test_float_option" "float option default" ((run fOpt []).val "f" == "42.0"),
   pc "tests/test_basic.py::test_float_option" "float option --f=23.5" ((run fOpt ["--f=23.5"]).val "f" == "23.5"),
-  pc "tests/test_basic.py::test_float_option" "float option bad value"
-    (has (run fOpt ["--f=x"]).out "Error: Invalid value for '--f': 'x' is not a valid float."),
   pc "tests/test_basic.py::test_boolean_switch" "switch --on, default true" ((run (onOff (some "true")) ["--on"]).val "on" == "True"),
   pc "tests/test_basic.py::test_boolean_switch" "switch --on, default false" ((run (onOff (some "false")) ["--on"]).val "on" == "True"),
   pc "tests/test_basic.py::test_boolean_switch" "switch --on, unset" ((run (onOff none) ["--on"]).val "on" == "True"),
@@ -112,38 +109,19 @@ def basicCases : List Case := [
   pc "tests/test_basic.py::test_boolean_conversion" "bool type accepts every false spelling"
     (["0", "false", "f", "no", "n", "off", "False", "No", "Off"].all fun v => (run boolOpt ["--flag", v]).val "flag" == "False"),
   pc "tests/test_basic.py::test_choice_option" "choice option value" ((run methodChoice ["--method=foo"]).val "method" == "foo"),
-  pc "tests/test_basic.py::test_choice_option" "choice option invalid"
-    ((run methodChoice ["--method=meh"]).code == 2 &&
-     has (run methodChoice ["--method=meh"]).out "Invalid value for '--method': 'meh' is not one of 'foo', 'bar', 'baz'."),
-  pc "tests/test_basic.py::test_choice_option" "choice option metavar in help"
-    (has (run methodChoice ["--help"]).out "--method [foo|bar|baz]"),
   pc "tests/test_basic.py::test_choice_argument" "choice argument value" ((run methodArg ["foo"]).val "method" == "foo"),
-  pc "tests/test_basic.py::test_choice_argument" "choice argument invalid"
-    ((run methodArg ["meh"]).code == 2 &&
-     has (run methodArg ["meh"]).out "Invalid value for '{foo|bar|baz}': 'meh' is not one of 'foo', 'bar', 'baz'."),
-  pc "tests/test_basic.py::test_choice_argument" "choice argument metavar in help"
-    (has (run methodArg ["--help"]).out "{foo|bar|baz}"),
   pc "tests/test_basic.py::test_uuid_option" "UUID option"
     (let c : Cmd := command "cli" [option ["--u"] (type := UUID) (default := "ba122011-349f-423b-873b-9d6a79c688ab")]
      (run c []).val "u" == "ba122011-349f-423b-873b-9d6a79c688ab" &&
-     (run c ["--u=821592C1C50E49719CD6E89DC6832F86"]).val "u" == "821592c1-c50e-4971-9cd6-e89dc6832f86" &&
-     has (run c ["--u=x"]).out "Error: Invalid value for '--u': 'x' is not a valid UUID."),
+     (run c ["--u=821592C1C50E49719CD6E89DC6832F86"]).val "u" == "821592c1-c50e-4971-9cd6-e89dc6832f86"),
   pc "tests/test_basic.py::test_datetime_option_default" "DateTime option, default formats"
     (let c : Cmd := command "cli" [option ["--start_date"] (type := DateTime)]
      (run c ["--start_date=2015-09-29"]).val "start_date" == "2015-09-29 00:00:00" &&
      (run c ["--start_date=2015-09-29T09:11:22"]).val "start_date" == "2015-09-29 09:11:22" &&
-     has (run c ["--start_date=2015-09"]).out
-       "Invalid value for '--start_date': '2015-09' does not match the formats '%Y-%m-%d', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M:%S'." &&
-     has (run c ["--help"]).out "--start_date [%Y-%m-%d|%Y-%m-%dT%H:%M:%S|%Y-%m-%d %H:%M:%S]" &&
      (run c ["--start_date=2015-02-30"]).code == 2),
   pc "tests/test_basic.py::test_datetime_option_custom" "DateTime with custom format"
     ((run (command "cli" [option ["--start_date"] (type := DateTime ["%A %B %d, %Y"])] : Cmd)
       ["--start_date=Wednesday June 05, 2010"]).val "start_date" == "2010-06-05 00:00:00"),
-  pc "tests/test_basic.py::test_datetime_argument_optional_metavar" "optional DateTime argument metavar"
-    (let c : Cmd := command "cli" [argument "when" (type := DateTime ["%Y-%m-%d"]) (required := false)]
-     has (run c ["--help"]).out "Usage: cli [OPTIONS] [%Y-%m-%d]\n" && !has (run c ["--help"]).out "[[%Y-%m-%d]]"),
-  pc "tests/test_basic.py::test_required_option" "required option missing"
-    (let r := run (mkCmd "cli" [(Param.opt ["--foo"]).requiredParam]) []; r.code == 2 && has r.out "Missing option '--foo'"),
   pc "tests/test_basic.py::test_evaluation_order" "eager first, then invocation order, then declaration order"
     (let mk := fun (n : String) (eager : Bool) =>
         ({ (Param.flagValue [s!"--{n}"] n) with eager := if eager then some .help else none } : Param)
@@ -154,21 +132,6 @@ def basicCases : List Case := [
        "normal_flag3", "normal_flag1", "normal_flag1"]
      (processingOrder ps inv).map (·.name) ==
        ["eager_flag2", "eager_flag1", "eager_flag3", "normal_flag2", "normal_flag3", "normal_flag1", "missing"]),
-  pc "tests/test_basic.py::test_hidden_option" "hidden option not in help"
-    (let r := run (mkCmd "cli" [(Param.opt ["--nope"]).hide]) ["--help"]; r.code == 0 && !has r.out "--nope"),
-  pc "tests/test_basic.py::test_hidden_command" "hidden command not in help"
-    (let g : Cmd := Command.group { name := "cli" } [Command.command { name := "nope", hidden := true }]
-     let r := run g ["--help"]; r.code == 0 && !has r.out "nope"),
-  pc "tests/test_basic.py::test_summary_line" "summary line stops at the paragraph"
-    (let g : Cmd := Command.group { name := "cli" }
-        [mkCmd "cmd" [] (some "\n        Summary line without period\n\n        Here is a sentence. And here too.\n        ")]
-     let r := run g ["--help"]; has r.out "Summary line without period" && !has r.out "Here is a sentence."),
-  pc "tests/test_basic.py::test_help_invalid_default" "invalid default still shown in help"
-    (let c := mkCmd "cli" [(Param.opt ["-a"] (.path { exists_ := true })).withDefault "not found" |>.showDefaultParam]
-     let r := run c ["--help"]; r.code == 0 && has r.out "default: not found"),
-  pc "tests/test_basic.py::test_basic_group" "group help lists the subcommand"
-    (let r := run basicGroup ["--help"]
-     r.code == 0 && has r.out "COMMAND [ARGS]..." && has r.out "This is the root" && has r.out "This is a subcommand."),
   pc "tests/test_basic.py::test_basic_group" "group dispatches to the subcommand"
     (let r := run basicGroup ["subcommand"]; r.code == 0 && (r.frames.map (·.path)) == ["cli", "cli subcommand"]),
   pc "tests/test_basic.py::test_group_from_list" "group built from a list"
@@ -183,40 +146,19 @@ def msgCmd : Cmd := mkCmd "cli" [(Param.opt ["-m", "--message"] (multiple := tru
 
 def optionCases : List Case := [
   pc "tests/test_options.py::test_counting" "count -vvv" ((run countCmd ["-vvv"]).val "v" == "3"),
-  pc "tests/test_options.py::test_counting" "count out of range"
-    (has (run countCmd ["-vvvv"]).out "Invalid value for '-v': 4 is not in the range 0<=x<=3."),
   pc "tests/test_options.py::test_counting" "count absent is 0" ((run countCmd []).val "v" == "0"),
-  pc "tests/test_options.py::test_counting" "count help row" (has (run countCmd ["--help"]).out "-v      Verbosity"),
-  pc "tests/test_options.py::test_unknown_options" "unknown long option"
-    (has (run (mkCmd "cli" []) ["--foo"]).out "No such option '--foo'."),
-  pc "tests/test_options.py::test_unknown_options" "unknown short option"
-    (has (run (mkCmd "cli" []) ["-f"]).out "No such option '-f'."),
-  pc "tests/test_options.py::test_suggest_possible_options" "--cat suggests --count"
-    (has (run boundCount ["--cat"]).out "Did you mean '--count'?"),
-  pc "tests/test_options.py::test_suggest_possible_options" "--bounds suggests both"
-    (has (run boundCount ["--bounds"]).out "(Did you mean one of: '--bound', '--count'?)"),
-  pc "tests/test_options.py::test_suggest_possible_options" "--bount suggests both"
-    (has (run boundCount ["--bount"]).out "(Did you mean one of: '--bound', '--count'?)"),
   pc "tests/test_options.py::test_multiple_required" "multiple values, attached short value"
     ((run msgCmd ["-m", "foo", "-mbar"]).val "message" == "(foo, bar)"),
-  pc "tests/test_options.py::test_multiple_required" "multiple required missing"
-    (has (run msgCmd []).out "Error: Missing option '-m' / '--message'."),
   pc "tests/test_options.py::test_nargs_tup_composite_mult" "Tuple option, multiple"
     (let c : Cmd := command "copy" [option ["--item"] (type := Tuple [STRING, INT]) (multiple := true)]
-     (run c ["--item", "peter", "1", "--item", "max", "2"]).val "item" == "((peter, 1), (max, 2))" &&
-     has (run c ["--item", "peter", "x"]).out "Invalid value for '--item': 'x' is not a valid integer."),
+     (run c ["--item", "peter", "1", "--item", "max", "2"]).val "item" == "((peter, 1), (max, 2))"),
   pc "tests/test_arguments.py::test_nargs_tup_composite" "Tuple argument and option, as click 8.5.0"
     (let c : Cmd := command "c" [option ["--item"] (type := Tuple [STRING, INT]) (multiple := true),
         option ["--pt"] (type := Tuple [INT, FLOAT]) (default := ["1", "2.5"]) (showDefault := true),
         argument "pair" (type := Tuple [STRING, INT])]
      let r := run c ["a", "1"]
      r.val "pair" == "(a, 1)" && r.val "pt" == "(1, 2.5)" && r.val "item" == "()" &&
-     (run c ["--pt", "1", "2", "a", "3"]).val "pt" == "(1, 2.0)" &&
-     lines (run c ["a", "x"]).out == ["Usage: c [OPTIONS] PAIR...", "Try 'c --help' for help.", "",
-       "Error: Invalid value for 'PAIR...': 'x' is not a valid integer."] &&
-     has (run c ["a"]).out "Error: Argument 'pair' takes 2 values." &&
-     has (run c ["--pt", "1"]).out "Error: Option '--pt' requires 2 arguments." &&
-     has (run c ["--help"]).out "  --item <TEXT INTEGER>...\n  --pt <INTEGER FLOAT>...   [default: 1, 2.5]\n"),
+     (run c ["--pt", "1", "2", "a", "3"]).val "pt" == "(1, 2.0)"),
   pc "tests/test_options.py::test_nargs_tup_composite_mult" "multiple nargs=2 occurrences"
     ((run (mkCmd "copy" [Param.opt ["--item"] (nargs := 2) (multiple := true)]) ["--item", "peter", "1", "--item", "max", "2"]).val "item"
       == "((peter, 1), (max, 2))"),
@@ -240,77 +182,23 @@ def optionCases : List Case := [
      (run c [] (envOf [("SHOUT", "True")])).val "shout" == "True" &&
      (run c [] (envOf [("SHOUT", "0")])).val "shout" == "False" &&
      (run c [] (envOf [("NO_SHOUT", "True")])).val "shout" == "False"),
-  pc "tests/test_options.py::test_boolean_envvar_bad_values" "bad boolean envvar"
-    (let c := mkCmd "cli" [(Param.flag ["--shout/--no-shout"]).withEnvvar ["SHOUT"]]
-     ["tr ue", "10", "randomstring", "x:y"].all fun v =>
-       let r := run c [] (envOf [("SHOUT", v)])
-       r.code == 2 && has r.out s!"Invalid value for '--shout': {Text.pyRepr v} is not a valid boolean."),
-  pc "tests/test_options.py::test_multiple_default_help" "multiple defaults shown joined"
-    (let c := mkCmd "cmd" [(Param.opt ["--arg1"] (multiple := true)).withDefaults ["foo", "bar"] |>.showDefaultParam,
-        (Param.opt ["--arg2"] .int (multiple := true)).withDefaults ["1", "2"] |>.showDefaultParam]
-     let r := run c ["--help"]; has r.out "foo, bar" && has r.out "1, 2"),
-  pc "tests/test_options.py::test_show_envvar" "show_envvar in help"
-    (has (run (mkCmd "cmd" [(Param.opt ["--arg1"]).withEnvvar ["ARG1"] |>.showEnvvarParam]) ["--help"]).out "ARG1"),
-  pc "tests/test_options.py::test_show_envvar_auto_prefix" "show_envvar with auto prefix"
-    (let c : Cmd := Command.command { name := "cmd", params := [(Param.opt ["--arg1"]).showEnvvarParam], autoEnvvarPrefix := some "TEST" }
-     has (run c ["--help"]).out "TEST_ARG1"),
-  pc "tests/test_options.py::test_show_envvar_auto_prefix_dash_in_command" "auto prefix through a group"
-    (let g : Cmd := Command.group { name := "cli", autoEnvvarPrefix := some "TEST" }
-        [mkCmd "foo-bar" [(Param.opt ["--baz"]).showEnvvarParam]]
-     has (run g ["foo-bar", "--help"]).out "TEST_FOO_BAR_BAZ"),
-  pc "tests/test_options.py::test_missing_required_flag" "required flag pair missing"
-    (has (run (mkCmd "cli" [(Param.flag ["--on/--off"]).requiredParam]) []).out "Error: Missing option '--on'."),
-  pc "tests/test_options.py::test_missing_choice" "missing choice lists the choices"
-    (let r := run (mkCmd "cmd" [(Param.opt ["--foo"] (.choice ["foo", "bar"])).requiredParam]) []
-     r.code == 2 && has r.out "Error: Missing option '--foo'. Choose from:\n\tfoo,\n\tbar"),
-  pc "tests/test_options.py::test_missing_envvar" "missing option with show_envvar hint"
-    (has (run (mkCmd "cli" [(Param.opt ["--foo"]).withEnvvar ["bar"] |>.requiredParam]) []).out "Error: Missing option '--foo'." &&
-     has (run (mkCmd "cli" [(Param.opt ["--foo"]).withEnvvar ["bar"] |>.requiredParam |>.showEnvvarParam]) []).out
-       "Error: Missing option '--foo' (env var: 'bar')."),
   pc "tests/test_options.py::test_case_insensitive_choice" "case-insensitive choice returns the declared spelling"
     (let c := mkCmd "cmd" [Param.opt ["--foo"] (.choice ["Orange", "Apple"] false)]
      (run c ["--foo", "apple"]).val "foo" == "Apple" && (run c ["--foo", "oRANGe"]).val "foo" == "Orange"),
   pc "tests/test_options.py::test_case_insensitive_choice" "case-sensitive choice rejects other case"
     (let c := mkCmd "cmd" [Param.opt ["--foo"] (.choice ["Orange", "Apple"])]
      (run c ["--foo", "apple"]).code == 2 && (run c ["--foo", "Apple"]).code == 0),
-  pc "tests/test_options.py::test_show_default_boolean_flag_name" "show default of a flag pair names the active spelling"
-    (has (run (mkCmd "cli" [(Param.flag ["--cache/--no-cache"]).withDefault "false" |>.showDefaultParam |>.withHelp "Enable the cache."]) ["--help"]).out
-      "[default: no-cache]"),
-  pc "tests/test_options.py::test_show_default_string" "show_default as text"
-    (has (run (mkCmd "cli" [{ (Param.opt ["--limit"]) with showDefault := .text "unlimited" }]) ["--help"]).out "(unlimited)"),
-  pc "tests/test_options.py::test_show_default_with_empty_string" "empty default shown quoted"
-    (has (run (mkCmd "cli" [(Param.opt ["--limit"]).withDefault "" |>.showDefaultParam]) ["--help"]).out "[default: \"\"]"),
-  pc "tests/test_options.py::test_do_not_show_no_default" "no default, nothing shown"
-    (!has (run (mkCmd "cli" [(Param.opt ["--limit"]).showDefaultParam]) ["--help"]).out "default:"),
-  pc "tests/test_options.py::test_intrange_default_help_text" "range in help"
-    (has (run (mkCmd "cli" [Param.opt ["--count"] (.intRange { min := some 1, max := some 32 })]) ["--help"]).out "[1<=x<=32]"),
-  pc "tests/test_options.py::test_count_default_type_help" "count range not shown"
-    (!has (run (mkCmd "cli" [Param.count ["--verbose"]]) ["--help"]).out "x>=0"),
   pc "tests/test_options.py::test_invalid_option" "option value taken even if it looks like an option"
     ((run (mkCmd "cli" [Param.opt ["--name"], Param.flag ["--other"]]) ["--name", "--other"]).val "name" == "--other"),
   pc "tests/test_options.py::test_aliases_for_flags" "secondary spelling of a pair"
     (let c := mkCmd "cli" [Param.flag ["--warnings/--no-warnings", "-w/-W"]]
      (run c ["-W"]).val "warnings" == "False" && (run c ["-w"]).val "warnings" == "True"),
-  pc "tests/test_options.py::test_prefixes" "++ prefix options"
-    (let c := mkCmd "cli" [(Param.flag ["++foo"]).withHelp "das foo", (Param.flag ["--bar"]).withHelp "das bar"]
-     let r := run c ["++foo", "--bar"]
-     r.val "foo" == "True" && r.val "bar" == "True" && has (run c ["--help"]).out "++foo   das foo"),
-  pc "tests/test_options.py::test_winstyle_options" "slash options and the '; ' separator"
-    (let c : Cmd := Command.command {
-        name := "cmd", helpOptionNames := some ["/?"],
-        params := [(Param.flag ["/debug;/no-debug"]).withHelp "Enables or disables debug mode."] }
-     (run c ["/debug"]).val "debug" == "True" && (run c ["/no-debug"]).val "debug" == "False" &&
-     (run c []).val "debug" == "False" &&
-     has (run c ["/?"]).out "/debug; /no-debug  Enables or disables debug mode." &&
-     has (run c ["/?"]).out "/?                 Show this message and exit."),
   pc "tests/test_options.py::test_legacy_options" "single-dash long option"
     (let c := mkCmd "cmd" [Param.opt ["-whatever"]]
      (run c ["-whatever", "42"]).val "whatever" == "42" && (run c ["-whatever=23"]).val "whatever" == "23"),
-  pc "tests/test_options.py::test_show_default_precedence" "shown default is the converted value"
-    (has (run (mkCmd "cli" [(Param.opt ["--f"] .float).withDefault "1e20" |>.showDefaultParam]) ["--help"]).out
-      "[default: 1e+20]"),
   pc "tests/test_options.py::test_intrange_default_help_text" "unbounded range shows no range (UP-023)"
-    (!has (run (mkCmd "cli" [(Param.opt ["--n"] (.intRange {})).withDefault "1" |>.showDefaultParam]) ["--help"]).out "None"),
+    ((run (mkCmd "cli" [(Param.opt ["--n"] (.intRange {})).withDefault "1" |>.showDefaultParam]) ["--help"]).stdout ==
+      "Usage: cli [OPTIONS]\n\nOptions:\n  --n INTEGER RANGE  [default: 1]\n  --help             Show this message and exit.\n"),
   pc "tests/test_options.py::test_toupper_envvar_prefix" "help and version never read auto envvars (UP-011)"
     (let c : Cmd := Command.command {
         name := "cli", autoEnvvarPrefix := some "APP",
@@ -322,19 +210,6 @@ def optionCases : List Case := [
      (run c [] (envOf [("MODE", "upper")])).val "upper" == "upper" &&
      (run c [] (envOf [("MODE", "1")])).val "upper" == "upper" &&
      (run c [] (envOf [("MODE", "0")])).val "upper" == "None"),
-  pc "tests/test_options.py::test_custom_validation" "parameter callback validates"
-    (let pos : Value → Except String Value := fun v => match v with
-        | .int n => if n < 0 then .error "Value needs to be positive" else .ok v
-        | v => .ok v
-     let c : Cmd := command "cmd" [option ["--foo"] (default := 1) (callback := some pos)]
-     has (run c ["--foo", "-1"]).out "Invalid value for '--foo': Value needs to be positive" &&
-     (run c ["--foo", "42"]).val "foo" == "42"),
-  pc "tests/test_basic.py::test_evaluation_order" "callbacks run in processing order, interleaved with conversion"
-    (let rej : Value → Except String Value := fun _ => .error "no"
-     let c : Cmd := command "c" [option ["--a"] (callback := some rej), option ["--b"] (type := INT)]
-     has (run c ["--a", "1", "--b", "x"]).out "Error: Invalid value for '--a': no" &&
-     has (run c ["--b", "x", "--a", "1"]).out "Error: Invalid value for '--b': 'x' is not a valid integer." &&
-     has (run c []).out "Error: Invalid value for '--a': no"),
   pc "tests/test_basic.py::test_evaluation_order" "parameter callback can replace the value"
     (let up : Value → Except String Value := fun v => match v with | .str s => .ok (.str s.toUpper) | v => .ok v
      (run (command "cmd" [option ["--name"] (callback := some up)] : Cmd) ["--name", "ann"]).val "name" == "ANN"),
@@ -352,12 +227,8 @@ def argCases : List Case := [
   pc "tests/test_arguments.py::test_nargs_tup" "nargs=2 argument"
     (let c := mkCmd "copy" [Param.arg "name", Param.arg "point" .int (nargs := .exactly 2)]
      let r := run c ["peter", "1", "2"]; r.val "name" == "peter" && r.val "point" == "(1, 2)"),
-  pc "tests/test_arguments.py::test_nargs_err" "extra argument"
-    (has (run (mkCmd "copy" [Param.arg "x"]) ["foo", "bar"]).out "Got unexpected extra argument (bar)"),
-  pc "tests/test_arguments.py::test_nargs_err" "extra arguments"
-    (has (run (mkCmd "copy" [Param.arg "x"]) ["foo", "bar", "baz"]).out "Got unexpected extra arguments (bar baz)"),
   pc "tests/test_arguments.py::test_missing_arg" "missing argument"
-    (let r := run (mkCmd "cmd" [Param.arg "arg"]) []; r.code == 2 && has r.out "Missing argument 'ARG'."),
+    (let r := run (mkCmd "cmd" [Param.arg "arg"]) []; r.code == 2 && r.stderr == "Usage: cmd [OPTIONS] ARG\nTry 'cmd --help' for help.\n\nError: Missing argument 'ARG'.\n"),
   pc "tests/test_arguments.py::test_nargs_star_ordering" "star argument in the middle"
     (let c := mkCmd "cmd" [Param.arg "a", Param.arg "b" (nargs := .star), Param.arg "c"]
      let r := run c ["a", "b", "c", "d"]; r.val "a" == "a" && r.val "b" == "(b, c)" && r.val "c" == "d"),
@@ -365,12 +236,8 @@ def argCases : List Case := [
     (let c := mkCmd "cmd" [Param.arg "a" (nargs := .star), Param.arg "b", Param.arg "c" (nargs := .exactly 2)]
      let r := run c ["a", "b", "c", "d", "e", "f"]
      r.val "a" == "(a, b, c)" && r.val "b" == "d" && r.val "c" == "(e, f)"),
-  pc "tests/test_arguments.py::test_nargs_tup_composite" "partial nargs=2 argument is an error"
-    (has (run (mkCmd "cmd" [Param.arg "item" (nargs := .exactly 2)]) ["a"]).out "Argument 'item' takes 2 values."),
   pc "tests/test_arguments.py::test_empty_nargs" "empty star argument"
     ((run (mkCmd "cmd" [Param.arg "arg" (nargs := .star)]) []).val "arg" == "()"),
-  pc "tests/test_arguments.py::test_empty_nargs" "required star argument missing"
-    (has (run (mkCmd "cmd" [(Param.arg "arg" (nargs := .star)).requiredParam]) []).out "Missing argument 'ARG...'"),
   pc "tests/test_arguments.py::test_missing_argument_string_cast" "argument default"
     ((run (mkCmd "cmd" [(Param.arg "arg").withDefault "x"]) []).val "arg" == "x"),
   pc "tests/test_arguments.py::test_nargs_envvar" "argument from envvar, split by nargs"
@@ -383,30 +250,15 @@ def argCases : List Case := [
     ((run (mkCmd "cmd" [Param.arg "input" (.path { exists_ := true, allowDash := true })]) ["-"]).val "input" == "-"),
   pc "tests/test_arguments.py::test_file_args" "file argument for reading must exist"
     (let c := mkCmd "cmd" [Param.arg "input" (.file {})]
-     has (run c ["missing.txt"]).out "Invalid value for 'INPUT': 'missing.txt': No such file or directory" &&
      (run c ["-"]).val "input" == "-")
 ]
 
 /-! ## tests/test_commands.py, tests/test_formatting.py, tests/test_context.py -/
 
 def cmdCases : List Case := [
-  pc "tests/test_commands.py::test_command_no_args_is_help" "no_args_is_help exits 2 with the help"
-    (let r := run (Command.command { name := "cli", noArgsIsHelp := some true }) []
-     r.code == 2 && has r.out "Show this message and exit."),
-  pc "tests/test_commands.py::test_group_invoke_without_command" "group without subcommand prints help"
-    (let r := run (Command.group { name := "cli" } [mkCmd "sub" []]) []; r.code == 2 && has r.out "Usage: cli"),
-  pc "tests/test_commands.py::test_group_with_args" "missing command"
-    (let g : Cmd := Command.group { name := "cli", params := [Param.arg "obj"] } [mkCmd "move" []]
-     let r := run g ["obj1"]; r.code == 2 && has r.out "Error: Missing command."),
   pc "tests/test_commands.py::test_group_with_args" "group argument then subcommand"
     (let g : Cmd := Command.group { name := "cli", params := [Param.arg "obj"] } [mkCmd "move" []]
      let r := run g ["obj1", "move"]; r.code == 0 && (r.frames.map (·.path)) == ["cli", "cli OBJ move"]),
-  pc "tests/test_commands.py::test_unknown_command" "unknown command"
-    (has (run (Command.group { name := "cli" } []) ["unknown"]).out "No such command 'unknown'."),
-  pc "tests/test_commands.py::test_unknown_command_suggestion" "did you mean a command"
-    (let g : Cmd := Command.group { name := "cli" } [mkCmd "push" [], mkCmd "declare" [], mkCmd "refine" []]
-     has (run g ["pause"]).out "Did you mean 'push'?" &&
-     has (run g ["decline"]).out "(Did you mean one of: 'declare', 'refine'?)"),
   pc "tests/test_commands.py::test_default_maps" "default_map for a subcommand"
     (let g : Cmd := group "cli" [] [command "foo" [option ["--name"] (default := "normal")]]
      let r := run g ["foo"] (defaultMap := some (.node [] [("foo", .node [("name", ["changed"])] [])]))
@@ -414,9 +266,7 @@ def cmdCases : List Case := [
   pc "tests/test_defaults.py::test_flag_default_map" "default_map for a flag pair, in help too"
     (let g : Cmd := group "cli" [] [command "foo" [option ["--name/--no-name"] (isFlag := true) (showDefault := true) (help := "name flag")]]
      let dm : Option DefaultMap := some (.node [] [("foo", .node [("name", ["true"])] [])])
-     (run g ["foo"]).val "name" == "False" && has (run g ["foo", "--help"]).out "default: no-name" &&
-     (run g ["foo"] (defaultMap := dm)).val "name" == "True" &&
-     has (run g ["foo", "--help"] (defaultMap := dm)).out "default: name"),
+     (run g ["foo"]).val "name" == "False" && (run g ["foo"] (defaultMap := dm)).val "name" == "True"),
   pc "tests/test_commands.py::test_default_maps" "command line beats default_map"
     (let g : Cmd := group "cli" [] [command "foo" [option ["--name"] (default := "normal")]]
      (run g ["foo", "--name", "x"] (defaultMap := some (.node [] [("foo", .node [("name", ["changed"])] [])]))).val "name" == "x"),
@@ -425,12 +275,6 @@ def cmdCases : List Case := [
      let r := run g ["bdist", "sdist", "bdist"]
      r.code == 0 && (r.frames.map (·.infoName)) == ["cli", "bdist", "sdist", "bdist"] &&
      (r.frames.head?.bind (·.invokedSub)) == some "*"),
-  pc "tests/test_chain.py::test_chaining_help" "chained help texts"
-    (let g : Cmd := group "cli" [] [command "sdist" (help := "SDIST HELP"), command "bdist" (help := "BDIST HELP")]
-        (help := "ROOT HELP") (chain := true)
-     has (run g ["--help"]).out "COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]..." && has (run g ["--help"]).out "ROOT HELP" &&
-     has (run g ["sdist", "--help"]).out "SDIST HELP" && has (run g ["bdist", "--help"]).out "BDIST HELP" &&
-     has (run g ["bdist", "sdist", "--help"]).out "SDIST HELP" && (run g ["bdist", "sdist", "--help"]).code == 0),
   pc "tests/test_chain.py::test_chaining_with_options" "chained commands with options"
     (let g : Cmd := group "cli" [] [command "sdist" [option ["--format"]], command "bdist" [option ["--format"]]] (chain := true)
      let r := run g ["bdist", "--format=1", "sdist", "--format=2"]
@@ -439,9 +283,6 @@ def cmdCases : List Case := [
     (let g : Cmd := group "cli" [] [command "sdist" [argument "format"], command "bdist" [argument "format"]] (chain := true)
      let r := run g ["bdist", "1", "sdist", "2"]
      (r.frames.drop 1).map (fun f => (f.infoName, (f.args.get "format").render)) == [("bdist", "1"), ("sdist", "2")]),
-  pc "tests/test_chain.py::test_args_and_chain" "unknown command inside a chain"
-    (let g : Cmd := group "cli" [] [command "a" []] (chain := true)
-     let r := run g ["a", "b"]; r.code == 2 && has r.out "No such command 'b'."),
   pc "tests/test_chain.py::test_group_arg_behavior" "a chained group with a required argument"
     (let g : Cmd := group "cli" [argument "arg"] [command "a"] (chain := true)
      let r := run g ["foo", "a"]
@@ -449,72 +290,14 @@ def cmdCases : List Case := [
   pc "tests/test_chain.py::test_group_chaining" "a group nested in a chained group is refused"
     (let c : Cmd := .mk { name := "cli", chain := true } true () [group "sub" [] [command "leaf"], command "other"]
      let r := run c ["sub", "leaf"]
-     r.code == 2 && has r.out "Found the group 'sub' as subcommand to another group  'cli' that is in chain mode. This is not supported." &&
+     r.code == 2 && r.stderr == "Usage: cli [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...\nTry 'cli --help' for help.\n\nError: Found the group 'sub' as subcommand to another group  'cli' that is in chain mode. This is not supported.\n" &&
      (run c ["other"]).code == 0),
   pc "tests/test_commands.py::test_group_first_match" "first subcommand of a name wins"
     (let g : Cmd := Command.group { name := "cli" } [mkCmd "a" [Param.opt ["--x"]], mkCmd "a" [Param.opt ["--y"]]]
      (run g ["a", "--x", "1"]).val "x" == "1"),
-  pc "tests/test_formatting.py::test_basic_functionality" "help paragraphs and \\b blocks"
-    (let c := mkCmd "cli" [] (some "First paragraph.\n\n        This is a very long second\n        paragraph and not correctly\n        wrapped but it will be rewrapped.\n\n        \x08\n        This is\n        a paragraph\n        without rewrapping.\n\n        \x08\n        1\n         2\n          3\n\n        And this is a paragraph\n        that will be rewrapped again.\n        ")
-     lines (run c ["--help"] { width := 60 }).out == [
-        "Usage: cli [OPTIONS]", "", "  First paragraph.", "",
-        "  This is a very long second paragraph and not correctly",
-        "  wrapped but it will be rewrapped.", "",
-        "  This is", "  a paragraph", "  without rewrapping.", "",
-        "  1", "   2", "    3", "",
-        "  And this is a paragraph that will be rewrapped again.", "",
-        "Options:", "  --help  Show this message and exit."]),
-  pc "tests/test_formatting.py::test_wrapping_long_options_strings" "usage line wraps under the prefix"
-    (let leaf := mkCmd "command" (["first", "second", "third", "fourth", "fifth", "sixth"].map (Param.arg ·)) (some "A command.")
-     let g : Cmd := Command.group { name := "cli", help := some "Top level command" }
-        [Command.group { name := "a-very-long", help := some "Second level" } [leaf]]
-     lines (run g ["a-very-long", "command", "--help"] { width := 54 }).out == [
-        "Usage: cli a-very-long command [OPTIONS] FIRST SECOND",
-        "                               THIRD FOURTH FIFTH",
-        "                               SIXTH", "", "  A command.", "",
-        "Options:", "  --help  Show this message and exit."]),
-  pc "tests/test_formatting.py::test_wrapping_long_command_name" "usage arguments move to the next line"
-    (let leaf := mkCmd "command" (["first", "second", "third", "fourth", "fifth", "sixth"].map (Param.arg ·)) (some "A command.")
-     let g : Cmd := Command.group { name := "cli", help := some "Top level command" }
-        [Command.group { name := "a-very-very-very-long", help := some "Second level" } [leaf]]
-     lines (run g ["a-very-very-very-long", "command", "--help"] { width := 54 }).out == [
-        "Usage: cli a-very-very-very-long command ",
-        "           [OPTIONS] FIRST SECOND THIRD FOURTH FIFTH",
-        "           SIXTH", "", "  A command.", "",
-        "Options:", "  --help  Show this message and exit."]),
-  pc "tests/test_formatting.py::test_formatting_usage_error" "usage error layout"
-    (let r := run (mkCmd "cmd" [Param.arg "arg"]) []
-     r.code == 2 && lines r.out == ["Usage: cmd [OPTIONS] ARG", "Try 'cmd --help' for help.", "", "Error: Missing argument 'ARG'."]),
-  pc "tests/test_formatting.py::test_formatting_usage_error_metavar_missing_arg" "metavar in missing-argument error"
-    (lines (run (mkCmd "cmd" [(Param.arg "arg").withMetavar "metavar"]) []).out ==
-      ["Usage: cmd [OPTIONS] metavar", "Try 'cmd --help' for help.", "", "Error: Missing argument 'metavar'."]),
-  pc "tests/test_formatting.py::test_formatting_usage_error_metavar_bad_arg" "metavar in bad-value error"
-    (lines (run (mkCmd "cmd" [(Param.arg "arg" .int).withMetavar "metavar"]) ["3.14"]).out ==
-      ["Usage: cmd [OPTIONS] metavar", "Try 'cmd --help' for help.", "",
-       "Error: Invalid value for 'metavar': '3.14' is not a valid integer."]),
-  pc "tests/test_formatting.py::test_formatting_usage_error_nested" "nested usage error"
-    (let g : Cmd := Command.group { name := "cmd" } [mkCmd "foo" [Param.arg "bar"]]
-     lines (run g ["foo"]).out == ["Usage: cmd foo [OPTIONS] BAR", "Try 'cmd foo --help' for help.", "",
-       "Error: Missing argument 'BAR'."]),
-  pc "tests/test_formatting.py::test_formatting_usage_error_no_help" "no help option, no hint"
-    (lines (run (Command.command { name := "cmd", params := [Param.arg "arg"], addHelpOption := false }) []).out ==
-      ["Usage: cmd [OPTIONS] ARG", "", "Error: Missing argument 'ARG'."]),
-  pc "tests/test_formatting.py::test_formatting_usage_custom_help" "custom help name in hint"
-    (lines (run (Command.command { name := "cmd", params := [Param.arg "arg"], helpOptionNames := some ["--man"] }) []).out ==
-      ["Usage: cmd [OPTIONS] ARG", "Try 'cmd --man' for help.", "", "Error: Missing argument 'ARG'."]),
-  pc "tests/test_formatting.py::test_formatting_usage_error_help_hint" "shadowed help names"
-    (let mk := fun (extra : List Param) => (Command.group { name := "cli", helpOptionNames := some ["-h", "--help"] }
-        [mkCmd "foo" (Param.arg "required_arg" :: extra)] : Cmd)
-     has (run (mk []) ["foo"]).out "Try 'cli foo --help' for help." &&
-     has (run (mk [Param.opt ["--host", "-h"]]) ["foo"]).out "Try 'cli foo --help' for help." &&
-     has (run (mk [Param.opt ["--help-file", "--help"]]) ["foo"]).out "Try 'cli foo -h' for help." &&
-     !has (run (mk [Param.opt ["--host", "-h"], Param.opt ["--help-file", "--help"]]) ["foo"]).out "Try "),
   pc "tests/test_context.py::test_context_meta" "subcommand path includes the parent"
     (let g : Cmd := Command.group { name := "cli" } [mkCmd "sub" []]
      ((run g ["sub"]).frames.map (·.invokedSub)) == [some "sub", none]),
-  pc "tests/test_basic.py::test_custom_version_option" "version option"
-    (let c : Cmd := Command.command { name := "cli", params := [Param.versionOption "1.0"] }
-     let r := run c ["--version"]; r.code == 0 && r.out == "cli, version 1.0\n"),
   pc "tests/test_basic.py::test_param_named_help" "help option wins over required arguments"
     ((run (mkCmd "cli" [Param.arg "x"]) ["--help"]).code == 0)
 ]
@@ -569,16 +352,7 @@ def fastapiCases : List Case := [
     (let r := run fastapiCli ["dev", "app.py", "--host", "h"]
      r.val "port" == "8000" && r.src "port" == some .default),
   pc "fastapi-cli tests/test_cli.py::test_version" "--version"
-    (let r := run fastapiCli ["--version"]; r.code == 0 && has r.out "FastAPI CLI version: 0.0.0"),
-  pc "fastapi-cli tests/test_cli.py::test_dev_help" "dev -h lists the options"
-    (let r := run fastapiCli ["dev", "-h"]
-     r.code == 0 && has r.out "Usage: fastapi dev [OPTIONS] [PATH]" && has r.out "--reload / --no-reload" &&
-     has r.out "--port INTEGER" && has r.out "-e, --entrypoint TEXT" && has r.out "-h, --help"),
-  pc "fastapi-cli tests/test_cli.py::test_callback_help" "root help lists both commands"
-    (let r := run fastapiCli ["--help"]; has r.out "dev" && has r.out "run" && has r.out "--version"),
-  pc "fastapi-cli tests/test_cli.py::test_dev_bad_port" "bad port"
-    (let r := run fastapiCli ["dev", "--port", "eighty"]
-     r.code == 2 && has r.out "Invalid value for '--port': 'eighty' is not a valid integer.")
+    (let r := run fastapiCli ["--version"]; r.code == 0 && r.stdout == "FastAPI CLI version: 0.0.0\n"),
 ]
 
 /-! ## Typed commands (`click_command`), typer's rules as in fastapi-cli -/
@@ -616,11 +390,7 @@ def typedCases : List Case := [
     pure ((← typedValues ["main.py", "--port", "9", "--no-reload", "--workers", "2", "--tag", "a", "--tag", "b", "--level", "3"])
       == some "(some main.py) 127.0.0.1 9 false (some 2) [a, b] 3")⟩,
   ⟨"fastapi-cli tests/test_cli.py::test_dev_env_vars", "typed command defaults and envvar", do
-    pure ((← typedValues [] (envOf [("PORT", "8111")])) == some "none 127.0.0.1 8111 true none [] 1")⟩,
-  pc "tests/test_options.py::test_counting" "typed refined range rejects out-of-range"
-    (has (run (Command.mk serveT.spec false () []) ["--level", "5"]).out "5 is not in the range 0<=x<=3."),
-  pc "fastapi-cli tests/test_cli.py::test_dev_help" "typed command help: option spellings from binder names"
-    (has (helpPage serveT "serve") "--reload / --no-reload" && has (helpPage serveT "serve") "--workers INTEGER RANGE" && has (helpPage serveT "serve") "[PATH]  A path.")
+    pure ((← typedValues [] (envOf [("PORT", "8111")])) == some "none 127.0.0.1 8111 true none [] 1")⟩
 ]
 
 /-! ## tests/test_shell_completion.py -/
@@ -721,13 +491,213 @@ def completionCases : List Case := [
      splitArgString "cli 'unterminated" == ["cli", "unterminated"])
 ]
 
+/-! ## Golden cases: click 8.5.0's exact output
+
+`tests/golden/generate.py` ran each scenario on click 8.5.0 and recorded the
+exit code, stdout and stderr in `tests/golden/click.json`; every fixture
+below is the twin of the click command of the same name there. The runner
+replays each scenario and compares all three byte for byte. -/
+
+def nopCmd (name : String) (params : List Param) (help : String := "") : Cmd := command name params (help := help)
+
+def dataArgs6 : List Param := ["first", "second", "third", "fourth", "fifth", "sixth"].map (argument ·)
+
+def devLike (name host : String) (reload : Bool) : Cmd :=
+  command name (help := "Run a FastAPI app in development mode.") [
+    argument "path" (type := Path) (required := some false),
+    option ["--host"] (default := host) (help := "The host to serve on."),
+    option ["--port"] (default := 8000) (envvar := ["PORT"]) (help := "The port to serve on."),
+    option ["--reload/--no-reload"] (default := reload) (help := "Enable auto-reload."),
+    option ["--root-path"] (default := ""),
+    option ["--app"],
+    option ["--entrypoint", "-e"],
+    option ["--proxy-headers/--no-proxy-headers"] (default := true),
+    option ["--verbose", "-v"] (isFlag := true)]
+
+def hintGroup (extra : List Param) : Cmd :=
+  group "cli" [] [nopCmd "foo" (argument "required_arg" :: extra)] (contextSettings := { helpOptionNames := some ["-h", "--help"] })
+
+/-- Serve an app. -/
+click_command serve
+    (path : Argument (Option String)) "A path."
+    (host : String := "127.0.0.1") "The host."
+    (port : Nat := 8000) "The port." [envvar := ["PORT"]]
+    (reload : Bool := true) "Reload."
+    (workers : Option Nat := none)
+    (tag : List String := [])
+    (level : LeanClick.IntIn 0 3 := ⟨1, by decide⟩)
+    : IO Unit :=
+  IO.println s!"{path} {host} {port} {reload} {workers} {tag} {level.val}"
+
+/-- One `default_map` leaf value. -/
+def jsonLeaf (v : Lean.Json) : Option (List String) :=
+  match v with
+  | .str s => some [s]
+  | .bool b => some [if b then "true" else "false"]
+  | .num n => some [toString n]
+  | .arr xs => some (xs.toList.filterMap fun (x : Lean.Json) => match x with
+      | .str s => some s
+      | .num n => some (toString n)
+      | _ => none)
+  | _ => none
+
+/-- click's `default_map` from the JSON a scenario recorded (nesting depth
+bounded by `fuel`). -/
+def jsonDefaultMap : Nat → Lean.Json → Option DefaultMap
+  | 0, _ => none
+  | fuel + 1, .obj kvs =>
+    let entries := kvs.toList
+    let values := entries.filterMap fun (k, v) => (jsonLeaf v).map (k, ·)
+    let subs := entries.filterMap fun (k, v) => match v with
+      | .obj _ => (jsonDefaultMap fuel v).map (k, ·)
+      | _ => none
+    some (.node values subs)
+  | _, _ => none
+
+def goldenFixtures : List (String × Cmd) := [
+  ("sopt", nopCmd "cli" [option ["--s"] (default := "no value")]),
+  ("iopt", nopCmd "cli" [option ["--i"] (default := 42)]),
+  ("fopt", nopCmd "cli" [option ["--f"] (default := 42.0)]),
+  ("methodopt", nopCmd "cli" [option ["--method"] (type := Choice ["foo", "bar", "baz"])]),
+  ("methodarg", nopCmd "cli" [argument "method" (type := Choice ["foo", "bar", "baz"])]),
+  ("reqopt", nopCmd "cli" [option ["--foo"] (required := true)]),
+  ("hiddenopt", nopCmd "cli" [option ["--nope"] (hidden := true)]),
+  ("hiddencmd", group "cli" [] [command "nope" (hidden := true)]),
+  ("summary", group "cli" [] [nopCmd "cmd" [] "\n        Summary line without period\n\n        Here is a sentence. And here too.\n        "]),
+  ("invaliddefault", nopCmd "cli" [option ["-a"] (type := Path (exists_ := true)) (default := "not found") (showDefault := true)]),
+  ("basicgroup", group "cli" [] [nopCmd "subcommand" [] "This is a subcommand."] (help := "This is the root.")),
+  ("count", nopCmd "cli" [option ["-v"] (count := true) (help := "Verbosity") (type := IntRange (some 0) (some 3))]),
+  ("empty", nopCmd "cli" []),
+  ("boundcount", nopCmd "cli" [option ["--bound"], option ["--count"]]),
+  ("msg", nopCmd "cli" [option ["-m", "--message"] (multiple := true) (required := true)]),
+  ("shout", nopCmd "cli" [option ["--shout/--no-shout"] (envvar := ["SHOUT"])]),
+  ("multidefault", nopCmd "cmd" [option ["--arg1"] (multiple := true) (default := ["foo", "bar"]) (showDefault := true),
+    option ["--arg2"] (multiple := true) (default := ["1", "2"]) (type := INT) (showDefault := true)]),
+  ("showenvvar", nopCmd "cmd" [option ["--arg1"] (envvar := ["ARG1"]) (showEnvvar := true)]),
+  ("showenvvarauto", command "cmd" [option ["--arg1"] (showEnvvar := true)] (contextSettings := { autoEnvvarPrefix := some "TEST" })),
+  ("dashgroup", group "cli" [] [command "foo-bar" [option ["--baz"] (showEnvvar := true)]] (contextSettings := { autoEnvvarPrefix := some "TEST" })),
+  ("reqflag", nopCmd "cli" [option ["--on/--off"] (required := true)]),
+  ("misschoice", nopCmd "cmd" [option ["--foo"] (type := Choice ["foo", "bar"]) (required := true)]),
+  ("missenv1", nopCmd "cli" [option ["--foo"] (envvar := ["bar"]) (required := true)]),
+  ("missenv2", nopCmd "cli" [option ["--foo"] (envvar := ["bar"]) (showEnvvar := true) (required := true)]),
+  ("casechoice", nopCmd "cmd" [option ["--foo"] (type := Choice ["Orange", "Apple"] false)]),
+  ("casechoice2", nopCmd "cmd" [option ["--foo"] (type := Choice ["Orange", "Apple"])]),
+  ("flagdefault", nopCmd "cli" [option ["--cache/--no-cache"] (default := false) (showDefault := true) (help := "Enable the cache.")]),
+  ("showdefaulttext", nopCmd "cli" [{ (option ["--limit"]) with showDefault := .text "unlimited" }]),
+  ("emptydefault", nopCmd "cli" [option ["--limit"] (default := "") (showDefault := true)]),
+  ("nodefault", nopCmd "cli" [option ["--limit"] (showDefault := true)]),
+  ("intrange", nopCmd "cli" [option ["--count"] (type := IntRange (some 1) (some 32))]),
+  ("countdefault", nopCmd "cli" [option ["--verbose"] (count := true)]),
+  ("copyx", nopCmd "copy" [argument "x"]),
+  ("missarg", nopCmd "cmd" [argument "arg"]),
+  ("tupitem", nopCmd "cmd" [argument "item" (nargs := 2)]),
+  ("star", nopCmd "cmd" [argument "arg" (nargs := -1) (required := some true)]),
+  ("filearg", nopCmd "cmd" [argument "input" (type := File)]),
+  ("noargshelp", command "cli" (noArgsIsHelp := true)),
+  ("grpsub", group "cli" [] [command "sub"]),
+  ("grpargs", group "cli" [argument "obj"] [command "move"]),
+  ("unknowncmd", group "cli"),
+  ("suggest", group "cli" [] [command "push", command "declare", command "refine"]),
+  ("fmtbasic", nopCmd "cli" [] "First paragraph.\n\n        This is a very long second\n        paragraph and not correctly\n        wrapped but it will be rewrapped.\n\n        \x08\n        This is\n        a paragraph\n        without rewrapping.\n\n        \x08\n        1\n         2\n          3\n\n        And this is a paragraph\n        that will be rewrapped again.\n        "),
+  ("longopts", group "cli" [] [group "a-very-long" [] [nopCmd "command" dataArgs6 "A command."] (help := "Second level")] (help := "Top level command")),
+  ("longname", group "cli" [] [group "a-very-very-very-long" [] [nopCmd "command" dataArgs6 "A command."] (help := "Second level")] (help := "Top level command")),
+  ("metavarmiss", nopCmd "cmd" [argument "arg" (metavar := some "metavar")]),
+  ("metavarbad", nopCmd "cmd" [argument "arg" (type := INT) (metavar := some "metavar")]),
+  ("nested", group "cmd" [] [nopCmd "foo" [argument "bar"]]),
+  ("nohelp", command "cmd" [argument "arg"] (addHelpOption := false)),
+  ("customhelp", command "cmd" [argument "arg"] (contextSettings := { helpOptionNames := some ["--man"] })),
+  ("version", nopCmd "cli" [versionOption "1.0"]),
+  ("prefixes", nopCmd "cli" [option ["++foo"] (isFlag := true) (help := "das foo"), option ["--bar"] (isFlag := true) (help := "das bar")]),
+  ("winstyle", command "cmd" [option ["/debug;/no-debug"] (help := "Enables or disables debug mode.")] (contextSettings := { helpOptionNames := some ["/?"] })),
+  ("float1e20", nopCmd "cli" [option ["--f"] (type := FLOAT) (default := "1e20") (showDefault := true)]),
+  ("callbacks", nopCmd "c" [option ["--a"] (callback := some fun _ => .error "no"), option ["--b"] (type := INT)]),
+  ("validation", nopCmd "cmd" [option ["--foo"] (default := 1) (callback := some fun v => match v with
+      | .int n => if n < 0 then .error "Value needs to be positive" else .ok v
+      | v => .ok v)]),
+  ("chainhelp", group "cli" [] [nopCmd "sdist" [] "SDIST HELP", nopCmd "bdist" [] "BDIST HELP"] (help := "ROOT HELP") (chain := true)),
+  ("chainunknown", group "cli" [] [command "a"] (chain := true)),
+  ("uuid", nopCmd "cli" [option ["--u"] (type := UUID) (default := "ba122011-349f-423b-873b-9d6a79c688ab")]),
+  ("datetime", nopCmd "cli" [option ["--start_date"] (type := DateTime)]),
+  ("datetimearg", nopCmd "cli" [argument "when" (type := DateTime ["%Y-%m-%d"]) (required := some false)]),
+  ("tuple", nopCmd "c" [option ["--item"] (type := Tuple [STRING, INT]) (multiple := true),
+    option ["--pt"] (type := Tuple [INT, FLOAT]) (default := ["1", "2.5"]) (showDefault := true),
+    argument "pair" (type := Tuple [STRING, INT])]),
+  ("fastapi", group "fastapi" [option ["--verbose/--no-verbose"]] [devLike "dev" "127.0.0.1" true, devLike "run" "0.0.0.0" false]
+    (contextSettings := { helpOptionNames := some ["-h", "--help"] })),
+  ("hint1", hintGroup []), ("hint2", hintGroup [option ["--host", "-h"]]),
+  ("hint3", hintGroup [option ["--help-file", "--help"]]),
+  ("hint4", hintGroup [option ["--host", "-h"], option ["--help-file", "--help"]]),
+  ("flagmap", group "cli" [] [nopCmd "foo" [option ["--name/--no-name"] (isFlag := true) (showDefault := true) (help := "name flag")]]),
+  ("typedserve", Command.mk serve.spec false () [])
+]
+
+def jsonStr (j : Lean.Json) (k : String) : String := (j.getObjValAs? String k).toOption.getD ""
+
+/-- A whole-process scenario: run the example binary with the arguments and
+stdin click's program got, compare exit code, stdout and stderr. -/
+def processCase (prog : String) (j : Lean.Json) : Case :=
+  let argv := ((j.getObjValAs? (List String) "argv").toOption).getD []
+  let input := jsonStr j "input"
+  let code := ((j.getObjValAs? Nat "code").toOption).getD 99
+  let wantOut := jsonStr j "stdout"
+  let wantErr := jsonStr j "stderr"
+  ⟨s!"tests/golden/click.json (process {prog})", s!"process {prog} {argv}", do
+    let child ← IO.Process.spawn {
+      cmd := s!".lake/build/bin/{prog}", args := argv.toArray,
+      stdin := .piped, stdout := .piped, stderr := .piped, env := #[("COLUMNS", some "80")] }
+    let (stdin, child) ← child.takeStdin
+    stdin.putStr input
+    stdin.flush
+    let outTask ← IO.asTask child.stdout.readToEnd
+    let errTask ← IO.asTask child.stderr.readToEnd
+    let rc ← child.wait
+    let out ← IO.ofExcept outTask.get
+    let err ← IO.ofExcept errTask.get
+    let ok := rc.toNat == code && out == wantOut && err == wantErr
+    unless ok do
+      IO.println s!"      code {rc} want {code}"
+      IO.println s!"      stdout {repr out}\n      want   {repr wantOut}"
+      IO.println s!"      stderr {repr err}\n      want   {repr wantErr}"
+    pure ok⟩
+
+def goldenCases : IO (List Case) := do
+  let text ← IO.FS.readFile "tests/golden/click.json"
+  let some arr := (Lean.Json.parse text).toOption.bind (·.getArr?.toOption)
+    | throw (IO.userError "tests/golden/click.json does not parse")
+  return arr.toList.map fun j =>
+    if let .ok (.str prog) := j.getObjVal? "process" then processCase prog j else
+    let fx := jsonStr j "fixture"
+    let argv := ((j.getObjValAs? (List String) "argv").toOption).getD []
+    let envVars := match j.getObjVal? "env" with
+      | .ok (.obj kvs) => kvs.toList.filterMap fun (k, v) => match v with | .str s => some (k, s) | _ => none
+      | _ => []
+    let width := ((j.getObjValAs? Nat "width").toOption).getD 80
+    let code := ((j.getObjValAs? Nat "code").toOption).getD 99
+    let wantOut := jsonStr j "stdout"
+    let wantErr := jsonStr j "stderr"
+    ⟨s!"tests/golden/click.json ({fx})", s!"golden {fx} {argv}", do
+      match goldenFixtures.lookup fx with
+      | none => IO.println s!"      no fixture {fx}"; pure false
+      | some c =>
+        let dm := match j.getObjVal? "default_map" with
+          | .ok v => jsonDefaultMap 8 v
+          | .error _ => none
+        let r := run c argv { vars := envVars, width } dm
+        let ok := r.code == code && r.stdout == wantOut && r.stderr == wantErr
+        unless ok do
+          IO.println s!"      code {r.code} want {code}"
+          IO.println s!"      stdout {repr r.stdout}\n      want   {repr wantOut}"
+          IO.println s!"      stderr {repr r.stderr}\n      want   {repr wantErr}"
+        pure ok⟩
+
 def cases : List Case := basicCases ++ optionCases ++ argCases ++ cmdCases ++ fastapiCases ++ typedCases ++ completionCases
 
 def main : IO UInt32 := do
   let mut failures := 0
-  for c in cases do
+  let all := cases ++ (← goldenCases)
+  for c in all do
     let ok ← try c.run catch e => do IO.println s!"      {e}"; pure false
     IO.println s!"{if ok then "ok  " else "FAIL"}  {c.name}  [{c.upstream}]"
     unless ok do failures := failures + 1
-  IO.println s!"{cases.length} cases, {failures} failing"
+  IO.println s!"{all.length} cases, {failures} failing"
   return if failures == 0 then 0 else 1

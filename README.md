@@ -87,6 +87,7 @@ any axiom beyond `propext`, `Quot.sound`, `Classical.choice`.
 | The environment variable beats the default: an option absent from any argv takes its variable's converted value | `envvar_beats_default : … → Absent cmd s p argv → envString env.get s p = some w → cmd.parseArgs s path argv env = .ok r → ∃ e ∈ r.entries, e.param = p ∧ e.source = .environment ∧ ∃ x, convert env.fs p.type w = .ok x ∧ e.toValue = p.type.erase x` |
 | The default applies when neither is given | `default_when_absent : … → Absent cmd s p argv → envString env.get s p = none → p.default = some [d] → cmd.parseArgs s path argv env = .ok r → ∃ e ∈ r.entries, e.param = p ∧ e.source = .default ∧ ∃ x, convert env.fs p.type d = .ok x ∧ e.toValue = p.type.erase x` |
 | `LeanClick.parse` is `parseArgs` under the root settings, so all of the above apply to it | `parse_val : parse cmd argv env prog = .ok r → cmd.parseArgs (cmd.settings _ prog) prog argv env = .ok r.val` |
+| What a callback reads is the converted value (or its callback's result) | `parse_get_eq_toValue : cmd.parseArgs … = .ok r → r.entry? n = some e → e.param.callback = none → r.get n = e.toValue` |
 | A group runs the first subcommand with the name | `group_dispatch_first_match : cmd.parseLevel s path argv env = .ok lv → lv.sub = some (c, name, rest) → cmd.subcommands.find? (·.name == name) = some c` |
 | Exit codes are bytes; click's own are 0, 1, 2 | `exit_code_range : t.exitCode < 256`, `framework_exit_codes : t.isFramework → t.exitCode ≤ 2` |
 

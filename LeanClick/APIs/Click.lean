@@ -124,7 +124,10 @@ def option (decls : List String) (type : Option ParamType := none) (default : De
     (shellComplete : Option (String → List String) := none) : Param :=
   let (_, _, sec) := parseDecls decls
   let base : Param :=
-    if count then Param.count decls
+    if count then
+      match type with
+      | some (.intRange b) => Param.count decls b
+      | _ => Param.count decls
     else match flagValue with
       | some c => Param.flagValue decls c (type.getD .string) multiple
       | none =>

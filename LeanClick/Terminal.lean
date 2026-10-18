@@ -83,13 +83,13 @@ def confirm (text : String) (default : Option Bool := some false) (fuel : Nat :=
     | f + 1 => do
       echo s!"{text} {suffix}: " (nl := false)
       match ← readLine with
-      | none => echo ""; pure none
+      | none => pure none
       | some ans =>
         let a := lower (strip ans)
         if a == "y" || a == "yes" then pure (some true)
         else if a == "n" || a == "no" then pure (some false)
         else if a.isEmpty && default.isSome then pure default
-        else do echo "Error: invalid input" (err := true); loop f
+        else do echo "Error: invalid input"; loop f
   loop fuel
 
 /-- `click.prompt` for a parameter: shows the default and the choices,
@@ -117,13 +117,15 @@ def promptParam (fs : String → Option FileInfo) (p : Param) (dflt : Option Str
     | f + 1 => do
       echo text (nl := false)
       match ← readLine with
-      | none => echo ""; pure none
+      | none => do
+        if ps.hideInput then echo "" (err := true)
+        pure none
       | some "" => match dflt with
         | some d => pure (some d)
         | none => ask f
       | some v =>
         match convert fs p.type v with
-        | .error msg => do echo s!"Error: {msg}" (err := true); ask f
+        | .error msg => do echo s!"Error: {msg}"; ask f
         | .ok _ => pure (some v)
   let rec loop : Nat → IO (Option String)
     | 0 => pure none
@@ -135,10 +137,10 @@ def promptParam (fs : String → Option FileInfo) (p : Param) (dflt : Option Str
         else do
           echo "Repeat for confirmation: " (nl := false)
           match ← readLine with
-          | none => echo ""; pure none
+          | none => pure none
           | some w =>
             if v == w then pure (some v)
-            else do echo "Error: The two entered values do not match." (err := true); loop f
+            else do echo "Error: The two entered values do not match."; loop f
   loop fuel
 
 /-- What the filesystem says about a path. Permission bits are not
