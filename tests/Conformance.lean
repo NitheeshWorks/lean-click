@@ -641,7 +641,7 @@ def processCase (prog : String) (j : Lean.Json) : Case :=
   let code := ((j.getObjValAs? Nat "code").toOption).getD 99
   let wantOut := jsonStr j "stdout"
   let wantErr := jsonStr j "stderr"
-  ⟨s!"tests/golden/click.json (process {prog})", s!"process {prog} {argv}", do
+  ⟨jsonStr j "upstream", s!"process {prog} {argv} (tests/golden/click.json)", do
     let child ← IO.Process.spawn {
       cmd := s!".lake/build/bin/{prog}", args := argv.toArray,
       stdin := .piped, stdout := .piped, stderr := .piped, env := #[("COLUMNS", some "80")] }
@@ -675,7 +675,7 @@ def goldenCases : IO (List Case) := do
     let code := ((j.getObjValAs? Nat "code").toOption).getD 99
     let wantOut := jsonStr j "stdout"
     let wantErr := jsonStr j "stderr"
-    ⟨s!"tests/golden/click.json ({fx})", s!"golden {fx} {argv}", do
+    ⟨jsonStr j "upstream", s!"golden {fx} {argv} (tests/golden/click.json)", do
       match goldenFixtures.lookup fx with
       | none => IO.println s!"      no fixture {fx}"; pure false
       | some c =>

@@ -1,6 +1,7 @@
 [
  {
   "fixture": "sopt",
+  "upstream": "tests/test_basic.py::test_string_option",
   "argv": [
    "--s"
   ],
@@ -13,6 +14,7 @@
  },
  {
   "fixture": "sopt",
+  "upstream": "tests/test_basic.py::test_string_option",
   "argv": [],
   "env": {},
   "width": 80,
@@ -23,6 +25,7 @@
  },
  {
   "fixture": "sopt",
+  "upstream": "tests/test_basic.py::test_string_option",
   "argv": [
    "--s="
   ],
@@ -35,6 +38,7 @@
  },
  {
   "fixture": "iopt",
+  "upstream": "tests/test_basic.py::test_int_option",
   "argv": [
    "--i=x"
   ],
@@ -47,6 +51,7 @@
  },
  {
   "fixture": "fopt",
+  "upstream": "tests/test_basic.py::test_float_option",
   "argv": [
    "--f=x"
   ],
@@ -59,6 +64,7 @@
  },
  {
   "fixture": "methodopt",
+  "upstream": "tests/test_basic.py::test_choice_option",
   "argv": [
    "--method=meh"
   ],
@@ -71,6 +77,7 @@
  },
  {
   "fixture": "methodopt",
+  "upstream": "tests/test_basic.py::test_choice_option",
   "argv": [
    "--help"
   ],
@@ -83,6 +90,7 @@
  },
  {
   "fixture": "methodarg",
+  "upstream": "tests/test_basic.py::test_choice_argument",
   "argv": [
    "meh"
   ],
@@ -95,6 +103,7 @@
  },
  {
   "fixture": "methodarg",
+  "upstream": "tests/test_basic.py::test_choice_argument",
   "argv": [
    "--help"
   ],
@@ -107,6 +116,7 @@
  },
  {
   "fixture": "methodarg",
+  "upstream": "tests/test_basic.py::test_choice_argument",
   "argv": [],
   "env": {},
   "width": 80,
@@ -117,6 +127,7 @@
  },
  {
   "fixture": "reqopt",
+  "upstream": "tests/test_basic.py::test_required_option",
   "argv": [],
   "env": {},
   "width": 80,
@@ -127,6 +138,7 @@
  },
  {
   "fixture": "hiddenopt",
+  "upstream": "tests/test_basic.py::test_hidden_option",
   "argv": [
    "--help"
   ],
@@ -139,6 +151,7 @@
  },
  {
   "fixture": "hiddencmd",
+  "upstream": "tests/test_basic.py::test_hidden_command",
   "argv": [
    "--help"
   ],
@@ -151,6 +164,7 @@
  },
  {
   "fixture": "summary",
+  "upstream": "tests/test_basic.py::test_summary_line",
   "argv": [
    "--help"
   ],
@@ -163,6 +177,7 @@
  },
  {
   "fixture": "invaliddefault",
+  "upstream": "tests/test_basic.py::test_help_invalid_default",
   "argv": [
    "--help"
   ],
@@ -175,6 +190,7 @@
  },
  {
   "fixture": "basicgroup",
+  "upstream": "tests/test_basic.py::test_basic_group",
   "argv": [
    "--help"
   ],
@@ -187,6 +203,7 @@
  },
  {
   "fixture": "basicgroup",
+  "upstream": "tests/test_basic.py::test_basic_group",
   "argv": [],
   "env": {},
   "width": 80,
@@ -197,6 +214,7 @@
  },
  {
   "fixture": "basicgroup",
+  "upstream": "tests/test_basic.py::test_basic_group",
   "argv": [
    "subcommand"
   ],
@@ -209,6 +227,7 @@
  },
  {
   "fixture": "count",
+  "upstream": "tests/test_options.py::test_counting",
   "argv": [
    "-vvvv"
   ],
@@ -221,6 +240,7 @@
  },
  {
   "fixture": "count",
+  "upstream": "tests/test_options.py::test_counting",
   "argv": [
    "--help"
   ],
@@ -233,6 +253,7 @@
  },
  {
   "fixture": "count",
+  "upstream": "tests/test_options.py::test_counting",
   "argv": [
    "-vvv"
   ],
@@ -245,6 +266,7 @@
  },
  {
   "fixture": "empty",
+  "upstream": "tests/test_options.py::test_unknown_options",
   "argv": [
    "--foo"
   ],
@@ -257,6 +279,7 @@
  },
  {
   "fixture": "empty",
+  "upstream": "tests/test_options.py::test_unknown_options",
   "argv": [
    "-f"
   ],
@@ -269,6 +292,7 @@
  },
  {
   "fixture": "boundcount",
+  "upstream": "tests/test_options.py::test_suggest_possible_options",
   "argv": [
    "--cat"
   ],
@@ -281,6 +305,7 @@
  },
  {
   "fixture": "boundcount",
+  "upstream": "tests/test_options.py::test_suggest_possible_options",
   "argv": [
    "--bounds"
   ],
@@ -293,6 +318,7 @@
  },
  {
   "fixture": "boundcount",
+  "upstream": "tests/test_options.py::test_suggest_possible_options",
   "argv": [
    "--bount"
   ],
@@ -305,6 +331,7 @@
  },
  {
   "fixture": "msg",
+  "upstream": "tests/test_options.py::test_multiple_required",
   "argv": [],
   "env": {},
   "width": 80,
@@ -315,6 +342,7 @@
  },
  {
   "fixture": "msg",
+  "upstream": "tests/test_options.py::test_multiple_required",
   "argv": [
    "-m",
    "foo",
@@ -329,6 +357,7 @@
  },
  {
   "fixture": "shout",
+  "upstream": "tests/test_options.py::test_boolean_envvar_bad_values",
   "argv": [],
   "env": {
    "SHOUT": "tr ue"
@@ -341,6 +370,7 @@
  },
  {
   "fixture": "shout",
+  "upstream": "tests/test_options.py::test_boolean_envvar_bad_values",
   "argv": [],
   "env": {
    "SHOUT": "10"
@@ -353,6 +383,7 @@
  },
  {
   "fixture": "shout",
+  "upstream": "tests/test_options.py::test_boolean_envvar_bad_values",
   "argv": [],
   "env": {
    "SHOUT": "x:y"
@@ -365,6 +396,7 @@
  },
  {
   "fixture": "multidefault",
+  "upstream": "tests/test_options.py::test_multiple_default_help",
   "argv": [
    "--help"
   ],
@@ -377,6 +409,7 @@
  },
  {
   "fixture": "showenvvar",
+  "upstream": "tests/test_options.py::test_show_envvar",
   "argv": [
    "--help"
   ],
@@ -389,6 +422,7 @@
  },
  {
   "fixture": "showenvvarauto",
+  "upstream": "tests/test_options.py::test_show_envvar_auto_prefix",
   "argv": [
    "--help"
   ],
@@ -401,6 +435,7 @@
  },
  {
   "fixture": "dashgroup",
+  "upstream": "tests/test_options.py::test_show_envvar_auto_prefix_dash_in_command",
   "argv": [
    "foo-bar",
    "--help"
@@ -414,6 +449,7 @@
  },
  {
   "fixture": "reqflag",
+  "upstream": "tests/test_options.py::test_missing_required_flag",
   "argv": [],
   "env": {},
   "width": 80,
@@ -424,6 +460,7 @@
  },
  {
   "fixture": "misschoice",
+  "upstream": "tests/test_options.py::test_missing_choice",
   "argv": [],
   "env": {},
   "width": 80,
@@ -434,6 +471,7 @@
  },
  {
   "fixture": "missenv1",
+  "upstream": "tests/test_options.py::test_missing_envvar",
   "argv": [],
   "env": {},
   "width": 80,
@@ -444,6 +482,7 @@
  },
  {
   "fixture": "missenv2",
+  "upstream": "tests/test_options.py::test_missing_envvar",
   "argv": [],
   "env": {},
   "width": 80,
@@ -454,6 +493,7 @@
  },
  {
   "fixture": "casechoice",
+  "upstream": "tests/test_options.py::test_case_insensitive_choice",
   "argv": [
    "--foo",
    "x"
@@ -467,6 +507,7 @@
  },
  {
   "fixture": "casechoice2",
+  "upstream": "tests/test_options.py::test_case_insensitive_choice",
   "argv": [
    "--foo",
    "apple"
@@ -480,6 +521,7 @@
  },
  {
   "fixture": "flagdefault",
+  "upstream": "tests/test_options.py::test_show_default_boolean_flag_name",
   "argv": [
    "--help"
   ],
@@ -492,6 +534,7 @@
  },
  {
   "fixture": "showdefaulttext",
+  "upstream": "tests/test_options.py::test_show_default_string",
   "argv": [
    "--help"
   ],
@@ -504,6 +547,7 @@
  },
  {
   "fixture": "emptydefault",
+  "upstream": "tests/test_options.py::test_show_default_with_empty_string",
   "argv": [
    "--help"
   ],
@@ -516,6 +560,7 @@
  },
  {
   "fixture": "nodefault",
+  "upstream": "tests/test_options.py::test_do_not_show_no_default",
   "argv": [
    "--help"
   ],
@@ -528,6 +573,7 @@
  },
  {
   "fixture": "intrange",
+  "upstream": "tests/test_options.py::test_intrange_default_help_text",
   "argv": [
    "--help"
   ],
@@ -540,6 +586,7 @@
  },
  {
   "fixture": "intrange",
+  "upstream": "tests/test_options.py::test_intrange_default_help_text",
   "argv": [
    "--count",
    "40"
@@ -553,6 +600,7 @@
  },
  {
   "fixture": "countdefault",
+  "upstream": "tests/test_options.py::test_count_default_type_help",
   "argv": [
    "--help"
   ],
@@ -565,6 +613,7 @@
  },
  {
   "fixture": "copyx",
+  "upstream": "tests/test_arguments.py::test_nargs_err",
   "argv": [
    "foo",
    "bar"
@@ -578,6 +627,7 @@
  },
  {
   "fixture": "copyx",
+  "upstream": "tests/test_arguments.py::test_nargs_err",
   "argv": [
    "foo",
    "bar",
@@ -592,6 +642,7 @@
  },
  {
   "fixture": "missarg",
+  "upstream": "tests/test_formatting.py::test_formatting_usage_error",
   "argv": [],
   "env": {},
   "width": 80,
@@ -602,6 +653,7 @@
  },
  {
   "fixture": "tupitem",
+  "upstream": "tests/test_arguments.py::test_nargs_tup_composite",
   "argv": [
    "a"
   ],
@@ -614,6 +666,7 @@
  },
  {
   "fixture": "star",
+  "upstream": "tests/test_arguments.py::test_empty_nargs",
   "argv": [],
   "env": {},
   "width": 80,
@@ -624,6 +677,7 @@
  },
  {
   "fixture": "filearg",
+  "upstream": "tests/test_arguments.py::test_file_args",
   "argv": [
    "missing.txt"
   ],
@@ -636,6 +690,7 @@
  },
  {
   "fixture": "noargshelp",
+  "upstream": "tests/test_commands.py::test_command_no_args_is_help",
   "argv": [],
   "env": {},
   "width": 80,
@@ -646,6 +701,7 @@
  },
  {
   "fixture": "grpsub",
+  "upstream": "tests/test_commands.py::test_group_invoke_without_command",
   "argv": [],
   "env": {},
   "width": 80,
@@ -656,6 +712,7 @@
  },
  {
   "fixture": "grpargs",
+  "upstream": "tests/test_commands.py::test_group_with_args",
   "argv": [
    "obj1"
   ],
@@ -668,6 +725,7 @@
  },
  {
   "fixture": "grpargs",
+  "upstream": "tests/test_commands.py::test_group_with_args",
   "argv": [
    "obj1",
    "move"
@@ -681,6 +739,7 @@
  },
  {
   "fixture": "unknowncmd",
+  "upstream": "tests/test_commands.py::test_unknown_command",
   "argv": [
    "unknown"
   ],
@@ -693,6 +752,7 @@
  },
  {
   "fixture": "suggest",
+  "upstream": "tests/test_commands.py::test_unknown_command_suggestion",
   "argv": [
    "pause"
   ],
@@ -705,6 +765,7 @@
  },
  {
   "fixture": "suggest",
+  "upstream": "tests/test_commands.py::test_unknown_command_suggestion",
   "argv": [
    "decline"
   ],
@@ -717,6 +778,7 @@
  },
  {
   "fixture": "suggest",
+  "upstream": "tests/test_commands.py::test_unknown_command_suggestion",
   "argv": [
    "--help"
   ],
@@ -729,6 +791,7 @@
  },
  {
   "fixture": "fmtbasic",
+  "upstream": "tests/test_formatting.py::test_basic_functionality",
   "argv": [
    "--help"
   ],
@@ -741,6 +804,7 @@
  },
  {
   "fixture": "longopts",
+  "upstream": "tests/test_formatting.py::test_wrapping_long_options_strings",
   "argv": [
    "a-very-long",
    "command",
@@ -755,6 +819,7 @@
  },
  {
   "fixture": "longname",
+  "upstream": "tests/test_formatting.py::test_wrapping_long_command_name",
   "argv": [
    "a-very-very-very-long",
    "command",
@@ -769,6 +834,7 @@
  },
  {
   "fixture": "metavarmiss",
+  "upstream": "tests/test_formatting.py::test_formatting_usage_error_metavar_missing_arg",
   "argv": [],
   "env": {},
   "width": 80,
@@ -779,6 +845,7 @@
  },
  {
   "fixture": "metavarbad",
+  "upstream": "tests/test_formatting.py::test_formatting_usage_error_metavar_bad_arg",
   "argv": [
    "3.14"
   ],
@@ -791,6 +858,7 @@
  },
  {
   "fixture": "nested",
+  "upstream": "tests/test_formatting.py::test_formatting_usage_error_nested",
   "argv": [
    "foo"
   ],
@@ -803,6 +871,7 @@
  },
  {
   "fixture": "nohelp",
+  "upstream": "tests/test_formatting.py::test_formatting_usage_error_no_help",
   "argv": [],
   "env": {},
   "width": 80,
@@ -813,6 +882,7 @@
  },
  {
   "fixture": "customhelp",
+  "upstream": "tests/test_formatting.py::test_formatting_usage_custom_help",
   "argv": [],
   "env": {},
   "width": 80,
@@ -823,6 +893,7 @@
  },
  {
   "fixture": "version",
+  "upstream": "tests/test_basic.py::test_custom_version_option",
   "argv": [
    "--version"
   ],
@@ -835,6 +906,7 @@
  },
  {
   "fixture": "version",
+  "upstream": "tests/test_basic.py::test_custom_version_option",
   "argv": [
    "--help"
   ],
@@ -847,6 +919,7 @@
  },
  {
   "fixture": "prefixes",
+  "upstream": "tests/test_options.py::test_prefixes",
   "argv": [
    "--help"
   ],
@@ -859,6 +932,7 @@
  },
  {
   "fixture": "prefixes",
+  "upstream": "tests/test_options.py::test_prefixes",
   "argv": [
    "++foo",
    "--bar"
@@ -872,6 +946,7 @@
  },
  {
   "fixture": "winstyle",
+  "upstream": "tests/test_options.py::test_winstyle_options",
   "argv": [
    "/?"
   ],
@@ -884,6 +959,7 @@
  },
  {
   "fixture": "winstyle",
+  "upstream": "tests/test_options.py::test_winstyle_options",
   "argv": [
    "/debug"
   ],
@@ -896,6 +972,7 @@
  },
  {
   "fixture": "float1e20",
+  "upstream": "tests/test_options.py::test_show_default_precedence",
   "argv": [
    "--help"
   ],
@@ -908,6 +985,7 @@
  },
  {
   "fixture": "callbacks",
+  "upstream": "tests/test_basic.py::test_evaluation_order",
   "argv": [
    "--a",
    "1",
@@ -923,6 +1001,7 @@
  },
  {
   "fixture": "callbacks",
+  "upstream": "tests/test_basic.py::test_evaluation_order",
   "argv": [
    "--b",
    "x",
@@ -938,6 +1017,7 @@
  },
  {
   "fixture": "callbacks",
+  "upstream": "tests/test_basic.py::test_evaluation_order",
   "argv": [],
   "env": {},
   "width": 80,
@@ -948,6 +1028,7 @@
  },
  {
   "fixture": "validation",
+  "upstream": "tests/test_options.py::test_custom_validation",
   "argv": [
    "--foo",
    "-1"
@@ -961,6 +1042,7 @@
  },
  {
   "fixture": "validation",
+  "upstream": "tests/test_options.py::test_custom_validation",
   "argv": [
    "--foo",
    "42"
@@ -974,6 +1056,7 @@
  },
  {
   "fixture": "chainhelp",
+  "upstream": "tests/test_chain.py::test_chaining_help",
   "argv": [
    "--help"
   ],
@@ -986,6 +1069,7 @@
  },
  {
   "fixture": "chainhelp",
+  "upstream": "tests/test_chain.py::test_chaining_help",
   "argv": [
    "sdist",
    "--help"
@@ -999,6 +1083,7 @@
  },
  {
   "fixture": "chainhelp",
+  "upstream": "tests/test_chain.py::test_chaining_help",
   "argv": [
    "bdist",
    "sdist",
@@ -1013,6 +1098,7 @@
  },
  {
   "fixture": "chainhelp",
+  "upstream": "tests/test_chain.py::test_basic_chaining",
   "argv": [
    "bdist",
    "sdist",
@@ -1027,6 +1113,7 @@
  },
  {
   "fixture": "chainunknown",
+  "upstream": "tests/test_chain.py::test_args_and_chain",
   "argv": [
    "a",
    "b"
@@ -1040,6 +1127,7 @@
  },
  {
   "fixture": "uuid",
+  "upstream": "tests/test_basic.py::test_uuid_option",
   "argv": [
    "--u=x"
   ],
@@ -1052,6 +1140,7 @@
  },
  {
   "fixture": "uuid",
+  "upstream": "tests/test_basic.py::test_uuid_option",
   "argv": [
    "--help"
   ],
@@ -1064,6 +1153,7 @@
  },
  {
   "fixture": "datetime",
+  "upstream": "tests/test_basic.py::test_datetime_option_default",
   "argv": [
    "--start_date=2015-09"
   ],
@@ -1076,6 +1166,7 @@
  },
  {
   "fixture": "datetime",
+  "upstream": "tests/test_basic.py::test_datetime_option_default",
   "argv": [
    "--help"
   ],
@@ -1088,6 +1179,7 @@
  },
  {
   "fixture": "datetimearg",
+  "upstream": "tests/test_basic.py::test_datetime_argument_optional_metavar",
   "argv": [
    "--help"
   ],
@@ -1100,6 +1192,7 @@
  },
  {
   "fixture": "tuple",
+  "upstream": "tests/test_arguments.py::test_nargs_tup_composite",
   "argv": [
    "a",
    "x"
@@ -1113,6 +1206,7 @@
  },
  {
   "fixture": "tuple",
+  "upstream": "tests/test_arguments.py::test_nargs_tup_composite",
   "argv": [
    "a"
   ],
@@ -1125,6 +1219,7 @@
  },
  {
   "fixture": "tuple",
+  "upstream": "tests/test_arguments.py::test_nargs_tup_composite",
   "argv": [
    "--pt",
    "1"
@@ -1138,6 +1233,7 @@
  },
  {
   "fixture": "tuple",
+  "upstream": "tests/test_arguments.py::test_nargs_tup_composite",
   "argv": [
    "--help"
   ],
@@ -1150,6 +1246,7 @@
  },
  {
   "fixture": "tuple",
+  "upstream": "tests/test_arguments.py::test_nargs_tup_composite",
   "argv": [
    "a",
    "1"
@@ -1163,6 +1260,7 @@
  },
  {
   "fixture": "fastapi",
+  "upstream": "fastapi-cli tests/test_cli.py::test_callback_help",
   "argv": [
    "--help"
   ],
@@ -1175,6 +1273,7 @@
  },
  {
   "fixture": "fastapi",
+  "upstream": "fastapi-cli tests/test_cli.py::test_dev_help",
   "argv": [
    "dev",
    "-h"
@@ -1188,6 +1287,7 @@
  },
  {
   "fixture": "fastapi",
+  "upstream": "fastapi-cli tests/test_cli.py::test_dev_help",
   "argv": [
    "run",
    "-h"
@@ -1201,6 +1301,7 @@
  },
  {
   "fixture": "fastapi",
+  "upstream": "fastapi-cli tests/test_cli.py::test_dev_bad_port",
   "argv": [
    "dev",
    "--port",
@@ -1215,6 +1316,7 @@
  },
  {
   "fixture": "fastapi",
+  "upstream": "fastapi-cli tests/test_cli.py::test_dev",
   "argv": [
    "dev",
    "--prot",
@@ -1229,6 +1331,7 @@
  },
  {
   "fixture": "fastapi",
+  "upstream": "fastapi-cli tests/test_cli.py::test_dev",
   "argv": [
    "dev",
    "--port"
@@ -1242,6 +1345,7 @@
  },
  {
   "fixture": "fastapi",
+  "upstream": "fastapi-cli tests/test_cli.py::test_dev",
   "argv": [
    "dev",
    "a",
@@ -1256,6 +1360,7 @@
  },
  {
   "fixture": "fastapi",
+  "upstream": "fastapi-cli tests/test_cli.py::test_dev",
   "argv": [],
   "env": {},
   "width": 80,
@@ -1266,6 +1371,7 @@
  },
  {
   "fixture": "fastapi",
+  "upstream": "fastapi-cli tests/test_cli.py::test_dev",
   "argv": [
    "deve"
   ],
@@ -1278,6 +1384,7 @@
  },
  {
   "fixture": "tuple",
+  "upstream": "tests/test_options.py::test_nargs_tup_composite_mult",
   "argv": [
    "--item",
    "peter",
@@ -1294,6 +1401,7 @@
  },
  {
   "fixture": "hint1",
+  "upstream": "tests/test_formatting.py::test_formatting_usage_error_help_hint",
   "argv": [
    "foo"
   ],
@@ -1306,6 +1414,7 @@
  },
  {
   "fixture": "hint2",
+  "upstream": "tests/test_formatting.py::test_formatting_usage_error_help_hint",
   "argv": [
    "foo"
   ],
@@ -1318,6 +1427,7 @@
  },
  {
   "fixture": "hint3",
+  "upstream": "tests/test_formatting.py::test_formatting_usage_error_help_hint",
   "argv": [
    "foo"
   ],
@@ -1330,6 +1440,7 @@
  },
  {
   "fixture": "hint4",
+  "upstream": "tests/test_formatting.py::test_formatting_usage_error_help_hint",
   "argv": [
    "foo"
   ],
@@ -1342,6 +1453,7 @@
  },
  {
   "fixture": "flagmap",
+  "upstream": "tests/test_defaults.py::test_flag_default_map",
   "argv": [
    "foo",
    "--help"
@@ -1355,6 +1467,7 @@
  },
  {
   "fixture": "flagmap",
+  "upstream": "tests/test_defaults.py::test_flag_default_map",
   "argv": [
    "foo",
    "--help"
@@ -1372,6 +1485,7 @@
  },
  {
   "fixture": "typedserve",
+  "upstream": "fastapi-cli tests/test_cli.py::test_dev_help",
   "argv": [
    "--help"
   ],
@@ -1384,6 +1498,7 @@
  },
  {
   "fixture": "typedserve",
+  "upstream": "fastapi-cli tests/test_cli.py::test_dev_help",
   "argv": [
    "--level",
    "5"
@@ -1397,6 +1512,7 @@
  },
  {
   "fixture": "typedserve",
+  "upstream": "fastapi-cli tests/test_cli.py::test_dev_help",
   "argv": [
    "--port",
    "x"
@@ -1410,6 +1526,7 @@
  },
  {
   "process": "hello",
+  "upstream": "README.md (A Simple Example)",
   "argv": [
    "--count=3"
   ],
@@ -1420,6 +1537,7 @@
  },
  {
   "process": "hello",
+  "upstream": "README.md (A Simple Example)",
   "argv": [],
   "input": "",
   "code": 1,
@@ -1428,6 +1546,7 @@
  },
  {
   "process": "hello",
+  "upstream": "README.md (A Simple Example)",
   "argv": [
    "--count=x"
   ],
@@ -1438,6 +1557,7 @@
  },
  {
   "process": "hello",
+  "upstream": "README.md (A Simple Example)",
   "argv": [
    "--help"
   ],
@@ -1448,6 +1568,7 @@
  },
  {
   "process": "hello",
+  "upstream": "README.md (A Simple Example)",
   "argv": [
    "--count",
    "2"
@@ -1459,6 +1580,7 @@
  },
  {
   "process": "hello",
+  "upstream": "README.md (A Simple Example)",
   "argv": [
    "--bogus"
   ],

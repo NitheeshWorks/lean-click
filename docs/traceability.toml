@@ -150,19 +150,19 @@ test = ["tests/Props.lean::intRoundtrip", "tests/Props.lean::decRoundtrip"]
 
 [[requirement]]
 id = "terminal.prompts"
-upstream = "tests/test_termui.py::test_prompts"
+upstream = "README.md (A Simple Example), run as a process"
 title = "Prompts, confirmation, re-prompt on invalid input, Aborted! on EOF"
 status = "tested"
 realises = ["LeanClick.Terminal.promptParam", "LeanClick.Terminal.confirm", "LeanClick.Terminal.parseInteractive"]
-test = ["examples/FastapiCli.lean"]
+test = ["examples/FastapiCli.lean", "tests/golden/click.json"]
 
 [[requirement]]
 id = "terminal.main"
-upstream = "tests/test_testing.py::test_exit_code_and_output_from_sys_exit"
+upstream = "README.md (A Simple Example), run as a process"
 title = "Command.main: report and exit code"
 status = "tested"
 realises = ["LeanClick.Terminal.main", "LeanClick.Terminal.runAux"]
-test = ["examples/FastapiCli.lean"]
+test = ["examples/FastapiCli.lean", "tests/golden/click.json"]
 
 [[requirement]]
 id = "dev.fastapi-cli"

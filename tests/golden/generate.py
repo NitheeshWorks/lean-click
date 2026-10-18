@@ -189,6 +189,64 @@ SCENARIOS = [
     ("typedserve", ["--help"]), ("typedserve", ["--level", "5"]), ("typedserve", ["--port", "x"]),
 ]
 
+# The upstream test each fixture re-expresses (`tests/...` is click's suite).
+UPSTREAM = {
+    "sopt": "tests/test_basic.py::test_string_option", "iopt": "tests/test_basic.py::test_int_option",
+    "fopt": "tests/test_basic.py::test_float_option", "methodopt": "tests/test_basic.py::test_choice_option",
+    "methodarg": "tests/test_basic.py::test_choice_argument", "reqopt": "tests/test_basic.py::test_required_option",
+    "hiddenopt": "tests/test_basic.py::test_hidden_option", "hiddencmd": "tests/test_basic.py::test_hidden_command",
+    "summary": "tests/test_basic.py::test_summary_line", "invaliddefault": "tests/test_basic.py::test_help_invalid_default",
+    "basicgroup": "tests/test_basic.py::test_basic_group", "count": "tests/test_options.py::test_counting",
+    "empty": "tests/test_options.py::test_unknown_options", "boundcount": "tests/test_options.py::test_suggest_possible_options",
+    "msg": "tests/test_options.py::test_multiple_required", "shout": "tests/test_options.py::test_boolean_envvar_bad_values",
+    "multidefault": "tests/test_options.py::test_multiple_default_help", "showenvvar": "tests/test_options.py::test_show_envvar",
+    "showenvvarauto": "tests/test_options.py::test_show_envvar_auto_prefix",
+    "dashgroup": "tests/test_options.py::test_show_envvar_auto_prefix_dash_in_command",
+    "reqflag": "tests/test_options.py::test_missing_required_flag", "misschoice": "tests/test_options.py::test_missing_choice",
+    "missenv1": "tests/test_options.py::test_missing_envvar", "missenv2": "tests/test_options.py::test_missing_envvar",
+    "casechoice": "tests/test_options.py::test_case_insensitive_choice", "casechoice2": "tests/test_options.py::test_case_insensitive_choice",
+    "flagdefault": "tests/test_options.py::test_show_default_boolean_flag_name",
+    "showdefaulttext": "tests/test_options.py::test_show_default_string",
+    "emptydefault": "tests/test_options.py::test_show_default_with_empty_string",
+    "nodefault": "tests/test_options.py::test_do_not_show_no_default", "intrange": "tests/test_options.py::test_intrange_default_help_text",
+    "countdefault": "tests/test_options.py::test_count_default_type_help", "copyx": "tests/test_arguments.py::test_nargs_err",
+    "missarg": "tests/test_formatting.py::test_formatting_usage_error", "tupitem": "tests/test_arguments.py::test_nargs_tup_composite",
+    "star": "tests/test_arguments.py::test_empty_nargs", "filearg": "tests/test_arguments.py::test_file_args",
+    "noargshelp": "tests/test_commands.py::test_command_no_args_is_help",
+    "grpsub": "tests/test_commands.py::test_group_invoke_without_command", "grpargs": "tests/test_commands.py::test_group_with_args",
+    "unknowncmd": "tests/test_commands.py::test_unknown_command", "suggest": "tests/test_commands.py::test_unknown_command_suggestion",
+    "fmtbasic": "tests/test_formatting.py::test_basic_functionality",
+    "longopts": "tests/test_formatting.py::test_wrapping_long_options_strings",
+    "longname": "tests/test_formatting.py::test_wrapping_long_command_name",
+    "metavarmiss": "tests/test_formatting.py::test_formatting_usage_error_metavar_missing_arg",
+    "metavarbad": "tests/test_formatting.py::test_formatting_usage_error_metavar_bad_arg",
+    "nested": "tests/test_formatting.py::test_formatting_usage_error_nested",
+    "nohelp": "tests/test_formatting.py::test_formatting_usage_error_no_help",
+    "customhelp": "tests/test_formatting.py::test_formatting_usage_custom_help",
+    "version": "tests/test_basic.py::test_custom_version_option", "prefixes": "tests/test_options.py::test_prefixes",
+    "winstyle": "tests/test_options.py::test_winstyle_options", "float1e20": "tests/test_options.py::test_show_default_precedence",
+    "callbacks": "tests/test_basic.py::test_evaluation_order", "validation": "tests/test_options.py::test_custom_validation",
+    "chainhelp": "tests/test_chain.py::test_chaining_help", "chainunknown": "tests/test_chain.py::test_args_and_chain",
+    "uuid": "tests/test_basic.py::test_uuid_option", "datetime": "tests/test_basic.py::test_datetime_option_default",
+    "datetimearg": "tests/test_basic.py::test_datetime_argument_optional_metavar",
+    "tuple": "tests/test_arguments.py::test_nargs_tup_composite", "fastapi": "fastapi-cli tests/test_cli.py::test_dev",
+    "hint1": "tests/test_formatting.py::test_formatting_usage_error_help_hint",
+    "hint2": "tests/test_formatting.py::test_formatting_usage_error_help_hint",
+    "hint3": "tests/test_formatting.py::test_formatting_usage_error_help_hint",
+    "hint4": "tests/test_formatting.py::test_formatting_usage_error_help_hint",
+    "flagmap": "tests/test_defaults.py::test_flag_default_map", "typedserve": "fastapi-cli tests/test_cli.py::test_dev_help",
+}
+# Scenarios that re-express a different test than their fixture's default.
+OVERRIDE = {
+    ("chainhelp", ("bdist", "sdist", "bdist")): "tests/test_chain.py::test_basic_chaining",
+    ("tuple", ("--item", "peter", "x", "a", "1")): "tests/test_options.py::test_nargs_tup_composite_mult",
+    ("fastapi", ("--help",)): "fastapi-cli tests/test_cli.py::test_callback_help",
+    ("fastapi", ("dev", "-h")): "fastapi-cli tests/test_cli.py::test_dev_help",
+    ("fastapi", ("run", "-h")): "fastapi-cli tests/test_cli.py::test_dev_help",
+    ("fastapi", ("dev", "--port", "eighty")): "fastapi-cli tests/test_cli.py::test_dev_bad_port",
+    ("count", ("-vvv",)): "tests/test_options.py::test_counting",
+}
+
 out = []
 runner = CliRunner()
 for sc in SCENARIOS:
@@ -202,7 +260,8 @@ for sc in SCENARIOS:
     if width is not None:
         kw["terminal_width"] = width
     res = runner.invoke(F[name], argv, prog_name=F[name].name, **kw)
-    out.append({"fixture": name, "argv": argv, "env": env, "width": width or 80, "default_map": dmap,
+    upstream = OVERRIDE.get((name, tuple(argv)), UPSTREAM[name])
+    out.append({"fixture": name, "upstream": upstream, "argv": argv, "env": env, "width": width or 80, "default_map": dmap,
                 "code": res.exit_code, "stdout": res.stdout, "stderr": res.stderr})
 # Whole-process scenarios: click's README quickstart run as a real program
 # with piped stdin, against `lake exe hello` (examples/Hello.lean).
@@ -227,6 +286,6 @@ PROCESS = [(["--count=3"], "Click\n"), ([], ""), (["--count=x"], ""), (["--help"
 for argv, inp in PROCESS:
     res = subprocess.run([sys.executable, "-I", "-c", HELLO, *argv], input=inp, capture_output=True, text=True,
                          env={"COLUMNS": "80"})
-    out.append({"process": "hello", "argv": argv, "input": inp, "code": res.returncode,
+    out.append({"process": "hello", "upstream": "README.md (A Simple Example)", "argv": argv, "input": inp, "code": res.returncode,
                 "stdout": res.stdout, "stderr": res.stderr})
 print(json.dumps(out, indent=1, ensure_ascii=False))
