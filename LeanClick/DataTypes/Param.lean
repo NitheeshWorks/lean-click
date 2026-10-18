@@ -284,6 +284,8 @@ structure CommandSpec where
   defaultMap : Option DefaultMap := none
   /-- Group only. -/
   invokeWithoutCommand : Bool := false
+  /-- Group only: `chain=True`, several subcommands in one invocation. -/
+  chain : Bool := false
   /-- Group only. -/
   subcommandMetavar : Option String := none
 

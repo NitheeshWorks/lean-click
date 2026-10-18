@@ -176,8 +176,13 @@ def terminalWidth : IO Nat := do
 /-- Build the `Env` one level of parsing reads. -/
 def levelEnv (cmd : App σ) (s : Settings) (argv : List String)
     (answers : List ((String × String) × String)) : IO Env := do
-  let ps := cmd.allParams s
-  let names := (ps.flatMap (envNames s)).eraseDups
+  -- a chained group parses its subcommands in the same step, so read their
+  -- variables too
+  let subPs : List (Settings × Param) := if cmd.spec.chain then
+      cmd.subcommands.flatMap fun c => let cs := c.settings (some s) c.name; (c.allParams cs).map (cs, ·)
+    else []
+  let ps := cmd.allParams s ++ subPs.map (·.2)
+  let names := ((cmd.allParams s).flatMap (envNames s) ++ subPs.flatMap fun (cs, p) => envNames cs p).eraseDups
   let mut vars : List (String × String) := []
   for n in names do
     if let some v ← IO.getEnv n then vars := vars ++ [(n, v)]
@@ -197,9 +202,9 @@ def parseInteractive (cmd : App σ) (s : Settings) (path : String) (argv : List 
   | f + 1, answers => do
     let env ← levelEnv cmd s argv answers
     match cmd.parseLevel s path argv env with
-    | .error (.prompt p d) =>
+    | .error (.prompt ppath p d) =>
       match ← promptParam env.fs p d with
-      | some a => parseInteractive cmd s path argv f (answers ++ [((path, p.name), a)])
+      | some a => parseInteractive cmd s path argv f (answers ++ [((ppath, p.name), a)])
       | none => pure none
     | r => pure (some r)
 
@@ -210,7 +215,9 @@ def runAux (prog : String) :
   | 0, _, _, _, _, _, _, _ => pure (.halted (.error ⟨.usage "Command nesting exceeds the argument count.", none⟩))
   | fuel + 1, cmd, parent, infoName, path, argv, parentCtx, obj => do
     let s := cmd.settings parent infoName
-    match ← parseInteractive cmd s path argv ((cmd.allParams s).length + 1) [] with
+    let budget := (cmd.allParams s).length + 1 +
+      (if cmd.spec.chain then argv.length * (cmd.subcommands.foldl (fun m c => max m c.spec.params.length) 0 + 1) else 0)
+    match ← parseInteractive cmd s path argv budget [] with
     | none => pure (.raised .abort)
     | some (.error st) =>
       match st.toHalt cmd s path prog with
@@ -219,13 +226,26 @@ def runAux (prog : String) :
     | some (.ok lv) =>
       let ctx : Context σ :=
         { infoName, commandPath := path, params := lv.args, parent := parentCtx, obj,
-          invokedSubcommand := lv.sub.map (·.2.1),
+          invokedSubcommand := match lv.sub with
+            | some (_, name, _) => some name
+            | none => if lv.chained.isEmpty then none else some "*",
           help := cmd.getHelp s path, usage := cmd.getUsage s path }
       match ← (cmd.callback ctx).run with
       | .error e => pure (.raised e)
       | .ok obj' =>
         match lv.sub with
-        | none => pure .ok
+        | none =>
+          -- a chained group: every subcommand, in order, under the group's context
+          let rec runChain : List (App σ × String × Settings × String × ParsedArgs) → IO Termination
+            | [] => pure .ok
+            | (c, name, cs, cpath, pa) :: more => do
+              let cctx : Context σ :=
+                { infoName := name, commandPath := cpath, params := pa, parent := some ctx, obj := obj',
+                  help := c.getHelp cs cpath, usage := c.getUsage cs cpath }
+              match ← (c.callback cctx).run with
+              | .error e => pure (.raised e)
+              | .ok _ => runChain more
+          runChain lv.chained
         | some (c, name, rest) =>
           runAux prog fuel c (some s) name (cmd.childPath s path name) rest (some ctx) obj'
 

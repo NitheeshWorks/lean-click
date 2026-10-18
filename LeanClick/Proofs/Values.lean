@@ -150,6 +150,16 @@ theorem choice_in_set (fs : String → Option FileInfo) (cs : List String) (cS :
 
 /-! ## Group dispatch -/
 
+theorem resolveSub_ok (cmd : Command σ) (s : Settings) (path name : String) (rest : List String)
+    (c : Command σ) (h : cmd.resolveSub s path name rest = .ok c) : cmd.findSub name = some c := by
+  unfold Command.resolveSub at h
+  dsimp only at h
+  split at h
+  · rename_i c' hc; cases h; exact hc
+  · split at h
+    · cases h
+    · split at h <;> cases h
+
 theorem parseLevel_sub (cmd : Command σ) (s : Settings) (path : String) (argv : List String) (env : Env)
     (lv : Level σ) (c : Command σ) (name : String) (rest : List String)
     (h : cmd.parseLevel s path argv env = .ok lv) (hs : lv.sub = some (c, name, rest)) :
@@ -157,17 +167,24 @@ theorem parseLevel_sub (cmd : Command σ) (s : Settings) (path : String) (argv :
   unfold Command.parseLevel at h
   split at h
   · cases h
-  · split at h
+  · dsimp only at h
+    split at h
     · cases h; simp at hs
     · split at h
       · split at h
         · cases h; simp at hs
         · cases h
       · split at h
-        · cases h; simp at hs; obtain ⟨rfl, rfl, rfl⟩ := hs; assumption
         · split at h
           · cases h
-          · split at h <;> cases h
+          · cases h; simp at hs
+        · split at h
+          · cases h
+          · rename_i c' hc
+            cases h
+            simp at hs
+            obtain ⟨rfl, rfl, rfl⟩ := hs
+            exact resolveSub_ok cmd s path _ _ _ hc
 
 theorem group_dispatch_first_match : GroupDispatchFirstMatch (σ := σ) :=
   fun cmd s path argv env lv c name rest h hs => parseLevel_sub cmd s path argv env lv c name rest h hs

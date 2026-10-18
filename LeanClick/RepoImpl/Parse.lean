@@ -83,6 +83,7 @@ def resolveWith (fs : String → Option FileInfo) (answers : List ((String × St
     (path : String) (info : CtxInfo) (sc : Scanned) (araws : List (String × Option Raw))
     (envOf : Param → Option String) (p : Param) : Except Stop Entry :=
   match resolveParam fs (answers.lookup (path, p.name)) (rawOf sc araws p) (envOf p) p with
+  | .error (.prompt _ q d) => .error (.prompt path q d)
   | .error st => .error (st.withCtx info)
   | .ok e => .ok e
 
@@ -124,35 +125,76 @@ selected subcommand with the name it was invoked as and its arguments. -/
 structure Level (σ : Type) where
   args : ParsedArgs
   sub : Option (Command σ × String × List String)
+  /-- A chained group's subcommands, parsed in order: the command, the name
+  it was invoked as, its settings, its command path and its arguments. -/
+  chained : List (Command σ × String × Settings × String × ParsedArgs) := []
 
 /-- `Group.resolve_command`: the first subcommand with the name. -/
 def Command.findSub (cmd : Command σ) (name : String) : Option (Command σ) :=
   cmd.subcommands.find? (fun c => c.name == name)
 
-/-- Parse one level; a group also selects its subcommand. -/
+/-- Look up the subcommand a group's leftover arguments name, or fail as
+`Group.resolve_command` does (`No such command`, or the error of an
+option-looking name). -/
+def Command.resolveSub (cmd : Command σ) (s : Settings) (path : String) (name : String)
+    (rest : List String) : Except Stop (Command σ) :=
+  let info := cmd.ctxInfo s path
+  let fail := fun (e : UsageError) => Stop.error { e with ctx := some info }
+  match cmd.findSub name with
+  | some c => .ok c
+  | none =>
+    let names := cmd.subcommands.map (·.name)
+    let nsc := fail ⟨.noSuchCommand name (closeMatches name names), none⟩
+    if (splitOpt name).1.isEmpty then .error nsc
+    else match scan (cmd.scanCfg s) (name :: rest) with
+      | .error e => .error (fail e)
+      | .ok _ => .error nsc
+
+/-- A subcommand as a chained group parses it: extra arguments allowed
+(they belong to the next command), no interspersed arguments. -/
+def Command.asChained : Command σ → Command σ
+  | .mk sp g cb subs => .mk { sp with allowExtraArgs := some true, allowInterspersedArgs := some false } g cb subs
+
+/-- Parse a chained group's commands one after another, each taking the
+arguments the previous one left over. -/
+def Command.parseChain (cmd : Command σ) (s : Settings) (path : String) (env : Env) :
+    Nat → List String → Except Stop (List (Command σ × String × Settings × String × ParsedArgs))
+  | _, [] => .ok []
+  | 0, _ :: _ => .error (.error ⟨.usage "Chained commands exceed the argument count.", none⟩)
+  | fuel + 1, name :: rest => do
+    let c ← cmd.resolveSub s path name rest
+    let cs := c.settings (some s) name
+    let cpath := cmd.childPath s path name
+    let pa ← match c.asChained.parseArgs cs cpath rest env with
+      | .error (.eager .help) => .error (.helpText (c.getHelp cs cpath))
+      | r => r
+    let more ← cmd.parseChain s path env fuel pa.extra
+    return (c, name, cs, cpath, { pa with extra := [] }) :: more
+
+/-- Parse one level; a group also selects its subcommand (all of them, in
+order, for a chained group). -/
 def Command.parseLevel (cmd : Command σ) (s : Settings) (path : String) (argv : List String)
     (env : Env) : Except Stop (Level σ) :=
   match cmd.parseArgs s path argv env with
   | .error st => .error st
   | .ok pa =>
-    if !cmd.isGroup then .ok ⟨pa, none⟩
+    if !cmd.isGroup then .ok ⟨pa, none, []⟩
     else
       let info := cmd.ctxInfo s path
       let fail := fun (e : UsageError) => Stop.error { e with ctx := some info }
       match pa.extra with
       | [] =>
-        if cmd.spec.invokeWithoutCommand then .ok ⟨pa, none⟩
+        if cmd.spec.invokeWithoutCommand then .ok ⟨pa, none, []⟩
         else .error (fail ⟨.usage "Missing command.", none⟩)
       | name :: rest =>
-        match cmd.findSub name with
-        | some c => .ok ⟨{ pa with extra := [] }, some (c, name, rest)⟩
-        | none =>
-          let names := cmd.subcommands.map (·.name)
-          let nsc := fail ⟨.noSuchCommand name (closeMatches name names), none⟩
-          if (splitOpt name).1.isEmpty then .error nsc
-          else match scan (cmd.scanCfg s) (name :: rest) with
-            | .error e => .error (fail e)
-            | .ok _ => .error nsc
+        if cmd.spec.chain then
+          match cmd.parseChain s path env (name :: rest).length (name :: rest) with
+          | .error st => .error st
+          | .ok subs => .ok ⟨{ pa with extra := [] }, none, subs⟩
+        else
+          match cmd.resolveSub s path name rest with
+          | .error st => .error st
+          | .ok c => .ok ⟨{ pa with extra := [] }, some (c, name, rest), []⟩
 
 /-- Why an invocation stopped before running every callback. -/
 inductive Halt where
@@ -170,7 +212,8 @@ def Stop.toHalt (cmd : Command σ) (s : Settings) (path prog : String) : Stop �
   | .error e => .error e
   | .eager .help => .help (cmd.getHelp s path)
   | .eager (.version v t) => .message (versionMessage prog v t)
-  | .prompt p d => .prompt path p d
+  | .prompt q p d => .prompt q p d
+  | .helpText t => .help t
 
 /-- One parsed level of an invocation chain. -/
 structure Frame (σ : Type) where
@@ -195,7 +238,10 @@ def dispatchAux (prog : String) (env : Env) :
     | .error st => ⟨[], some (st.toHalt cmd s path prog)⟩
     | .ok lv =>
       match lv.sub with
-      | none => ⟨[⟨cmd, infoName, path, s, lv.args, none⟩], none⟩
+      | none =>
+        let invoked := if lv.chained.isEmpty then none else some "*"
+        ⟨⟨cmd, infoName, path, s, lv.args, invoked⟩ ::
+          lv.chained.map (fun (c, name, cs, cpath, pa) => ⟨c, name, cpath, cs, pa, none⟩), none⟩
       | some (c, name, rest) =>
         let d := dispatchAux prog env fuel c (some s) name (cmd.childPath s path name) rest
         ⟨⟨cmd, infoName, path, s, lv.args, some name⟩ :: d.frames, d.halt⟩

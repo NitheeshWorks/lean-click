@@ -30,8 +30,11 @@ inductive Raw where
 inductive Stop where
   | error (e : UsageError)
   | eager (e : Eager)
-  /-- An option needs an interactive answer that `Env.answers` lacks. -/
-  | prompt (p : Param) (defaultShown : Option String)
+  /-- An option needs an interactive answer that `Env.answers` lacks; `path`
+  is the command path the answer is keyed by. -/
+  | prompt (path : String) (p : Param) (defaultShown : Option String)
+  /-- `--help` of a nested (chained) command, already rendered. -/
+  | helpText (text : String)
 
 /-- The command-line raw value of an option, from the scanner events. -/
 def cmdRaw (events : List Event) (p : Param) : Option Raw :=
@@ -248,7 +251,7 @@ def resolveParam (fs : String → Option FileInfo) (answer : Option String)
     (cmd : Option Raw) (env : Option String) (p : Param) : Except Stop Entry :=
   let rs := pickSource p answer cmd env
   if p.wantsPrompt rs.1 rs.2 && rs.2 != .prompt then
-    .error (.prompt p (match rs.1.or (implicitRaw p) with
+    .error (.prompt "" p (match rs.1.or (implicitRaw p) with
       | some (.tokens [d]) => some d
       | some (.bool b) => some (if b then "true" else "false")
       | _ => none))

@@ -369,6 +369,28 @@ def cmdCases : List Case := [
   pc "tests/test_commands.py::test_default_maps" "command line beats default_map"
     (let g : Cmd := group "cli" [] [command "foo" [option ["--name"] (default := "normal")]]
      (run g ["foo", "--name", "x"] (defaultMap := some (.node [] [("foo", .node [("name", ["changed"])] [])]))).val "name" == "x"),
+  pc "tests/test_chain.py::test_basic_chaining" "chained group runs each command in order"
+    (let g : Cmd := group "cli" [] [command "sdist" [], command "bdist" []] (chain := true)
+     let r := run g ["bdist", "sdist", "bdist"]
+     r.code == 0 && (r.frames.map (·.infoName)) == ["cli", "bdist", "sdist", "bdist"] &&
+     (r.frames.head?.bind (·.invokedSub)) == some "*"),
+  pc "tests/test_chain.py::test_chaining_help" "chained help texts"
+    (let g : Cmd := group "cli" [] [command "sdist" (help := "SDIST HELP"), command "bdist" (help := "BDIST HELP")]
+        (help := "ROOT HELP") (chain := true)
+     has (run g ["--help"]).out "COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]..." && has (run g ["--help"]).out "ROOT HELP" &&
+     has (run g ["sdist", "--help"]).out "SDIST HELP" && has (run g ["bdist", "--help"]).out "BDIST HELP" &&
+     has (run g ["bdist", "sdist", "--help"]).out "SDIST HELP" && (run g ["bdist", "sdist", "--help"]).code == 0),
+  pc "tests/test_chain.py::test_chaining_with_options" "chained commands with options"
+    (let g : Cmd := group "cli" [] [command "sdist" [option ["--format"]], command "bdist" [option ["--format"]]] (chain := true)
+     let r := run g ["bdist", "--format=1", "sdist", "--format=2"]
+     (r.frames.drop 1).map (fun f => (f.infoName, (f.args.get "format").render)) == [("bdist", "1"), ("sdist", "2")]),
+  pc "tests/test_chain.py::test_chaining_with_arguments" "chained commands with arguments"
+    (let g : Cmd := group "cli" [] [command "sdist" [argument "format"], command "bdist" [argument "format"]] (chain := true)
+     let r := run g ["bdist", "1", "sdist", "2"]
+     (r.frames.drop 1).map (fun f => (f.infoName, (f.args.get "format").render)) == [("bdist", "1"), ("sdist", "2")]),
+  pc "tests/test_chain.py::test_args_and_chain" "unknown command inside a chain"
+    (let g : Cmd := group "cli" [] [command "a" []] (chain := true)
+     let r := run g ["a", "b"]; r.code == 2 && has r.out "No such command 'b'."),
   pc "tests/test_commands.py::test_group_first_match" "first subcommand of a name wins"
     (let g : Cmd := Command.group { name := "cli" } [mkCmd "a" [Param.opt ["--x"]], mkCmd "a" [Param.opt ["--y"]]]
      (run g ["a", "--x", "1"]).val "x" == "1"),

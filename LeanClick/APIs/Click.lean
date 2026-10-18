@@ -174,9 +174,9 @@ def group {κ : Type} [Inhabited κ] (name : String) (params : List Param := [])
     (commands : List (Command κ) := []) (callback : κ := default) (help : String := "") (shortHelp : Option String := none)
     (epilog : Option String := none) (contextSettings : ContextSettings := {})
     (invokeWithoutCommand : Bool := false) (noArgsIsHelp : Option Bool := none)
-    (hidden : Bool := false) : Command κ :=
+    (hidden : Bool := false) (chain : Bool := false) : Command κ :=
   .mk { name, params, help := if help.isEmpty then none else some help, shortHelp, epilog, hidden,
-        invokeWithoutCommand, noArgsIsHelp,
+        invokeWithoutCommand, noArgsIsHelp, chain,
         helpOptionNames := contextSettings.helpOptionNames,
         autoEnvvarPrefix := contextSettings.autoEnvvarPrefix,
         showDefault := contextSettings.showDefault,

@@ -175,7 +175,10 @@ def Command.usagePieces (cmd : Command σ) (s : Settings) : List String :=
   let args := (cmd.allParams s).flatMap Param.usagePieces
   let sub := if cmd.isGroup then
       [cmd.spec.subcommandMetavar.getD
-        (if cmd.spec.invokeWithoutCommand then "[COMMAND] [ARGS]..." else "COMMAND [ARGS]...")]
+        (if cmd.spec.chain then
+          (if cmd.spec.invokeWithoutCommand then "[COMMAND1] [ARGS]... [COMMAND2 [ARGS]...]..."
+           else "COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...")
+         else if cmd.spec.invokeWithoutCommand then "[COMMAND] [ARGS]..." else "COMMAND [ARGS]...")]
     else []
   opts ++ args ++ sub
 

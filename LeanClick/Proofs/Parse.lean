@@ -122,6 +122,7 @@ theorem resolveWith_ok_entry (fs : String → Option FileInfo) (answers : List (
   unfold resolveWith at h
   split at h
   · cases h
+  · cases h
   · rename_i e' he
     cases h
     exact ⟨(resolveParam_ok_entry _ _ _ _ _ _ he).1, (resolveParam_ok_entry _ _ _ _ _ _ he).2, he⟩
