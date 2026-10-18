@@ -135,15 +135,17 @@ def convertPath (fs : String → Option FileInfo) (spec : PathSpec) (s : String)
   let title := match name.toList with
     | c :: r => String.ofList (c.toUpper :: r)
     | [] => ""
-  match fs s with
-  | none => if spec.exists_ then .error s!"{title} {pyRepr s} does not exist." else .ok s
+  let info := fs s
+  let shown := if spec.resolvePath then (info.bind (·.realPath)).getD s else s
+  match info.filter (·.exists_) with
+  | none => if spec.exists_ then .error s!"{title} {pyRepr s} does not exist." else .ok shown
   | some info =>
     if !spec.fileOkay && info.isFile then .error s!"{title} {pyRepr s} is a file."
     else if !spec.dirOkay && info.isDir then .error s!"{title} {pyRepr s} is a directory."
     else if spec.readable && !info.readable then .error s!"{title} {pyRepr s} is not readable."
     else if spec.writable && !info.writable then .error s!"{title} {pyRepr s} is not writable."
     else if spec.executable && !info.executable then .error s!"{title} {pyRepr s} is not executable."
-    else .ok s
+    else .ok shown
 
 /-- `File.convert`: a file opened for reading must exist and be readable;
 writing is lazy (checked when opened). -/
@@ -152,7 +154,7 @@ def convertFile (fs : String → Option FileInfo) (spec : FileSpec) (s : String)
   let reading := !(spec.mode.toList.contains 'w' || spec.mode.toList.contains 'a' ||
     spec.mode.toList.contains 'x')
   if s == "-" || !reading then .ok ⟨s, spec.mode⟩
-  else match fs s with
+  else match (fs s).filter (·.exists_) with
     | none => .error s!"{pyRepr s}: No such file or directory"
     | some info =>
       if info.isDir then .error s!"{pyRepr s}: Is a directory"

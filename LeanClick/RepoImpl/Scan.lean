@@ -29,7 +29,8 @@ open Text
 inductive Action where
   | takes (n : Nat)
   | flag (b : Bool)
-  | const
+  /-- A `flag_value` option: stores its constant. -/
+  | const (value : String)
   | count
   deriving DecidableEq, Repr, Inhabited
 
@@ -47,7 +48,7 @@ def Param.spellings (p : Param) : List Spelling :=
   | .option opts (.value n _) => opts.map fun o => ⟨o, p.name, .takes n⟩
   | .option opts (.boolFlag sec) =>
     opts.map (fun o => ⟨o, p.name, .flag true⟩) ++ sec.map (fun o => ⟨o, p.name, .flag false⟩)
-  | .option opts (.constFlag _ _) => opts.map fun o => ⟨o, p.name, .const⟩
+  | .option opts (.constFlag c _) => opts.map fun o => ⟨o, p.name, .const c⟩
   | .option opts .count => opts.map fun o => ⟨o, p.name, .count⟩
   | .argument _ => []
 
@@ -88,7 +89,7 @@ def lookupShort (tbl : List Spelling) (o : String) : Option Spelling :=
 inductive Occ where
   | values (xs : List String)
   | flag (b : Bool)
-  | const
+  | const (value : String)
   | count
   deriving DecidableEq, Repr, Inhabited
 
@@ -150,7 +151,7 @@ def takeValues (opt : String) (n : Nat) (attached : Option String) (rest : List 
 def Action.occ : Action → Occ
   | .takes _ => .values []
   | .flag b => .flag b
-  | .const => .const
+  | .const c => .const c
   | .count => .count
 
 /-- `_match_short_opt` over the characters after the prefix. Returns the

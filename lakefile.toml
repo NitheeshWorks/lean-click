@@ -22,9 +22,9 @@ root = "tests.Conformance"
 # The fastapi dev/run shape on top of LeanClick.Terminal: `lake exe example`.
 [[lean_exe]]
 name = "example"
-root = "examples.FastapiCli"
+root = "tests.apps.FastapiCli"
 
 # click's README quickstart: `lake exe hello --count=3`.
 [[lean_exe]]
 name = "hello"
-root = "examples.Hello"
+root = "tests.apps.Hello"

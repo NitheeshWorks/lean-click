@@ -60,6 +60,7 @@ theorem resolveParam_callbackResult (fs : String → Option FileInfo) (ans : Opt
     · rename_i f hcb
       split at h
       · cases h
+      · cases h
       · rename_i v hv
         simp only [Except.ok.injEq] at h; subst h
         simp only [hp, hcb]

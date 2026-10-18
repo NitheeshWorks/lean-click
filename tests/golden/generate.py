@@ -264,7 +264,7 @@ for sc in SCENARIOS:
     out.append({"fixture": name, "upstream": upstream, "argv": argv, "env": env, "width": width or 80, "default_map": dmap,
                 "code": res.exit_code, "stdout": res.stdout, "stderr": res.stderr})
 # Whole-process scenarios: click's README quickstart run as a real program
-# with piped stdin, against `lake exe hello` (examples/Hello.lean).
+# with piped stdin, against `lake exe hello` (tests/apps/Hello.lean).
 import subprocess
 import sys
 

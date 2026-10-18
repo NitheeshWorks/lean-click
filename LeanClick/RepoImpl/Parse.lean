@@ -145,12 +145,15 @@ def Command.findSub (cmd : Command σ) (name : String) : Option (Command σ) :=
 `Group.resolve_command` does (`No such command`, or the error of an
 option-looking name). -/
 def Command.resolveSub (cmd : Command σ) (s : Settings) (path : String) (name : String)
-    (rest : List String) : Except Stop (Command σ) :=
+    (rest : List String) (alias : String → Option String := fun _ => none) : Except Stop (Command σ) :=
   let info := cmd.ctxInfo s path
   let fail := fun (e : UsageError) => Stop.error { e with ctx := some info }
   match cmd.findSub name with
   | some c => .ok c
   | none =>
+    match (alias name).bind cmd.findSub with
+    | some c => .ok c
+    | none =>
     let names := cmd.subcommands.map (·.name)
     let nsc := fail ⟨.noSuchCommand name (closeMatches name names), none⟩
     if (splitOpt name).1.isEmpty then .error nsc
@@ -165,12 +168,15 @@ def Command.asChained : Command σ → Command σ
 
 /-- Parse a chained group's commands one after another, each taking the
 arguments the previous one left over. -/
-def Command.parseChain (cmd : Command σ) (s : Settings) (path : String) (env : Env) :
+def Command.parseChain (cmd : Command σ) (s : Settings) (path : String) (env : Env)
+    (alias : String → Option String := fun _ => none) :
     Nat → List String → Except Stop (List (Command σ × String × Settings × String × ParsedArgs))
   | _, [] => .ok []
   | 0, _ :: _ => .error (.error ⟨.usage "Chained commands exceed the argument count.", none⟩)
-  | fuel + 1, name :: rest => do
-    let c ← cmd.resolveSub s path name rest
+  | fuel + 1, name0 :: rest => do
+    let c ← cmd.resolveSub s path name0 rest alias
+    -- an alias resolves to the command's own name (as `AliasedGroup.resolve_command`)
+    let name := if (cmd.findSub name0).isSome then name0 else c.name
     -- click refuses a group inside a chained group (`_check_nested_chain`)
     if c.isGroup then
       .error (.error { kind := .usage s!"Found the group {pyRepr name} as subcommand to another group  {pyRepr cmd.name} that is in chain mode. This is not supported.", ctx := some (cmd.ctxInfo s path) })
@@ -180,13 +186,14 @@ def Command.parseChain (cmd : Command σ) (s : Settings) (path : String) (env : 
     let pa ← match c.asChained.parseArgs cs cpath rest env with
       | .error (.eager .help) => .error (.helpText (c.getHelp cs cpath))
       | r => r
-    let more ← cmd.parseChain s path env fuel pa.extra
+    let more ← cmd.parseChain s path env alias fuel pa.extra
     return (c, name, cs, cpath, { pa with extra := [] }) :: more
 
 /-- Parse one level; a group also selects its subcommand (all of them, in
-order, for a chained group). -/
-def Command.parseLevel (cmd : Command σ) (s : Settings) (path : String) (argv : List String)
-    (env : Env) : Except Stop (Level σ) :=
+order, for a chained group). `alias` maps a name the group does not know to
+one it does (a custom `Group.get_command`, run by `LeanClick.Terminal`). -/
+def Command.parseLevelWith (alias : String → Option String) (cmd : Command σ) (s : Settings)
+    (path : String) (argv : List String) (env : Env) : Except Stop (Level σ) :=
   match cmd.parseArgs s path argv env with
   | .error st => .error st
   | .ok pa =>
@@ -200,13 +207,20 @@ def Command.parseLevel (cmd : Command σ) (s : Settings) (path : String) (argv :
         else .error (fail ⟨.usage "Missing command.", none⟩)
       | name :: rest =>
         if cmd.spec.chain then
-          match cmd.parseChain s path env (name :: rest).length (name :: rest) with
+          match cmd.parseChain s path env alias (name :: rest).length (name :: rest) with
           | .error st => .error st
           | .ok subs => .ok ⟨{ pa with extra := [] }, none, subs⟩
         else
-          match cmd.resolveSub s path name rest with
+          match cmd.resolveSub s path name rest alias with
           | .error st => .error st
-          | .ok c => .ok ⟨{ pa with extra := [] }, some (c, name, rest), []⟩
+          | .ok c =>
+            let shown := if (cmd.findSub name).isSome then name else c.name
+            .ok ⟨{ pa with extra := [] }, some (c, shown, rest), []⟩
+
+/-- Parse one level with the group's own subcommands only. -/
+def Command.parseLevel (cmd : Command σ) (s : Settings) (path : String) (argv : List String)
+    (env : Env) : Except Stop (Level σ) :=
+  cmd.parseLevelWith (fun _ => none) s path argv env
 
 /-- Why an invocation stopped before running every callback. -/
 inductive Halt where
@@ -214,6 +228,8 @@ inductive Halt where
   | help (text : String)
   | message (text : String)
   | prompt (path : String) (p : Param) (defaultShown : Option String)
+  /-- `ctx.abort()` from a parameter callback: `Aborted!`, exit code 1. -/
+  | abort
 
 /-- Substitute `%(prog)s` and `%(version)s`. -/
 def versionMessage (prog version template : String) : String :=
@@ -226,6 +242,7 @@ def Stop.toHalt (cmd : Command σ) (s : Settings) (path prog : String) : Stop �
   | .eager (.version v t) => .message (versionMessage prog v t)
   | .prompt q p d => .prompt q p d
   | .helpText t => .help t
+  | .abort => .abort
 
 /-- One parsed level of an invocation chain. -/
 structure Frame (σ : Type) where
@@ -322,6 +339,7 @@ def Termination.exitCode : Termination → Nat
   | .halted (.help _) => 0
   | .halted (.message _) => 0
   | .halted (.prompt _ _ _) => 1
+  | .halted .abort => 1
   | .raised (.usage _) => 2
   | .raised (.failure _) => 1
   | .raised (.fileError _ _) => 1

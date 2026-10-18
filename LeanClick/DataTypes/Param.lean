@@ -74,6 +74,55 @@ structure PromptSpec where
   required : Bool := true
   deriving DecidableEq, Repr, Inhabited
 
+/-- What the filesystem says about a path (for `Path`/`File` checks). -/
+structure FileInfo where
+  isFile : Bool
+  isDir : Bool
+  readable : Bool := true
+  writable : Bool := true
+  executable : Bool := false
+  /-- The real path (`os.path.realpath`), when known. -/
+  realPath : Option String := none
+  /-- `false` for a path that does not exist (known only for its real path). -/
+  exists_ : Bool := true
+  deriving DecidableEq, Repr, Inhabited
+
+/-- click's `CompletionItem`: the value, the kind of completion the shell
+should do (`plain`, `file`, `dir`), and help text. -/
+structure CompletionItem where
+  value : String
+  type : String := "plain"
+  help : Option String := none
+  deriving DecidableEq, Repr, Inhabited
+
+instance : Coe String CompletionItem := ⟨fun v => { value := v }⟩
+
+/-- What a parameter callback can do with a value besides accept it:
+reject it (`BadParameter`) or abort the program (`ctx.abort()`, as
+`confirmation_option` does). -/
+inductive CallbackError where
+  | bad (message : String)
+  | abort
+  deriving DecidableEq, Repr, Inhabited
+
+instance : Coe String CallbackError := ⟨.bad⟩
+
+/-- Everything outside `argv` the parser may read: environment variables, a
+view of the filesystem, prompt answers already collected, and the terminal
+width. `LeanClick.Terminal` builds it; the parser only reads it. -/
+structure Env where
+  vars : List (String × String) := []
+  fs : String → Option FileInfo := fun _ => none
+  /-- Prompt answers keyed by `(command path, parameter name)`. -/
+  answers : List ((String × String) × String) := []
+  width : Nat := 80
+  /-- The working directory, for `resolve_path`. -/
+  cwd : String := ""
+
+/-- Look up an environment variable; the first binding wins. -/
+def Env.get (e : Env) (k : String) : Option String :=
+  (e.vars.find? (fun kv => kv.1 == k)).map (·.2)
+
 /-- One parameter. Defaults are raw strings, converted through `type` like
 any other source (click converts its defaults too); a multi-value default is
 the flat token list, chunked by `nargs`.
@@ -99,9 +148,9 @@ structure Param where
   allowFromAutoenv : Bool := true
   /-- click's parameter `callback`: sees the converted value, may replace it
   or reject it with a `BadParameter` message. -/
-  callback : Option (Value → Except String Value) := none
+  callback : Option (Value → Except CallbackError Value) := none
   /-- click's `shell_complete=`: completions for the incomplete word. -/
-  shellComplete : Option (String → List String) := none
+  shellComplete : Option (Env → String → List CompletionItem) := none
   /-- The default came from the context's `default_map`. -/
   fromDefaultMap : Bool := false
   h_bool : decl.isBoolFlag = true → type = .bool := by
@@ -220,29 +269,6 @@ inductive ClickError where
   /-- `Exit(code)`. -/
   | exit (code : Nat)
   deriving DecidableEq, Repr, Inhabited
-
-/-- What the filesystem says about a path (for `Path`/`File` checks). -/
-structure FileInfo where
-  isFile : Bool
-  isDir : Bool
-  readable : Bool := true
-  writable : Bool := true
-  executable : Bool := false
-  deriving DecidableEq, Repr, Inhabited
-
-/-- Everything outside `argv` the parser may read: environment variables, a
-view of the filesystem, prompt answers already collected, and the terminal
-width. `LeanClick.Terminal` builds it; the parser only reads it. -/
-structure Env where
-  vars : List (String × String) := []
-  fs : String → Option FileInfo := fun _ => none
-  /-- Prompt answers keyed by `(command path, parameter name)`. -/
-  answers : List ((String × String) × String) := []
-  width : Nat := 80
-
-/-- Look up an environment variable; the first binding wins. -/
-def Env.get (e : Env) (k : String) : Option String :=
-  (e.vars.find? (fun kv => kv.1 == k)).map (·.2)
 
 /-- A context: the parsed parameters of one command invocation, its parent,
 and the user object (click's `ctx.obj`). -/

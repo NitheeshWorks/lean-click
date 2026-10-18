@@ -99,7 +99,7 @@ Listed here with the reason, and in `docs/traceability.toml` with
 * Python number parsing and printing (`parseInt`, `parseDec`, `showDec`):
   round-trip property tests.
 * `Terminal.lean`: prompts, confirmation, the filesystem view, the exit code
-  reporting. Effectful; exercised by `examples/FastapiCli.lean`.
+  reporting. Effectful; exercised by `tests/apps/FastapiCli.lean`.
 
 ### Deviations from upstream
 

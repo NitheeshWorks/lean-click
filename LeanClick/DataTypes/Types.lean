@@ -80,6 +80,8 @@ structure PathSpec where
   writable : Bool := false
   executable : Bool := false
   allowDash : Bool := false
+  /-- `resolve_path`: the value is made absolute with symlinks resolved. -/
+  resolvePath : Bool := false
   deriving DecidableEq, Repr, Inhabited
 
 /-- click's `File` type: the open mode. The file is opened by
@@ -195,6 +197,9 @@ inductive Value where
   | file (f : FileArg)
   | dateTime (d : Timestamp)
   | list (vs : List Value)
+  /-- A structured value a custom type produced, shown as Python's
+  `Name(field=value, ...)` repr. -/
+  | record (name : String) (fields : List (String × Value))
   deriving Inhabited
 
 /-- `Repr` by structural recursion (the derived printer of a nested
@@ -207,14 +212,19 @@ def Value.reprPrec : Value → Nat → Std.Format
   | .bool b, p => Repr.addAppParen ("LeanClick.Value.bool " ++ repr b) p
   | .file f, p => Repr.addAppParen ("LeanClick.Value.file " ++ reprArg f) p
   | .dateTime d, p => Repr.addAppParen ("LeanClick.Value.dateTime " ++ reprArg d) p
+  | .record n fs, p =>
+    Repr.addAppParen ("LeanClick.Value.record " ++ repr n ++ " " ++
+      Std.Format.bracket "[" (Std.Format.joinSep (fs.attach.map fun ⟨(k, v), _⟩ =>
+        "(" ++ repr k ++ ", " ++ Value.reprPrec v 0 ++ ")") ("," ++ Std.Format.line)) "]") p
   | .list vs, p =>
     Repr.addAppParen ("LeanClick.Value.list " ++
       Std.Format.bracket "[" (Std.Format.joinSep (vs.attach.map fun ⟨v, _⟩ => Value.reprPrec v 0)
         ("," ++ Std.Format.line)) "]") p
 termination_by v => sizeOf v
 decreasing_by
-  have := List.sizeOf_lt_of_mem ‹v ∈ vs›
-  simp_wf; omega
+  all_goals first
+    | (have := List.sizeOf_lt_of_mem ‹v ∈ vs›; simp_wf; omega)
+    | (rename_i h; have := List.sizeOf_lt_of_mem h; simp_wf; simp at this ⊢; omega)
 
 instance : Repr Value := ⟨Value.reprPrec⟩
 

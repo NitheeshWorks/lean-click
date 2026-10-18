@@ -1,5 +1,6 @@
 import LeanClick.APIs
 import LeanClick.RepoImpl.Complete
+import LeanClick.RepoImpl.Style
 import Std.Data.HashSet
 import Std.Data.HashMap
 
@@ -31,28 +32,153 @@ abbrev ClickM := ExceptT ClickError IO
 subcommand's context. -/
 abbrev Callback (σ : Type) := Context σ → ClickM σ
 
-/-- A command whose callbacks run in `IO`. -/
-abbrev App (σ : Type) := Command (Callback σ)
+/-- What a command runs: its callback, and for a group that resolves
+names itself (click's `Group.get_command` override, as the `aliases`
+example does) the resolver. The resolver sees the group's context and the
+unknown name, and returns the name of a subcommand, `none`, or fails
+(`ctx.fail`). -/
+structure Handlers (σ : Type) where
+  run : Callback σ := fun c => pure c.obj
+  resolve : Option (Context σ → String → ClickM (Option String)) := none
 
-instance {σ : Type} : Inhabited (Callback σ) := ⟨fun c => pure c.obj⟩
+instance {σ : Type} : Inhabited (Handlers σ) := ⟨{}⟩
+
+instance {σ : Type} : Coe (Callback σ) (Handlers σ) := ⟨fun f => { run := f }⟩
+
+/-- A command whose callbacks run in `IO`. -/
+abbrev App (σ : Type) := Command (Handlers σ)
 
 /-- `click.command` with an `IO` callback. -/
 def App.command {σ : Type} (spec : CommandSpec) (callback : Callback σ := fun c => pure c.obj) : App σ :=
-  .mk spec false callback []
+  .mk spec false { run := callback } []
 
 /-- `click.group` with an `IO` callback. -/
 def App.group {σ : Type} (spec : CommandSpec) (subcommands : List (App σ))
     (callback : Callback σ := fun c => pure c.obj)
+    (resolve : Option (Context σ → String → ClickM (Option String)) := none)
     (_noNestedChain : spec.chain = false ∨ subcommands.all (fun c => !c.isGroup) = true := by
       first | exact Or.inl rfl | decide | fail "It is not possible to add a group to another group that is in chain mode.") :
     App σ :=
-  .mk spec true callback subcommands
+  .mk spec true { run := callback, resolve } subcommands
 
-/-- `click.echo`. -/
-def echo (msg : String) (err : Bool := false) (nl : Bool := true) : IO Unit := do
+/-- Does the stream show to a terminal? (click's `isatty`) -/
+def isTty (err : Bool := false) : IO Bool := do
   let h ← if err then IO.getStderr else IO.getStdout
+  h.isTty
+
+/-- `click.echo`: write a line; ANSI styles are removed when the output is
+not a terminal, unless `color` says otherwise (click's
+`should_strip_ansi`). -/
+def echo (msg : String) (err : Bool := false) (nl : Bool := true) (color : Option Bool := none) :
+    IO Unit := do
+  let h ← if err then IO.getStderr else IO.getStdout
+  let keep ← match color with
+    | some c => pure c
+    | none => h.isTty
+  let msg := if keep then msg else unstyle msg
   h.putStr (if nl then msg ++ "\n" else msg)
   h.flush
+
+/-- `click.secho`: `echo (style ...)`. -/
+def secho (msg : String) (fg : Option Color := none) (bg : Option Color := none)
+    (bold : Option Bool := none) (underline : Option Bool := none) (err : Bool := false)
+    (nl : Bool := true) : IO Unit :=
+  echo (style msg fg bg bold (underline := underline)) err nl
+
+/-- `click.format_filename`: how a file name is shown. -/
+def formatFilename (name : String) : String := name
+
+/-- `click.clear`: clear the screen (only on a terminal). -/
+def clear : IO Unit := do
+  if ← isTty then
+    let h ← IO.getStdout
+    h.putStr "\x1b[2J\x1b[1;1H"
+    h.flush
+
+/-- Read one key from the terminal (`click.getchar`), via `/dev/tty` in raw
+mode, as click does on POSIX. -/
+def getchar (echoIt : Bool := false) : IO String := do
+  let tty ← IO.FS.Handle.mk "/dev/tty" .read
+  let _ ← IO.Process.output { cmd := "stty", args := #["-F", "/dev/tty", "raw", "-echo"] }
+  let bytes ← tty.read 32
+  let _ ← IO.Process.output { cmd := "stty", args := #["-F", "/dev/tty", "sane"] }
+  let ch := (String.fromUTF8? bytes).getD ""
+  if echoIt then echo ch (nl := false)
+  return ch
+
+/-- `click.pause`: wait for a key, only when stdin and stdout are terminals. -/
+def pause (info : String := "Press any key to continue...") : IO Unit := do
+  let stdin ← IO.getStdin
+  if (← stdin.isTty) && (← isTty) then
+    echo info (nl := false)
+    let _ ← getchar
+    echo ""
+
+/-- `click.echo_via_pager`: through `$PAGER` (else `less`) on a terminal,
+straight to stdout otherwise. -/
+def echoViaPager (text : String) : IO Unit := do
+  if !(← isTty) then
+    echo text
+    return
+  let pager := (← IO.getEnv "PAGER").getD "less"
+  let child ← IO.Process.spawn { cmd := "sh", args := #["-c", pager], stdin := .piped }
+  let (stdin, child) ← child.takeStdin
+  stdin.putStr (text ++ "\n")
+  stdin.flush
+  let _ ← child.wait
+
+/-- `click.launch`: open a URL or file with the desktop's handler
+(`xdg-open`, or `open` on macOS); `locate` opens the containing folder. -/
+def launch (url : String) (locate : Bool := false) : IO UInt32 := do
+  let target := if locate then ((System.FilePath.mk url).parent.map (·.toString)).getD "." else url
+  let opener := if System.Platform.isOSX then "open" else "xdg-open"
+  try
+    let child ← IO.Process.spawn { cmd := opener, args := #[target] }
+    child.wait
+  catch _ => return 127
+
+/-- `click.edit`: edit the text in `$VISUAL`/`$EDITOR` (else `vi`) and
+return the result, or `none` when the file was not changed. -/
+def edit (text : String) (extension : String := ".txt") : IO (Option String) := do
+  let editor := (← IO.getEnv "VISUAL").getD ((← IO.getEnv "EDITOR").getD "vi")
+  let (h, path) ← IO.FS.createTempFile
+  h.putStr text
+  h.flush
+  let path' := path.toString ++ extension
+  IO.FS.rename path path'
+  let before ← (System.FilePath.mk path').metadata
+  let child ← IO.Process.spawn { cmd := "sh", args := #["-c", editor ++ " \"$1\"", "editor", path'] }
+  let _ ← child.wait
+  let after ← (System.FilePath.mk path').metadata
+  let result ← IO.FS.readFile path'
+  IO.FS.removeFile path'
+  if after.modified == before.modified && result == text then return none
+  return some result
+
+/-- click's `progressbar` over a list: on a terminal it redraws a bar
+(`label  [####----]  percent`); otherwise it prints the label once, as
+click does. `step` handles each item. -/
+def progressbar {α : Type} (items : List α) (label : String := "") (fillChar : String := "#")
+    (emptyChar : String := "-") (width : Nat := 36) (step : α → IO Unit := fun _ => pure ()) : IO Unit := do
+  if !(← isTty) then
+    echo label
+    for x in items do step x
+    return
+  let total := items.length
+  let draw := fun (done : Nat) => do
+    let filled := if total == 0 then width else done * width / total
+    let pct := if total == 0 then 100 else done * 100 / total
+    let bar := String.join (List.replicate filled fillChar) ++ String.join (List.replicate (width - filled) emptyChar)
+    let h ← IO.getStdout
+    h.putStr s!"\r{label}  [{bar}]  {pct}%"
+    h.flush
+  draw 0
+  let mut done := 0
+  for x in items do
+    step x
+    done := done + 1
+    draw done
+  echo ""
 
 /-- `ctx.exit(code)`. -/
 def exit (code : Nat := 0) : ClickM σ := throw (.exit code)
@@ -143,14 +269,28 @@ def promptParam (fs : String → Option FileInfo) (p : Param) (dflt : Option Str
             else do echo "Error: The two entered values do not match."; loop f
   loop fuel
 
+/-- `os.path.normpath` of an absolute path: drop `.` and empty segments,
+fold `..`. -/
+def normalizePath (p : String) : String :=
+  let segs := (p.splitOn "/").filter (fun x => !x.isEmpty && x != ".")
+  let folded := segs.foldl (fun acc x => if x == ".." then acc.dropLast else acc ++ [x]) []
+  "/" ++ "/".intercalate folded
+
 /-- What the filesystem says about a path. Permission bits are not
 available through Lean core, so readability, writability and
 executability are assumed. -/
-def statPath (s : String) : IO (Option FileInfo) := do
+def statPath (s : String) (resolve : Bool := false) : IO (Option FileInfo) := do
   try
     let md ← System.FilePath.metadata s
-    return some { isFile := md.type == .file, isDir := md.type == .dir }
-  catch _ => return none
+    let real ← if resolve then (do return some (← IO.FS.realPath s).toString) else pure none
+    return some { isFile := md.type == .file, isDir := md.type == .dir, realPath := real }
+  catch _ =>
+    if resolve then
+      -- `os.path.realpath` of a missing path: made absolute and normalised
+      let cwd ← IO.currentDir
+      return some { isFile := false, isDir := false, exists_ := false,
+                    realPath := some (normalizePath (if s.startsWith "/" then s else cwd.toString ++ "/" ++ s)) }
+    else return none
 
 /-- Every string the parser could hand to a `Path`/`File` conversion at
 this level: tokens, values after `=`, attached short-option values,
@@ -193,26 +333,52 @@ def levelEnv (cmd : App σ) (s : Settings) (argv : List String)
   for n in names do
     if let some v ← IO.getEnv n then vars := vars ++ [(n, v)]
   let needsFs := ps.any fun p => match p.type with | .path _ | .file _ => true | _ => false
+  let resolve := ps.any fun p => match p.type with | .path sp => sp.resolvePath | _ => false
   let mut table : Std.HashMap String FileInfo := {}
   if needsFs then
     for c in pathCandidates ps argv (vars.map (·.2)) do
-      if let some info ← statPath c then table := table.insert c info
+      if let some info ← statPath c resolve then table := table.insert c info
   let tbl := table
   return { vars, fs := fun p => tbl.get? p, answers, width := s.width }
 
 /-- Parse one level, prompting for missing values until the parser has
 every answer it asked for. `none` means the user aborted a prompt. -/
-def parseInteractive (cmd : App σ) (s : Settings) (path : String) (argv : List String) :
-    Nat → List ((String × String) × String) → IO (Option (Except Stop (Level (Callback σ))))
+def parseInteractive (cmd : App σ) (s : Settings) (path : String) (argv : List String)
+    (alias : String → Option String) :
+    Nat → List ((String × String) × String) → IO (Option (Except Stop (Level (Handlers σ))))
   | 0, _ => pure (some (.error (.error ⟨.usage "Too many prompts.", none⟩)))
   | f + 1, answers => do
     let env ← levelEnv cmd s argv answers
-    match cmd.parseLevel s path argv env with
+    match cmd.parseLevelWith alias s path argv env with
     | .error (.prompt ppath p d) =>
       match ← promptParam env.fs p d with
-      | some a => parseInteractive cmd s path argv f (answers ++ [((ppath, p.name), a)])
+      | some a => parseInteractive cmd s path argv alias f (answers ++ [((ppath, p.name), a)])
       | none => pure none
     | r => pure (some r)
+
+/-- Parse a level, asking a group's resolver (a custom `get_command`) for
+each subcommand name the group does not know. -/
+def parseResolving (cmd : App σ) (s : Settings) (path infoName : String) (argv : List String)
+    (parentCtx : Option (Context σ)) (obj : σ) (budget : Nat) :
+    Nat → List (String × String) → IO (Except ClickError (Option (Except Stop (Level (Handlers σ)))))
+  | 0, _ => pure (.ok (some (.error (.error ⟨.usage "Too many aliases.", none⟩))))
+  | f + 1, aliases => do
+    let alias := fun n => aliases.lookup n
+    let r ← parseInteractive cmd s path argv alias budget []
+    match r, cmd.callback.resolve with
+    | some (.error (.error { kind := .noSuchCommand name _, ctx := _ })), some resolve =>
+      let env ← levelEnv cmd s argv []
+      match cmd.parseArgs s path argv env with
+      | .error _ => pure (.ok r)
+      | .ok pa =>
+        let gctx : Context σ :=
+          { infoName, commandPath := path, params := pa, parent := parentCtx, obj,
+            help := cmd.getHelp s path, usage := cmd.getUsage s path }
+        match ← (resolve gctx name).run with
+        | .error e => pure (.error e)
+        | .ok none => pure (.ok r)
+        | .ok (some real) => parseResolving cmd s path infoName argv parentCtx obj budget f (aliases ++ [(name, real)])
+    | _, _ => pure (.ok r)
 
 /-- Run an invocation level by level: parse, run the callback, descend. -/
 def runAux (prog : String) :
@@ -223,20 +389,21 @@ def runAux (prog : String) :
     let s := cmd.settings parent infoName
     let budget := (cmd.allParams s).length + 1 +
       (if cmd.spec.chain then argv.length * (cmd.subcommands.foldl (fun m c => max m c.spec.params.length) 0 + 1) else 0)
-    match ← parseInteractive cmd s path argv budget [] with
-    | none => pure (.raised .abort)
-    | some (.error st) =>
+    match ← parseResolving cmd s path infoName argv parentCtx obj budget (argv.length + 1) [] with
+    | .error e => pure (.raised e)
+    | .ok none => pure (.raised .abort)
+    | .ok (some (.error st)) =>
       match st.toHalt cmd s path prog with
       | .prompt _ _ _ => pure (.raised .abort)
       | h => pure (.halted h)
-    | some (.ok lv) =>
+    | .ok (some (.ok lv)) =>
       let ctx : Context σ :=
         { infoName, commandPath := path, params := lv.args, parent := parentCtx, obj,
           invokedSubcommand := match lv.sub with
             | some (_, name, _) => some name
             | none => if lv.chained.isEmpty then none else some "*",
           help := cmd.getHelp s path, usage := cmd.getUsage s path }
-      match ← (cmd.callback ctx).run with
+      match ← (cmd.callback.run ctx).run with
       | .error e => pure (.raised e)
       | .ok obj' =>
         match lv.sub with
@@ -248,7 +415,7 @@ def runAux (prog : String) :
               let cctx : Context σ :=
                 { infoName := name, commandPath := cpath, params := pa, parent := some ctx, obj := obj',
                   help := c.getHelp cs cpath, usage := c.getUsage cs cpath }
-              match ← (c.callback cctx).run with
+              match ← (c.callback.run cctx).run with
               | .error e => pure (.raised e)
               | .ok _ => runChain more
           runChain lv.chained
@@ -262,6 +429,7 @@ def report : Termination → IO Unit
   | .halted (.help t) => echo t
   | .halted (.message t) => echo t
   | .halted (.prompt _ _ _) => echo "Aborted!" (err := true)
+  | .halted .abort => echo "Aborted!" (err := true)
   | .raised e => echo e.render (err := true) (nl := false)
 
 /-- Shell completion (`_PROG_COMPLETE=bash_source|bash_complete|...`):

@@ -154,7 +154,7 @@ upstream = "README.md (A Simple Example), run as a process"
 title = "Prompts, confirmation, re-prompt on invalid input, Aborted! on EOF"
 status = "tested"
 realises = ["LeanClick.Terminal.promptParam", "LeanClick.Terminal.confirm", "LeanClick.Terminal.parseInteractive"]
-test = ["examples/FastapiCli.lean", "tests/golden/click.json"]
+test = ["tests/apps/FastapiCli.lean", "tests/golden/click.json"]
 
 [[requirement]]
 id = "terminal.main"
@@ -162,7 +162,7 @@ upstream = "README.md (A Simple Example), run as a process"
 title = "Command.main: report and exit code"
 status = "tested"
 realises = ["LeanClick.Terminal.main", "LeanClick.Terminal.runAux"]
-test = ["examples/FastapiCli.lean", "tests/golden/click.json"]
+test = ["tests/apps/FastapiCli.lean", "tests/golden/click.json"]
 
 [[requirement]]
 id = "dev.fastapi-cli"
@@ -269,7 +269,7 @@ upstream = "fastapi-cli src/fastapi_cli/cli.py (typer commands)"
 title = "click_command: a command as a typed Lean function; typer's rules (default means option, Bool default means flag pair, Option/List optional/repeatable)"
 status = "tested"
 realises = ["LeanClick.ClickType", "LeanClick.ClickType.option", "LeanClick.ClickType.argument", "LeanClick.ClickType.fetch"]
-test = ["tests/Conformance.lean::typed command values arrive typed", "examples/FastapiCli.lean", "examples/Hello.lean"]
+test = ["tests/Conformance.lean::typed command values arrive typed", "tests/apps/FastapiCli.lean", "tests/apps/Hello.lean"]
 
 [[requirement]]
 id = "usage.decorators"
@@ -277,7 +277,7 @@ upstream = "README.md (A Simple Example)"
 title = "click's decorator vocabulary: command, group, option, argument, versionOption, Choice/Path/File/IntRange/FloatRange"
 status = "tested"
 realises = ["LeanClick.option", "LeanClick.argument", "LeanClick.command", "LeanClick.group", "LeanClick.Choice", "LeanClick.Path"]
-test = ["tests/Conformance.lean::string option default", "examples/Hello.lean"]
+test = ["tests/Conformance.lean::string option default", "tests/apps/Hello.lean"]
 
 [[requirement]]
 id = "help.positional-arguments-section"

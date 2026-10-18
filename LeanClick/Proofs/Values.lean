@@ -90,6 +90,7 @@ theorem resolveParam_ok (fs : String → Option FileInfo) (ans : Option String) 
     · simp only [Except.ok.injEq] at h; subst h; exact ⟨e0, e0.override, rfl, rfl⟩
     · split at h
       · cases h
+      · cases h
       · simp only [Except.ok.injEq] at h; subst h; exact ⟨e0, _, rfl, rfl⟩
 
 theorem resolveParam_source_core (fs : String → Option FileInfo) (ans : Option String) (cmd : Option Raw)
@@ -214,14 +215,16 @@ theorem resolveSub_ok (cmd : Command σ) (s : Settings) (path name : String) (re
   split at h
   · rename_i c' hc; cases h; exact hc
   · split at h
-    · cases h
-    · split at h <;> cases h
+    · rename_i hb; simp at hb
+    · split at h
+      · cases h
+      · split at h <;> cases h
 
 theorem parseLevel_sub (cmd : Command σ) (s : Settings) (path : String) (argv : List String) (env : Env)
     (lv : Level σ) (c : Command σ) (name : String) (rest : List String)
     (h : cmd.parseLevel s path argv env = .ok lv) (hs : lv.sub = some (c, name, rest)) :
     cmd.findSub name = some c := by
-  unfold Command.parseLevel at h
+  unfold Command.parseLevel Command.parseLevelWith at h
   split at h
   · cases h
   · dsimp only at h
@@ -237,11 +240,13 @@ theorem parseLevel_sub (cmd : Command σ) (s : Settings) (path : String) (argv :
           · cases h; simp at hs
         · split at h
           · cases h
-          · rename_i c' hc
+          · rename_i name0 rest0 _ c' hc
+            have hf := resolveSub_ok cmd s path _ _ _ hc
+            simp only [hf, Option.isSome_some, ite_true] at h
             cases h
             simp at hs
             obtain ⟨rfl, rfl, rfl⟩ := hs
-            exact resolveSub_ok cmd s path _ _ _ hc
+            exact hf
 
 theorem group_dispatch_first_match : GroupDispatchFirstMatch (σ := σ) :=
   fun cmd s path argv env lv c name rest h hs => parseLevel_sub cmd s path argv env lv c name rest h hs

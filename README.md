@@ -52,7 +52,7 @@ commands: a binder with a default is an option (`root_path` is
 comment is the help text; a string after a binder is its help; `[envvar :=
 ["PORT"], decls := ["--entrypoint", "-e"], prompt := "...", type := Path
 (exists_ := true)]` passes click's keywords. The body receives typed values,
-never strings looked up by name. `examples/FastapiCli.lean`
+never strings looked up by name. `tests/apps/FastapiCli.lean`
 (`lake exe example`) is `fastapi dev` / `fastapi run` in this style.
 
 The decorator vocabulary is there too, for groups and hand-built commands:

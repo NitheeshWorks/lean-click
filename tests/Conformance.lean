@@ -48,6 +48,7 @@ def run (c : Cmd) (argv : List String) (env : Env := {}) (defaultMap : Option De
   | some (.help t) => ⟨t ++ "\n", 0, d.frames, t ++ "\n", ""⟩
   | some (.message t) => ⟨t ++ "\n", 0, d.frames, t ++ "\n", ""⟩
   | some (.prompt _ p _) => ⟨s!"PROMPT {p.name}", 1, d.frames, "", s!"PROMPT {p.name}"⟩
+  | some .abort => ⟨"Aborted!\n", 1, d.frames, "", "Aborted!\n"⟩
 
 /-- The value the innermost command received, rendered as click echoes it. -/
 def Run.val (r : Run) (name : String) : String :=
@@ -211,7 +212,7 @@ def optionCases : List Case := [
      (run c [] (envOf [("MODE", "1")])).val "upper" == "upper" &&
      (run c [] (envOf [("MODE", "0")])).val "upper" == "None"),
   pc "tests/test_basic.py::test_evaluation_order" "parameter callback can replace the value"
-    (let up : Value → Except String Value := fun v => match v with | .str s => .ok (.str s.toUpper) | v => .ok v
+    (let up : Value → Except CallbackError Value := fun v => match v with | .str s => .ok (.str s.toUpper) | v => .ok v
      (run (command "cmd" [option ["--name"] (callback := some up)] : Cmd) ["--name", "ann"]).val "name" == "ANN"),
   pc "tests/test_options.py::test_option_names" "name from the longest spelling"
     ((parseDecls ["-a", "--aggressive"]).1 == "aggressive" && (parseDecls ["--root-path"]).1 == "root_path" &&
@@ -454,7 +455,7 @@ def completionCases : List Case := [
         option ["-c"] (type := Choice ["p", "q"]) (nargs := 2)] (addHelpOption := false)
      words c ["a1", "--flag", "-c"] "" == ["p", "q"]),
   pc "tests/test_shell_completion.py::test_option_custom" "custom completion function"
-    (let c : Cmd := command "cli" [argument "x", argument "y", argument "z" (shellComplete := some fun i => [i.toUpper])]
+    (let c : Cmd := command "cli" [argument "x", argument "y", argument "z" (shellComplete := some fun _ i => [i.toUpper])]
      words c ["a", "b"] "" == [""] && words c ["a", "b"] "c" == ["C"]),
   pc "tests/test_shell_completion.py::test_option_multiple" "multiple options are offered again"
     (let c : Cmd := command "type" [option ["-m"] (type := Choice ["a", "b"]) (multiple := true), option ["-f"]]

@@ -63,9 +63,12 @@ def Value.render : Value → String
   | .file f => f.name
   | .dateTime d => showDateTime d
   | .list vs => "(" ++ ", ".intercalate (vs.attach.map fun ⟨v, _⟩ => Value.render v) ++ ")"
+  | .record n fs => n ++ "(" ++ ", ".intercalate (fs.attach.map fun ⟨(k, v), _⟩ =>
+      k ++ "=" ++ (match v with | .str s => Text.pyRepr s | w => Value.render w)) ++ ")"
 termination_by v => sizeOf v
 decreasing_by
-  have := List.sizeOf_lt_of_mem ‹v ∈ vs›
-  simp_wf; omega
+  all_goals first
+    | (have := List.sizeOf_lt_of_mem ‹v ∈ vs›; simp_wf; omega)
+    | (rename_i h; have := List.sizeOf_lt_of_mem h; simp_wf; simp at this ⊢; omega)
 
 end LeanClick

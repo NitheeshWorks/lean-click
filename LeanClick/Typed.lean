@@ -162,7 +162,7 @@ def spellingsOf (isFlag : Bool) (name : String) (decls : List String) : List Str
 def option (α : Type) [ClickType α] (name : String) (default : Option α := none) (help : String := "")
     (envvar : List String := []) (decls : List String := []) (hidden : Bool := false)
     (showDefault : Bool := false) (prompt : Option String := none) (metavar : Option String := none)
-    (type : Option ParamType := none) (callback : Option (Value → Except String Value) := none) :
+    (type : Option ParamType := none) (callback : Option (Value → Except CallbackError Value) := none) :
     Param :=
   let (prim, sec) := spellingsOf (ClickType.isFlag α) name decls
   let base : Param :=
@@ -201,7 +201,22 @@ def fetch (α : Type) [ClickType α] (a : ParsedArgs) (name : String) : ClickM �
 
 end ClickType
 
-/-! ## `click_command` -/
+/-- Options that share a name and store constants (click's feature
+switches, `flag_value`): one flag per `(spelling, value, help)`; the last
+one given wins, and `default` names the value used when none is. -/
+def ClickType.flagValueGroup (name : String) (values : List (String × String × String))
+    (default : Option String := none) : List Param :=
+  values.map fun (decl, v, help) =>
+    let base := Param.flagValue [decl] v
+    { base with
+      name, help := if help.isEmpty then none else some help,
+      default := if default == some v then some [v] else none }
+
+/-! ## `click_command` and `click_group` -/
+
+/-- A binder of this type receives the context's object (click's
+`make_pass_decorator`); it declares no parameter. -/
+abbrev Pass (σ : Type) := σ
 
 declare_syntax_cat clickBinder
 declare_syntax_cat clickKw
@@ -209,73 +224,134 @@ syntax ident " := " term : clickKw
 syntax "(" ident " : " term (" := " term)? ")" (ppSpace str)? (ppSpace "[" sepBy1(clickKw, ", ") "]")? : clickBinder
 
 /-- Declare a click command as a typed Lean function (see the module doc). -/
-syntax (docComment)? "click_command " ident (ppSpace clickBinder)* " : " term " := " term : command
+syntax (docComment)? "click_command " ident (ppSpace "[" sepBy1(clickKw, ", ") "]")? (ppSpace clickBinder)*
+  " : " term " := " term : command
+
+/-- Declare a click group as a typed Lean function: the body runs as the
+group's callback and returns the object its subcommands receive. -/
+syntax (docComment)? "click_group " ident (ppSpace "[" sepBy1(clickKw, ", ") "]")? (ppSpace clickBinder)*
+  " : " term " := " term : command
 
 open Lean in
-macro_rules
-  | `($[$doc?:docComment]? click_command $name:ident $bs:clickBinder* : $ret := $body) => do
-    let help : String := match doc? with
-      | some d => (d.getDocString).trimAscii.copy
-      | none => ""
-    let cliName := Syntax.mkStrLit (replaceChar name.getId.toString '_' '-')
-    let mainName := mkIdentFrom name (name.getId ++ `main)
-    let mut binders : Array (TSyntax `Lean.Parser.Term.bracketedBinder) := #[]
-    let mut params : Array Term := #[]
-    let mut fetches : Array (Ident × Term × StrLit) := #[]
-    let mut args : Array Term := #[]
-    for b in bs do
-      match b with
-      | `(clickBinder| ($x:ident : $t:term $[:= $d?]?) $[$h?:str]? $[[$kws:clickKw,*]]?) =>
-        let kws : Array (TSyntax `clickKw) := match kws with | some k => k.getElems | none => #[]
-        let mut ns : Array Ident := #[]
-        let mut vs : Array Term := #[]
-        for k in kws do
-          match k with
-          | `(clickKw| $n:ident := $v:term) => ns := ns.push n; vs := vs.push v
-          | _ => Macro.throwUnsupported
-        let pname := Syntax.mkStrLit x.getId.toString
-        -- typer's rule: no default means an argument, unless the binder is
-        -- given option spellings or a prompt
-        let optionKw := ns.any fun n => n.getId == `decls || n.getId == `prompt
-        let (isArg, τ) ← match t with
-          | `(Argument $τ:term) => pure (true, τ)
-          | _ => pure (d?.isNone && !optionKw, t)
-        let helpLit : Term := match h? with | some h => h | none => Syntax.mkStrLit ""
-        let dflt : Term ← match d? with
-          | some d => `((some ($d : $τ)))
-          | none => `(none)
-        let builder : Ident := mkIdent (if isArg then ``LeanClick.ClickType.argument else ``LeanClick.ClickType.option)
-        let extra : Array Syntax := (ns.zip vs).map fun (n, v) =>
-          Syntax.node SourceInfo.none `Lean.Parser.Term.namedArgument
-            #[Syntax.atom SourceInfo.none "(", n.raw, Syntax.atom SourceInfo.none ":=", v.raw,
-              Syntax.atom SourceInfo.none ")"]
-        let call ← `($builder $τ $pname (default := $dflt) (help := $helpLit))
-        let call : Term := match call.raw with
-          | Syntax.node i k #[f, Syntax.node i' k' as] => ⟨Syntax.node i k #[f, Syntax.node i' k' (as ++ extra)]⟩
-          | c => ⟨c⟩
-        params := params.push call
+/-- Split a keyword list into names and values. -/
+def clickKwPairs (kws : Array (TSyntax `clickKw)) : MacroM (Array (Ident × Term)) :=
+  kws.mapM fun k => match k with
+    | `(clickKw| $n:ident := $v:term) => pure (n, v)
+    | _ => Macro.throwUnsupported
+
+open Lean in
+/-- `f (n₁ := v₁) ...` from a call and named arguments. -/
+def appendNamedArgs (call : Term) (named : Array (Ident × Term)) : Term :=
+  let extra : Array Syntax := named.map fun (n, v) =>
+    Syntax.node SourceInfo.none `Lean.Parser.Term.namedArgument
+      #[Syntax.atom SourceInfo.none "(", n.raw, Syntax.atom SourceInfo.none ":=", v.raw,
+        Syntax.atom SourceInfo.none ")"]
+  match call.raw with
+  | Syntax.node i k #[f, Syntax.node i' k' as] => ⟨Syntax.node i k #[f, Syntax.node i' k' (as ++ extra)]⟩
+  | c => ⟨c⟩
+
+open Lean in
+/-- The shared expansion of `click_command` and `click_group`. -/
+def expandClick (isGroup : Bool) (doc? : Option (TSyntax `Lean.Parser.Command.docComment)) (name : Ident)
+    (ckws : Array (TSyntax `clickKw)) (bs : Array (TSyntax `clickBinder)) (ret body : Term) :
+    MacroM Syntax := do
+  let help : String := match doc? with
+    | some d => (d.getDocString).trimAscii.copy
+    | none => ""
+  let ckw ← clickKwPairs ckws
+  let cliName : Term := match ckw.find? (·.1.getId == `name) with
+    | some (_, v) => v
+    | none => Syntax.mkStrLit (replaceChar name.getId.toString '_' '-')
+  let resolve? := (ckw.find? (·.1.getId == `resolve)).map (·.2)
+  let cmdKws := ckw.filter fun (n, _) => n.getId != `name && n.getId != `resolve
+  let mainName := mkIdentFrom name (name.getId ++ `main)
+  let ctxId := mkIdent `ctx
+  let mut binders : Array (TSyntax `Lean.Parser.Term.bracketedBinder) := #[]
+  let mut params : Array Term := #[]
+  let mut fetches : Array (Ident × Term) := #[]
+  let mut args : Array Term := #[]
+  let mut objTy : Option Term := none
+  for b in bs do
+    match b with
+    | `(clickBinder| ($x:ident : $t:term $[:= $d?]?) $[$h?:str]? $[[$kws:clickKw,*]]?) =>
+      let kv ← clickKwPairs (match kws with | some k => k.getElems | none => #[])
+      match t with
+      | `(Pass $τ:term) =>
+        objTy := some τ
         binders := binders.push (← `(bracketedBinder| ($x : $τ)))
-        fetches := fetches.push (x, τ, pname)
+        fetches := fetches.push (x, ← `(pure $(ctxId).obj))
         args := args.push x
-      | _ => Macro.throwUnsupported
-    let helpLit := Syntax.mkStrLit help
-    let c1 ← `(command| $[$doc?:docComment]? def $mainName $binders:bracketedBinder* : $ret := $body)
-    let ctxId := mkIdent `ctx
-    let mut cb ← `(do let _ ← ($mainName $args* : $ret); pure ())
-    for (x, τ, pname) in fetches.reverse do
-      cb ← `(LeanClick.ClickType.fetch $τ $(ctxId).params $pname >>= fun $x:ident => $cb)
-    let c2 ← `(command| def $name : LeanClick.Terminal.App Unit :=
-        LeanClick.command $cliName [$params,*] (help := $helpLit)
-          (callback := fun $ctxId => $cb))
-    -- no two parameters share a spelling (the `Unambiguous` hypothesis of
-    -- the flag and precedence theorems), checked when the command is compiled
-    let unambId := mkIdentFrom name (name.getId ++ `unambiguous)
-    let c3 ← `(command|
-      /-- No two parameters of the command share a spelling, in any context
-      whose help option names are distinct (inherited ones included). -/
-      theorem $unambId : ∀ s : LeanClick.Settings, s.helpOptionNames.Nodup →
-          LeanClick.Command.Unambiguous $name s :=
-        fun s h => LeanClick.Command.unambiguous_of $name s (by decide) h)
-    return mkNullNode #[c1, c2, c3]
+      | `(Context $τ:term) =>
+        objTy := some τ
+        binders := binders.push (← `(bracketedBinder| ($x : LeanClick.Context $τ)))
+        fetches := fetches.push (x, ← `(pure $ctxId))
+        args := args.push x
+      | _ =>
+        let pname := Syntax.mkStrLit x.getId.toString
+        let helpLit : Term := match h? with | some h => h | none => Syntax.mkStrLit ""
+        match kv.find? (·.1.getId == `flagValues) with
+        | some (_, vals) =>
+          let dflt : Term ← match d? with
+            | some d => `((some ($d : String)))
+            | none => `(none)
+          params := params.push (← `(LeanClick.ClickType.flagValueGroup $pname $vals $dflt))
+          binders := binders.push (← `(bracketedBinder| ($x : $t)))
+          fetches := fetches.push (x, ← `(LeanClick.ClickType.fetch $t $(ctxId).params $pname))
+          args := args.push x
+        | none =>
+          -- typer's rule: no default means an argument, unless the binder is
+          -- given option spellings or a prompt
+          let optionKw := kv.any fun (n, _) => n.getId == `decls || n.getId == `prompt
+          let (isArg, τ) ← match t with
+            | `(Argument $τ:term) => pure (true, τ)
+            | _ => pure (d?.isNone && !optionKw, t)
+          let dflt : Term ← match d? with
+            | some d => `((some ($d : $τ)))
+            | none => `(none)
+          let builder : Ident := mkIdent (if isArg then ``LeanClick.ClickType.argument else ``LeanClick.ClickType.option)
+          let call ← `($builder $τ $pname (default := $dflt) (help := $helpLit))
+          let call := appendNamedArgs call kv
+          params := params.push (← `([$call]))
+          binders := binders.push (← `(bracketedBinder| ($x : $τ)))
+          fetches := fetches.push (x, ← `(LeanClick.ClickType.fetch $τ $(ctxId).params $pname))
+          args := args.push x
+    | _ => Macro.throwUnsupported
+  let σ : Term ← match objTy with
+    | some τ => pure τ
+    | none => `(Unit)
+  let helpLit := Syntax.mkStrLit help
+  let c1 ← `(command| $[$doc?:docComment]? def $mainName $binders:bracketedBinder* : $ret := $body)
+  -- a body returning `Unit` hands the context's object on unchanged
+  let returnsUnit := match ret with
+    | `(IO Unit) | `(Terminal.ClickM Unit) | `(LeanClick.Terminal.ClickM Unit) | `(ClickM Unit) => true
+    | _ => false
+  let mut cb ← if !isGroup || returnsUnit then `(do let _ ← ($mainName $args* : $ret); pure $(ctxId).obj)
+    else `(do let r ← ($mainName $args* : $ret); pure r)
+  for (x, fetch) in fetches.reverse do
+    cb ← `($fetch >>= fun $x:ident => $cb)
+  let paramList ← `(List.flatten [$params,*])
+  let handlers ← match resolve? with
+    | some r => `(({ run := fun $ctxId => $cb, resolve := some $r } : LeanClick.Terminal.Handlers $σ))
+    | none => `(({ run := fun $ctxId => $cb } : LeanClick.Terminal.Handlers $σ))
+  let builder : Ident := mkIdent (if isGroup then ``LeanClick.group else ``LeanClick.command)
+  let call ← `($builder $cliName $paramList (callback := $handlers) (help := $helpLit))
+  let call := appendNamedArgs call cmdKws
+  let c2 ← `(command| def $name : LeanClick.Terminal.App $σ := $call)
+  -- no two parameters share a spelling (the `Unambiguous` hypothesis of
+  -- the flag and precedence theorems), proved when the command is compiled
+  let unambId := mkIdentFrom name (name.getId ++ `unambiguous)
+  let c3 ← `(command|
+    /-- No two parameters of the command share a spelling, in any context
+    whose help option names are distinct (inherited ones included). -/
+    theorem $unambId : ∀ s : LeanClick.Settings, s.helpOptionNames.Nodup →
+        LeanClick.Command.Unambiguous $name s :=
+      fun s h => LeanClick.Command.unambiguous_of $name s (by decide) h)
+  return mkNullNode #[c1, c2, c3]
+
+macro_rules
+  | `($[$doc?:docComment]? click_command $name:ident $[[$ckws:clickKw,*]]? $bs:clickBinder* : $ret := $body) =>
+    expandClick false doc? name (match ckws with | some k => k.getElems | none => #[]) bs ret body
+  | `($[$doc?:docComment]? click_group $name:ident $[[$ckws:clickKw,*]]? $bs:clickBinder* : $ret := $body) =>
+    expandClick true doc? name (match ckws with | some k => k.getElems | none => #[]) bs ret body
 
 end LeanClick

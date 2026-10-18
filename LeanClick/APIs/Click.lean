@@ -120,8 +120,8 @@ def option (decls : List String) (type : Option ParamType := none) (default : De
     (confirmationPrompt : Bool := false) (hideInput : Bool := false) (showDefault : Bool := false)
     (showEnvvar : Bool := false) (showChoices : Bool := true) (hidden : Bool := false)
     (metavar : Option String := none) (isEager : Bool := false)
-    (callback : Option (Value → Except String Value) := none)
-    (shellComplete : Option (String → List String) := none) : Param :=
+    (callback : Option (Value → Except CallbackError Value) := none)
+    (shellComplete : Option (Env → String → List CompletionItem) := none) : Param :=
   let (_, _, sec) := parseDecls decls
   let base : Param :=
     if count then
@@ -136,8 +136,12 @@ def option (decls : List String) (type : Option ParamType := none) (default : De
         else
           let t := type.getD default.impliedType
           Param.opt decls t (if t.isComposite then t.arity else nargs) multiple
+  let dtoks := match flagValue, default with
+    | some c, .bool true => some [c]
+    | some _, .bool false => none
+    | _, d => d.tokens
   { base with
-    default := default.tokens, help := if help.isEmpty then none else some help, required,
+    default := dtoks, help := if help.isEmpty then none else some help, required,
     envvar, hidden, metavar, showEnvvar, showChoices,
     showDefault := if showDefault then .yes else .auto,
     prompt := prompt.map fun t => { text := t, confirmation := confirmationPrompt, hideInput },
@@ -148,8 +152,8 @@ unless it has a default or `nargs = -1`, as in click. -/
 def argument (name : String) (type : Option ParamType := none) (default : DefaultArg := .unset)
     (nargs : Int := 1) (required : Option Bool := none) (envvar : List String := [])
     (help : String := "") (metavar : Option String := none)
-    (callback : Option (Value → Except String Value) := none)
-    (shellComplete : Option (String → List String) := none) : Param :=
+    (callback : Option (Value → Except CallbackError Value) := none)
+    (shellComplete : Option (Env → String → List CompletionItem) := none) : Param :=
   let t := type.getD default.impliedType
   let n : ArgNargs := if nargs < 0 then .star else .exactly (if t.isComposite then t.arity else nargs.toNat)
   let base := Param.arg name t n

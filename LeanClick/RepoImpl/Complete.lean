@@ -19,14 +19,6 @@ open Text
 
 variable {σ : Type}
 
-/-- click's `CompletionItem`: the value, the kind of completion the shell
-should do (`plain`, `file`, `dir`), and help text. -/
-structure CompletionItem where
-  value : String
-  type : String := "plain"
-  help : Option String := none
-  deriving DecidableEq, Repr, Inhabited
-
 /-- Where completion resolved to: the innermost command, its settings and
 path, the parameters given on the command line, the positionals it has,
 and for a command inside a chained group, that group with the commands
@@ -102,9 +94,9 @@ def CompletionCtx.completeCommand (c : CompletionCtx σ) (incomplete : String) :
 
 /-- A parameter's value completions: its `shell_complete` function, else
 the type's (`ParamType.shell_complete`). -/
-def Param.complete (p : Param) (incomplete : String) : List CompletionItem :=
+def Param.complete (env : Env) (p : Param) (incomplete : String) : List CompletionItem :=
   match p.shellComplete with
-  | some f => (f incomplete).map fun v => { value := v }
+  | some f => f env incomplete
   | none =>
   match p.type with
   | .choice cs cS =>
@@ -115,7 +107,7 @@ def Param.complete (p : Param) (incomplete : String) : List CompletionItem :=
   | _ => []
 
 /-- `_resolve_incomplete` and the completion it leads to. -/
-def CompletionCtx.complete (c : CompletionCtx σ) (args : List String) (incomplete : String) :
+def CompletionCtx.complete (c : CompletionCtx σ) (env : Env) (args : List String) (incomplete : String) :
     List CompletionItem :=
   let cfg := c.cmd.scanCfg c.settings
   let (args, incomplete) :=
@@ -137,7 +129,7 @@ def CompletionCtx.complete (c : CompletionCtx σ) (args : List String) (incomple
         | none => false
       | _ => false
     match waiting with
-    | some p => p.complete incomplete
+    | some p => p.complete env incomplete
     | none =>
       -- the first argument without its value
       let argPs := ps.filter Param.isArgument
@@ -147,16 +139,16 @@ def CompletionCtx.complete (c : CompletionCtx σ) (args : List String) (incomple
         | .tuple vs => vs.any Option.isNone
         | .star _ => true
       match open_ with
-      | some (p, _) => p.complete incomplete
+      | some (p, _) => p.complete env incomplete
       | none => c.completeCommand incomplete
 
 /-- Complete for a top-level command invoked as `prog`: the words before
 the cursor (without the program name) and the word being completed. -/
-def Command.complete (cmd : Command σ) (prog : String) (args : List String) (incomplete : String) :
-    List CompletionItem :=
+def Command.complete (cmd : Command σ) (prog : String) (args : List String) (incomplete : String)
+    (env : Env := {}) : List CompletionItem :=
   let s := cmd.settings (some {}) prog
   let c := resolveCompletion prog (args.length + 1) cmd s args none
-  c.complete args incomplete
+  c.complete env args incomplete
 
 /-- Python's `shlex.split`, as click's `split_arg_string` uses it: words
 separated by whitespace, single and double quotes, backslash escapes; an

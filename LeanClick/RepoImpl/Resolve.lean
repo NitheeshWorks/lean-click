@@ -35,6 +35,8 @@ inductive Stop where
   | prompt (path : String) (p : Param) (defaultShown : Option String)
   /-- `--help` of a nested (chained) command, already rendered. -/
   | helpText (text : String)
+  /-- A parameter callback aborted (`ctx.abort()`). -/
+  | abort
 
 /-- The command-line raw value of an option, from the scanner events. -/
 def cmdRaw (events : List Event) (p : Param) : Option Raw :=
@@ -45,8 +47,13 @@ def cmdRaw (events : List Event) (p : Param) : Option Raw :=
   | .option _ (.value _ true) => if vals.isEmpty then none else some (.multi vals)
   | .option _ (.boolFlag _) =>
     (occs.filterMap fun o => match o with | .flag b => some b | _ => none).getLast?.map .bool
-  | .option _ (.constFlag c false) => if occs.isEmpty then none else some (.tokens [c])
-  | .option _ (.constFlag c true) => if occs.isEmpty then none else some (.multi (occs.map fun _ => [c]))
+  | .option _ (.constFlag _ false) =>
+    -- parameters sharing a name (feature switches) share their events: the
+    -- last one given decides
+    (occs.filterMap fun o => match o with | .const v => some v | _ => none).getLast?.map fun v => .tokens [v]
+  | .option _ (.constFlag _ true) =>
+    let vs := occs.filterMap fun o => match o with | .const v => some v | _ => none
+    if vs.isEmpty then none else some (.multi (vs.map ([·])))
   | .option _ .count => if occs.isEmpty then none else some (.count occs.length)
   | .argument _ => none
 
@@ -287,7 +294,8 @@ def applyCallback (p : Param) (e : Entry) : Except Stop Entry :=
   | none => .ok e
   | some f =>
     match f e.toValue with
-    | .error msg => .error (.error (p.badParameter msg))
+    | .error (.bad msg) => .error (.error (p.badParameter msg))
+    | .error .abort => .error .abort
     | .ok v => .ok { e with override := some v }
 
 /-- Process one parameter (`handle_parse_result`): resolve and convert it,

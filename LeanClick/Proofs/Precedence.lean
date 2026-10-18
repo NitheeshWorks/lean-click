@@ -71,7 +71,7 @@ theorem matchShort_events (cfg : ScanCfg) (pfx : Char) :
           rcases hev with hev | rfl
           · exact Or.inl hev
           · exact Or.inr here
-      | flag b | const | count =>
+      | flag b | const c | count =>
         rw [ha] at h
         dsimp only at h
         rcases matchShort_events cfg pfx cs rest _ unk evs' k unk' h ev hev with h1 | ⟨sp', hsp', hd, c, hc, ho'⟩
@@ -103,7 +103,7 @@ theorem processOpt_events (cfg : ScanCfg) (tok : String) (rest : List String)
       split at h
       · cases h
       · cases h; simp at hev; subst hev; exact ⟨sp, hsp, rfl, hm⟩
-    | flag b | const | count =>
+    | flag b | const c | count =>
       rw [ha] at h
       dsimp only at h
       split at h
