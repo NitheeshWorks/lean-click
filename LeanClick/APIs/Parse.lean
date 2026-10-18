@@ -37,7 +37,7 @@ theorem mapM_except_map {α β ε : Type} (f : α → Except ε β) (g : β → 
 
 theorem parseArgs_parsedFor (cmd : Command σ) (s : Settings) (path : String) (argv : List String)
     (env : Env) (r : ParsedArgs) (h : cmd.parseArgs s path argv env = .ok r) : ParsedFor cmd s r := by
-  refine ⟨?_, parse_ok_required_present cmd s path argv env r h⟩
+  refine ⟨?_, required_present cmd s path argv env r h⟩
   obtain ⟨sc, araws, _, hm⟩ := parseWith_ok_entries cmd s path argv _ _ _ r h
   exact mapM_except_map _ _ (fun p e he => (resolveWith_ok_entry _ _ _ _ _ _ _ p e he).1) _ _ hm
 

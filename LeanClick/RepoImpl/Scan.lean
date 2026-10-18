@@ -203,17 +203,19 @@ def processOpt (cfg : ScanCfg) (tok : String) (rest : List String) :
     else if cfg.ignoreUnknown then .ok ([], 0, [tok])
     else .error ⟨.noSuchOption longOpt (closeMatches longOpt (longOpts cfg.tbl)), none⟩
 
-/-- `_process_args_for_options`: the main scanning loop. -/
+/-- `_process_args_for_options`: the main scanning loop. The events and
+positionals are accumulated in reverse (so each step costs only what it
+adds) and turned around at the end. -/
 def scanLoop (cfg : ScanCfg) : List String → List Event → List String → Except UsageError Scanned
-  | [], evs, largs => .ok ⟨evs, largs, []⟩
+  | [], evs, largs => .ok ⟨evs.reverse, largs.reverse, []⟩
   | tok :: rest, evs, largs =>
-    if tok == "--" then .ok ⟨evs, largs, rest⟩
+    if tok == "--" then .ok ⟨evs.reverse, largs.reverse, rest⟩
     else if cfg.isOptTok tok then
       match processOpt cfg tok rest with
       | .error e => .error e
-      | .ok (newEvs, k, pass) => scanLoop cfg (rest.drop k) (evs ++ newEvs) (largs ++ pass)
-    else if cfg.interspersed then scanLoop cfg rest evs (largs ++ [tok])
-    else .ok ⟨evs, largs, tok :: rest⟩
+      | .ok (newEvs, k, pass) => scanLoop cfg (rest.drop k) (newEvs.reverse ++ evs) (pass.reverse ++ largs)
+    else if cfg.interspersed then scanLoop cfg rest evs (tok :: largs)
+    else .ok ⟨evs.reverse, largs.reverse, tok :: rest⟩
 termination_by l => l.length
 decreasing_by
   all_goals simp only [List.length_drop, List.length_cons]

@@ -32,7 +32,7 @@ upstream = "docs: Parameters / Values from Environment Variables"
 title = "The parser reads the environment only through the declared variable names"
 status = "implemented"
 realises = ["LeanClick.Command.parseWith", "LeanClick.Command.parseArgs"]
-theorem = ["LeanClick.parse_deterministic", "LeanClick.parseWith_congr"]
+theorem = ["LeanClick.parse_env_local", "LeanClick.parseWith_congr"]
 test = ["tests/Props.lean::declaredAccepted"]
 
 [[requirement]]
@@ -41,7 +41,7 @@ upstream = "tests/test_basic.py::test_required_option"
 title = "Required parameters with no value are reported as missing; a successful parse never leaves one missing"
 status = "implemented"
 realises = ["LeanClick.resolveParam", "LeanClick.Param.missingError"]
-theorem = ["LeanClick.required_missing_error", "LeanClick.resolveParam_missing", "LeanClick.parse_ok_required_present"]
+theorem = ["LeanClick.required_missing_error", "LeanClick.required_present"]
 test = ["tests/Conformance.lean::required option missing"]
 
 [[requirement]]
@@ -50,7 +50,7 @@ upstream = "tests/test_arguments.py::test_nargs_tup"
 title = "nargs=n yields exactly n values per occurrence"
 status = "implemented"
 realises = ["LeanClick.takeValues", "LeanClick.Entry"]
-theorem = ["LeanClick.nargs_arity", "LeanClick.takeValues_length", "LeanClick.entry_tuple_length", "LeanClick.entry_many_length"]
+theorem = ["LeanClick.nargs_arity", "LeanClick.takeValues_length", "LeanClick.entry_many_length"]
 test = ["tests/Conformance.lean::nargs=2 argument"]
 
 [[requirement]]
@@ -59,7 +59,7 @@ upstream = "tests/test_basic.py::test_choice_option"
 title = "Choice values are refined to members of the choices; the first normalised match is returned"
 status = "implemented"
 realises = ["LeanClick.matchChoice", "LeanClick.ParamType.Carrier"]
-theorem = ["LeanClick.choice_in_set", "LeanClick.convert_choice"]
+theorem = ["LeanClick.choice_in_set"]
 test = ["tests/Conformance.lean::choice option value"]
 
 [[requirement]]
@@ -73,7 +73,7 @@ test = ["tests/Conformance.lean::count out of range"]
 [[requirement]]
 id = "flags.pairs"
 upstream = "tests/test_basic.py::test_boolean_switch"
-title = "--x stores true, --no-x stores false"
+title = "--x stores true, --no-x stores false; over any sequence of the flag's spellings the last one wins"
 status = "implemented"
 realises = ["LeanClick.Param.flag", "LeanClick.cmdRaw"]
 theorem = ["LeanClick.bool_flag_pairs"]
@@ -85,7 +85,7 @@ upstream = "tests/test_options.py::test_multiple_envvar"
 title = "Command line beats environment variable beats default"
 status = "implemented"
 realises = ["LeanClick.consume", "LeanClick.envString"]
-theorem = ["LeanClick.envvar_fallback", "LeanClick.consume_commandline", "LeanClick.consume_environment", "LeanClick.consume_default", "LeanClick.resolveParam_source"]
+theorem = ["LeanClick.commandline_beats_envvar", "LeanClick.envvar_beats_default", "LeanClick.default_when_absent", "LeanClick.consume_commandline", "LeanClick.consume_environment", "LeanClick.consume_default"]
 test = ["tests/Conformance.lean::command line beats PORT"]
 
 [[requirement]]
@@ -103,7 +103,7 @@ upstream = "tests/test_commands.py::test_command_no_args_is_help"
 title = "Exit codes: 0 success/help/version, 1 abort/ClickException, 2 usage error, Exit(n) mod 256"
 status = "implemented"
 realises = ["LeanClick.Termination.exitCode"]
-theorem = ["LeanClick.exit_code_range", "LeanClick.usage_error_exit_2"]
+theorem = ["LeanClick.exit_code_range", "LeanClick.framework_exit_codes", "LeanClick.usage_error_exit_2"]
 test = ["tests/Conformance.lean::no_args_is_help exits 2 with the help"]
 
 [[requirement]]
@@ -286,3 +286,19 @@ id = "excluded.types"
 upstream = "tests/test_types"
 title = "UUID, DateTime, Tuple and custom ParamType classes; callbacks on parameters; deprecated parameters; prompt_required=False optional values"
 status = "excluded"
+
+[[requirement]]
+id = "usage.typed-commands"
+upstream = "fastapi-cli src/fastapi_cli/cli.py (typer commands)"
+title = "click_command: a command as a typed Lean function; typer's rules (default means option, Bool default means flag pair, Option/List optional/repeatable)"
+status = "tested"
+realises = ["LeanClick.ClickType", "LeanClick.ClickType.option", "LeanClick.ClickType.argument", "LeanClick.ClickType.fetch"]
+test = ["tests/Conformance.lean::typed command values arrive typed", "examples/FastapiCli.lean", "examples/Hello.lean"]
+
+[[requirement]]
+id = "usage.decorators"
+upstream = "README.md (A Simple Example)"
+title = "click's decorator vocabulary: command, group, option, argument, versionOption, Choice/Path/File/IntRange/FloatRange"
+status = "tested"
+realises = ["LeanClick.option", "LeanClick.argument", "LeanClick.command", "LeanClick.group", "LeanClick.Choice", "LeanClick.Path"]
+test = ["tests/Conformance.lean::string option default", "examples/Hello.lean"]

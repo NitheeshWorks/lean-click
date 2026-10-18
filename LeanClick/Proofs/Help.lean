@@ -75,12 +75,16 @@ theorem allOpts_in_helpSpec (p : Param) (ho : p.isOption = true) (o : String) (h
     · exact ((hprim o hc).right _).right _
     · exact (hsec o hc).left _
 
-theorem help_lists_every_param : HelpListsEveryParam (σ := σ) := by
-  intro cmd s path p hp ho hh
+/-- The help row of a visible option is on the page. -/
+theorem helpSpec_in_help (cmd : Command σ) (s : Settings) (path : String) (p : Param)
+    (hp : p ∈ cmd.allParams s) (ho : p.isOption = true) (hh : p.hidden = false) :
+    IsInfix p.helpSpec (cmd.formatHelp s path) := by
   obtain ⟨help, hrow⟩ := optionRows_mem cmd s p hp ho hh
-  have hspec : IsInfix p.helpSpec (cmd.formatHelp s path) :=
-    formatHelp_options_infix cmd s path _ (renderSection_infix _ _ _ _ hrow)
-  exact ⟨hspec, fun o h => (allOpts_in_helpSpec p ho o h).trans hspec⟩
+  exact formatHelp_options_infix cmd s path _ (renderSection_infix _ _ _ _ hrow)
+
+theorem help_lists_every_param : HelpListsEveryParam (σ := σ) :=
+  fun cmd s path p hp ho hh o h =>
+    (allOpts_in_helpSpec p ho o h).trans (helpSpec_in_help cmd s path p hp ho hh)
 
 /-- When the Positional arguments section is shown, it lists every
 argument. -/

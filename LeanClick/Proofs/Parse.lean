@@ -3,7 +3,7 @@ import LeanClick.Proofs.Values
 /-!
 # Proofs: the command parser
 
-`parse_deterministic`, `required_missing_error`,
+`parse_env_local`, `required_missing_error`, `required_present`,
 `undeclared_option_rejected`, `bool_flag_pairs`.
 -/
 
@@ -63,13 +63,14 @@ theorem parseWith_congr (cmd : Command σ) (s : Settings) (path : String) (argv 
           (fun p hp => (mem_processingOrder _ _ p).1 hp)
           (fun p hp => by simp only [resolveWith, h p hp])]
 
-theorem parse_deterministic : ParseDeterministic (σ := σ) := by
+theorem parse_env_local : ParseEnvLocal (σ := σ) := by
   intro cmd s path argv e₁ e₂ hvars hfs hans
   unfold Command.parseArgs
   rw [hfs, hans]
   apply parseWith_congr
   intro p hp
-  exact envString_congr _ _ s p (hvars p hp)
+  exact envString_congr _ _ s p fun n hn =>
+    hvars n (List.mem_flatMap.2 ⟨p, hp, hn⟩)
 
 /-! ## Required parameters -/
 
@@ -125,7 +126,7 @@ theorem resolveWith_ok_entry (fs : String → Option FileInfo) (answers : List (
     cases h
     exact ⟨(resolveParam_ok_entry _ _ _ _ _ _ he).1, (resolveParam_ok_entry _ _ _ _ _ _ he).2, he⟩
 
-theorem parse_ok_required_present (cmd : Command σ) (s : Settings) (path : String) (argv : List String)
+theorem required_present (cmd : Command σ) (s : Settings) (path : String) (argv : List String)
     (env : Env) (r : ParsedArgs) (h : cmd.parseArgs s path argv env = .ok r) :
     ∀ e ∈ r.entries, e.param.required = true → e.value.isMissing = false := by
   obtain ⟨sc, araws, _, hm⟩ := parseWith_ok_entries cmd s path argv _ _ _ r h
@@ -136,7 +137,9 @@ theorem absentValue_missing (p : Param) : (absentValue p).val.isMissing = true :
   unfold absentValue
   cases p.shape <;> rfl
 
-theorem resolveParam_missing (fs : String → Option FileInfo) (ans : Option String) (env : Option String)
+/-- A required parameter with no value from any source fails with click's
+`Missing option` / `Missing argument` error. -/
+theorem required_missing_error (fs : String → Option FileInfo) (ans : Option String) (env : Option String)
     (p : Param) (hreq : p.required = true) (hpr : p.prompt = none) (hd : p.default = none)
     (hc : p.decl.isCount = false) (he : env.bind (envRaw p) = none) :
     resolveParam fs ans none env p = .error (.error p.missingError) := by
@@ -158,8 +161,21 @@ theorem resolveParam_missing (fs : String → Option FileInfo) (ans : Option Str
   simp only at hm
   simp [hreq, hm]
 
-theorem required_missing_error : RequiredMissingError (σ := σ) :=
-  ⟨resolveParam_missing, parse_ok_required_present⟩
+
+
+/-- The entry a successful parse holds for each parameter of the table is
+what `resolveParam` makes of it from the scanned command line. The shared
+step of every parse-level proof. -/
+theorem parseArgs_entry (cmd : Command σ) (s : Settings) (path : String) (argv : List String)
+    (env : Env) (r : ParsedArgs) (h : cmd.parseArgs s path argv env = .ok r) (p : Param)
+    (hp : p ∈ cmd.allParams s) :
+    ∃ sc araws, scan (cmd.scanCfg s) argv = .ok sc ∧ ∃ e ∈ r.entries, e.param = p ∧
+      resolveParam env.fs (env.answers.lookup (path, p.name)) (rawOf sc araws p)
+        (envString env.get s p) p = .ok e := by
+  obtain ⟨sc, araws, hsc, hm⟩ := parseWith_ok_entries cmd s path argv _ _ _ r h
+  obtain ⟨e, he, hres⟩ := mapM_except_ok_mem _ _ _ hm p hp
+  obtain ⟨hep, _, hrp⟩ := resolveWith_ok_entry _ _ _ _ _ _ _ p e hres
+  exact ⟨sc, araws, hsc, e, he, hep, hrp⟩
 
 /-! ## Undeclared options -/
 
@@ -219,14 +235,14 @@ theorem processOpt_undeclared (cfg : ScanCfg) (tok : String) (rest : List String
 theorem scanLoop_positional (cfg : ScanCfg) (hi : cfg.interspersed = true) :
     ∀ (pre rest : List String) (evs : List Event) (largs : List String),
     (∀ t ∈ pre, cfg.isOptTok t = false ∧ t ≠ "--") →
-    scanLoop cfg (pre ++ rest) evs largs = scanLoop cfg rest evs (largs ++ pre)
+    scanLoop cfg (pre ++ rest) evs largs = scanLoop cfg rest evs (pre.reverse ++ largs)
   | [], rest, evs, largs, _ => by simp
   | t :: pre, rest, evs, largs, h => by
     have ht := h t (by simp)
     rw [List.cons_append, scanLoop]
     have hne : (t == "--") = false := by simpa using ht.2
     simp only [hne, ht.1, hi, Bool.false_eq_true, ite_false, ite_true]
-    rw [scanLoop_positional cfg hi pre rest evs (largs ++ [t]) (fun x hx => h x (by simp [hx]))]
+    rw [scanLoop_positional cfg hi pre rest evs (t :: largs) (fun x hx => h x (by simp [hx]))]
     simp
 
 theorem scanLoop_undeclared (cfg : ScanCfg) (tok : String) (post : List String) (evs : List Event)
@@ -241,7 +257,9 @@ theorem scanLoop_undeclared (cfg : ScanCfg) (tok : String) (post : List String) 
   rw [processOpt_undeclared cfg tok post hig hdd heq hnot hp.2]
 
 theorem undeclared_option_rejected : UndeclaredOptionRejected (σ := σ) := by
-  intro cmd s path env pre post tok hig hdd hne heq hnot hpre hint
+  intro cmd s path env pre post tok hig ⟨hdd, hne, heq⟩ hnot' hpre hint
+  have hnot : ∀ sp ∈ table (cmd.allParams s), sp.opt ≠ tok := fun sp hsp h =>
+    hnot' (List.mem_map.2 ⟨sp, hsp, h⟩)
   have hp := scanCfg_prefixes cmd s
   have hscan : scan (cmd.scanCfg s) (pre ++ tok :: post) =
       .error ⟨.noSuchOption tok (closeMatches tok (longOpts (cmd.scanCfg s).tbl)), none⟩ := by
@@ -250,7 +268,6 @@ theorem undeclared_option_rejected : UndeclaredOptionRejected (σ := σ) := by
     · exact scanLoop_undeclared (cmd.scanCfg s) tok post [] [] hig hdd hne heq hnot hp
     · rw [scanLoop_positional (cmd.scanCfg s) hint pre (tok :: post) [] [] hpre]
       exact scanLoop_undeclared (cmd.scanCfg s) tok post [] _ hig hdd hne heq hnot hp
-  refine ⟨closeMatches tok (longOpts (cmd.scanCfg s).tbl), ?_⟩
   unfold Command.parseArgs Command.parseWith
   have hnil : (pre ++ tok :: post).isEmpty = false := by simp
   simp only [hnil, Bool.false_and, Bool.false_eq_true, ite_false]
@@ -276,24 +293,6 @@ theorem lookupLong_unique (tbl : List Spelling) (o : String) (x : Spelling)
   rw [List.filter_reverse, this]
   simp
 
-theorem scan_single_flag (cfg : ScanCfg) (o d : String) (b : Bool)
-    (hl : lookupLong cfg.tbl o = some ⟨o, d, .flag b⟩) (hlo : cfg.isOptTok o = true)
-    (hne : o ≠ "--") (heq : '=' ∉ o.toList) :
-    scan cfg [o] = .ok ⟨[⟨d, .flag b⟩], [], []⟩ := by
-  unfold scan
-  rw [scanLoop]
-  have h1 : (o == "--") = false := by simpa using hne
-  simp only [h1, hlo, Bool.false_eq_true, ite_false, ite_true]
-  have hp : processOpt cfg o [] = .ok ([⟨d, .flag b⟩], 0, []) := by
-    unfold processOpt
-    rw [splitEq_noEq o heq]
-    dsimp only
-    rw [hl]
-    simp [Action.occ]
-  rw [hp]
-  simp only [List.drop_zero, List.nil_append, List.append_nil]
-  rw [scanLoop]
-
 theorem wantsPrompt_cmdline (p : Param) (r : Raw) : p.wantsPrompt (some r) .commandline = false := by
   unfold Param.wantsPrompt
   split
@@ -306,35 +305,195 @@ theorem pickSource_cmdline (p : Param) (ans : Option String) (r : Raw) (env : Op
     pickSource p ans (some r) env = (some r, .commandline) := by
   simp [pickSource, consume, wantsPrompt_cmdline]
 
-theorem bool_flag_pairs : BoolFlagPairs (σ := σ) := by
-  intro cmd s path env p opts sec o b r hp hdecl hmem hf hs hlo hne heq hea hparse
-  obtain ⟨sc, araws, hsc, hm⟩ := parseWith_ok_entries cmd s path [o] _ _ _ r hparse
-  have hl := lookupLong_unique _ o _ hf hs
-  have hsc' := scan_single_flag (cmd.scanCfg s) o p.name b hl hlo hne heq
-  rw [hsc] at hsc'
-  cases hsc'
-  obtain ⟨e, he, hres⟩ := mapM_except_ok_mem _ _ _ hm p hp
-  obtain ⟨hep, _, hrp⟩ := resolveWith_ok_entry _ _ _ _ _ _ _ p e hres
-  refine ⟨e, he, hep, ?_⟩
-  have hopt : p.isOption = true := by simp [Param.isOption, hdecl]
-  have hraw : rawOf ⟨[⟨p.name, .flag b⟩], [], []⟩ araws p = some (.bool b) := by
-    simp [rawOf, hopt, cmdRaw, hdecl]
-  rw [hraw] at hrp
+theorem filter_opt_singleton : ∀ (tbl : List Spelling), (tbl.map (·.opt)).Nodup →
+    ∀ x ∈ tbl, tbl.filter (fun sp => sp.opt == x.opt) = [x]
+  | [], _, x, hx => by simp at hx
+  | a :: l, h, x, hx => by
+    rw [List.map_cons, List.nodup_cons] at h
+    obtain ⟨hna, hl⟩ := h
+    simp only [List.mem_cons] at hx
+    rcases hx with rfl | hx
+    · rw [List.filter_cons_of_pos (by simp), List.filter_eq_nil_iff.2]
+      intro y hy
+      simp only [beq_iff_eq]
+      intro heq
+      exact hna (heq ▸ List.mem_map_of_mem hy)
+    · have hne : a.opt ≠ x.opt := fun heq => hna (heq ▸ List.mem_map_of_mem hx)
+      rw [List.filter_cons_of_neg (by simpa using hne)]
+      exact filter_opt_singleton l hl x hx
+
+theorem not_short_of_dashDash (t : String) (h : startsDashDash t = true) : isShortSpelling t = false := by
+  unfold startsDashDash at h
+  unfold isShortSpelling splitOpt
+  split at h
+  · rename_i rest heq
+    rw [heq]
+    simp only [splitOptList]
+    have : (String.ofList ['-', '-']).length = 2 := by decide
+    simp [this]
+  · cases h
+
+/-- In an unambiguous table, a long spelling looks up its own row. -/
+theorem lookupLong_row (cmd : Command σ) (s : Settings) (hu : cmd.Unambiguous s) (sp : Spelling)
+    (hsp : sp ∈ table (cmd.allParams s)) (hs : isShortSpelling sp.opt = false) :
+    lookupLong (cmd.scanCfg s).tbl sp.opt = some sp :=
+  lookupLong_unique _ _ _ (filter_opt_singleton _ hu sp hsp) hs
+
+theorem boolFlag_row (ps : List Param) (p : Param) (hp : p ∈ ps) (opts sec : List String)
+    (hd : p.decl = .option opts (.boolFlag sec)) (t : String) (ht : t ∈ opts ++ sec) :
+    (⟨t, p.name, .flag (decide (t ∈ opts))⟩ : Spelling) ∈ table ps := by
+  unfold table
+  refine List.mem_flatMap.2 ⟨p, hp, ?_⟩
+  unfold Param.spellings
+  rw [hd]
+  by_cases h : t ∈ opts
+  · simp [h]
+  · have : t ∈ sec := by simpa [h] using ht
+    simp [h, this]
+
+theorem scanLoop_flags (cfg : ScanCfg) (d : String) (b : String → Bool) :
+    ∀ (toks : List String) (evs : List Event) (largs : List String),
+    (∀ t ∈ toks, lookupLong cfg.tbl t = some ⟨t, d, .flag (b t)⟩ ∧ cfg.isOptTok t = true ∧
+      t ≠ "--" ∧ '=' ∉ t.toList) →
+    scanLoop cfg toks evs largs = .ok ⟨evs.reverse ++ toks.map (fun t => ⟨d, .flag (b t)⟩), largs.reverse, []⟩
+  | [], evs, largs, _ => by rw [scanLoop]; simp
+  | t :: ts, evs, largs, h => by
+    obtain ⟨hl, hlo, hne, heq⟩ := h t (by simp)
+    rw [scanLoop]
+    have h1 : (t == "--") = false := by simpa using hne
+    have hp : processOpt cfg t ts = .ok ([⟨d, .flag (b t)⟩], 0, []) := by
+      unfold processOpt
+      rw [splitEq_noEq t heq]
+      dsimp only
+      rw [hl]
+      simp [Action.occ]
+    simp only [h1, hlo, Bool.false_eq_true, ite_false, ite_true, hp, List.drop_zero]
+    rw [scanLoop_flags cfg d b ts _ _ (fun x hx => h x (by simp [hx]))]
+    simp
+
+theorem cmdRaw_flags (p : Param) (opts sec : List String) (hd : p.decl = .option opts (.boolFlag sec))
+    (b : String → Bool) (toks : List String) :
+    cmdRaw (toks.map (fun t => ⟨p.name, .flag (b t)⟩)) p = (toks.map b).getLast?.map .bool := by
+  simp only [cmdRaw, hd]
+  congr 2
+  induction toks with
+  | nil => rfl
+  | cons t ts ih => simp [ih]
+
+/-- A boolean flag occurrence on the command line becomes that boolean,
+sourced from the command line. -/
+theorem resolveParam_boolFlag (fs : String → Option FileInfo) (ans : Option String) (env : Option String)
+    (p : Param) (opts sec : List String) (hd : p.decl = .option opts (.boolFlag sec)) (hea : p.eager = none)
+    (b : Bool) (e : Entry) (h : resolveParam fs ans (some (.bool b)) env p = .ok e) :
+    e.param = p ∧ e.source = .commandline ∧ e.toValue = .bool b := by
   obtain ⟨name, decl, type, required, default, envvar, help, metavar, hidden, showDefault,
     showEnvvar, showChoices, prompt, eager, exposeValue, allowFromAutoenv, h_bool, h_count⟩ := p
-  simp only at hdecl hea
-  subst hdecl hea
+  simp only at hd hea
+  subst hd hea
   have ht : type = .bool := h_bool rfl
   subst ht
+  unfold resolveParam at h
+  simp only [pickSource_cmdline, wantsPrompt_cmdline, Bool.false_and, Bool.false_eq_true,
+    ite_false] at h
+  unfold finishParam at h
+  simp only [Param.shape, Option.or] at h
+  rw [show convertShape fs ParamType.bool Shape.single (Raw.bool b) = .ok ⟨.one b, trivial⟩ from rfl] at h
+  dsimp only at h
+  split at h
+  · cases h
+  · cases h; exact ⟨rfl, rfl, rfl⟩
+
+theorem bool_flag_pairs : BoolFlagPairs (σ := σ) := by
+  intro cmd s path env p opts sec argv r hne hu hp hd hea hargv hparse
+  obtain ⟨sc, araws, hsc, e, he, hep, hrp⟩ := parseArgs_entry cmd s path argv env r hparse p hp
+  let b := fun t => decide (t ∈ opts)
+  have hcfg := scanCfg_prefixes cmd s
+  have hscan : scan (cmd.scanCfg s) argv = .ok ⟨argv.map (fun t => ⟨p.name, .flag (b t)⟩), [], []⟩ := by
+    unfold scan
+    rw [scanLoop_flags _ p.name b argv [] [] ?_]
+    · simp
+    · intro t ht
+      obtain ⟨hmem, hdd, hne', heq⟩ := hargv t ht
+      have hrow := boolFlag_row _ p hp opts sec hd t hmem
+      exact ⟨lookupLong_row cmd s hu _ hrow (not_short_of_dashDash t hdd),
+        isOptTok_of_dashDash _ t hdd hcfg.1, hne', heq⟩
+  rw [hsc] at hscan
+  cases hscan
+  have hopt : p.isOption = true := by simp [Param.isOption, hd]
+  have hraw : rawOf ⟨argv.map (fun t => ⟨p.name, .flag (b t)⟩), [], []⟩ araws p =
+      some (.bool (b (argv.getLast hne))) := by
+    simp only [rawOf, hopt, ite_true]
+    rw [cmdRaw_flags p opts sec hd b argv, List.getLast?_map, List.getLast?_eq_some_getLast hne]
+    rfl
+  rw [hraw] at hrp
+  obtain ⟨_, hsrc, hval⟩ := resolveParam_boolFlag _ _ _ p opts sec hd hea _ e hrp
+  exact ⟨e, he, hep, hsrc, hval⟩
+
+/-! ## Environment fallback -/
+
+theorem cmdRaw_nil (p : Param) : cmdRaw [] p = none := by
+  unfold cmdRaw
+  split <;> simp
+
+/-- With nothing on the command line, an option's source is the
+environment if its variable gives a value, else the default. -/
+theorem source_without_commandline (cmd : Command σ) (s : Settings) (path : String) (env : Env)
+    (p : Param) (r : ParsedArgs) (hp : p ∈ cmd.allParams s) (hopt : p.isOption = true)
+    (hpr : p.prompt = none) (hparse : cmd.parseArgs s path [] env = .ok r) :
+    ∃ e ∈ r.entries, e.param = p ∧ e.source = (consume none (envString env.get s p) p).2 := by
+  obtain ⟨sc, araws, hsc, e, he, hep, hrp⟩ := parseArgs_entry cmd s path [] env r hparse p hp
+  have hsc' : scan (cmd.scanCfg s) [] = .ok ⟨[], [], []⟩ := by unfold scan; rw [scanLoop]; rfl
+  rw [hsc] at hsc'
+  cases hsc'
+  have hraw : rawOf ⟨[], [], []⟩ araws p = none := by simp [rawOf, hopt, cmdRaw_nil]
+  rw [hraw] at hrp
+  exact ⟨e, he, hep, (resolveParam_source _ _ _ _ p e hpr hrp).2⟩
+
+theorem envvar_beats_default : EnvvarBeatsDefault (σ := σ) := by
+  intro cmd s path env p r hp hopt hpr hset hparse
+  obtain ⟨e, he, hep, hsrc⟩ := source_without_commandline cmd s path env p r hp hopt hpr hparse
+  obtain ⟨raw, hraw⟩ := Option.isSome_iff_exists.1 hset
+  exact ⟨e, he, hep, by rw [hsrc, consume_environment _ _ _ hraw]⟩
+
+theorem default_when_absent : DefaultWhenAbsent (σ := σ) := by
+  intro cmd s path env p r hp hopt hpr hnone hparse
+  obtain ⟨e, he, hep, hsrc⟩ := source_without_commandline cmd s path env p r hp hopt hpr hparse
+  exact ⟨e, he, hep, by rw [hsrc, consume_default _ _ hnone]⟩
+
+theorem commandline_beats_envvar : CommandlineBeatsEnvvar (σ := σ) := by
+  intro cmd s path env p opts o v r hu hp hd ho ⟨hdd, hne, heq⟩ hparse
+  obtain ⟨sc, araws, hsc, e, he, hep, hrp⟩ := parseArgs_entry cmd s path [o, v] env r hparse p hp
+  have hrow : (⟨o, p.name, .takes 1⟩ : Spelling) ∈ table (cmd.allParams s) := by
+    unfold table
+    refine List.mem_flatMap.2 ⟨p, hp, ?_⟩
+    unfold Param.spellings
+    rw [hd]
+    simpa using ho
+  have hl := lookupLong_row cmd s hu _ hrow (not_short_of_dashDash o hdd)
+  have hscan : scan (cmd.scanCfg s) [o, v] = .ok ⟨[⟨p.name, .values [v]⟩], [], []⟩ := by
+    unfold scan
+    rw [scanLoop]
+    have h1 : (o == "--") = false := by simpa using hne
+    have hp' : processOpt (cmd.scanCfg s) o [v] = .ok ([⟨p.name, .values [v]⟩], 1, []) := by
+      unfold processOpt
+      rw [splitEq_noEq o heq]
+      dsimp only
+      rw [hl]
+      simp [takeValues]
+      rfl
+    simp only [h1, isOptTok_of_dashDash _ o hdd (scanCfg_prefixes cmd s).1, Bool.false_eq_true,
+      ite_false, ite_true, hp']
+    rw [show List.drop 1 [v] = [] from rfl, scanLoop]
+    simp
+  rw [hsc] at hscan
+  cases hscan
+  have hopt : p.isOption = true := by simp [Param.isOption, hd]
+  have hraw : rawOf ⟨[⟨p.name, .values [v]⟩], [], []⟩ araws p = some (.tokens [v]) := by
+    simp [rawOf, hopt, cmdRaw, hd]
+  rw [hraw] at hrp
   unfold resolveParam at hrp
   simp only [pickSource_cmdline, wantsPrompt_cmdline, Bool.false_and, Bool.false_eq_true,
     ite_false] at hrp
-  unfold finishParam at hrp
-  simp only [Param.shape, Option.or] at hrp
-  rw [show convertShape env.fs ParamType.bool Shape.single (Raw.bool b) = .ok ⟨.one b, trivial⟩ from rfl] at hrp
-  dsimp only at hrp
-  split at hrp
-  · cases hrp
-  · cases hrp; exact ⟨rfl, rfl⟩
+  exact ⟨e, he, hep, (finishParam_ok _ _ _ _ e hrp).2.1⟩
 
 end LeanClick

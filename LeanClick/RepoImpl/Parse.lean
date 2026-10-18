@@ -8,7 +8,7 @@ positionals, process every parameter (eager ones first, then in invocation
 order, then the rest; the first failure in that order is the one
 reported), and reject extra arguments. It reads the environment only through
 the function `envOf` it is given; `Command.parseArgs` supplies it from an
-`Env`. That split is what `parse_deterministic` is stated against.
+`Env`. That split is what `parse_env_local` is stated against.
 
 `Command.parseLevel` adds group dispatch: the first subcommand whose name
 matches the next token. `Command.dispatch` runs the levels to the end, which
@@ -109,6 +109,10 @@ def Command.parseWith (cmd : Command σ) (s : Settings) (path : String) (argv : 
       | .ok entries =>
         if !leftover.isEmpty && !cmd.allowExtraArgs then .error (fail ⟨.usage (extraArgsMsg leftover), none⟩)
         else .ok ⟨entries, leftover⟩
+
+/-- Every environment variable name the command's parameters read. -/
+def Command.envNames (cmd : Command σ) (s : Settings) : List String :=
+  (cmd.allParams s).flatMap (LeanClick.envNames s)
 
 /-- `parseWith` with the environment taken from an `Env`. -/
 def Command.parseArgs (cmd : Command σ) (s : Settings) (path : String) (argv : List String)

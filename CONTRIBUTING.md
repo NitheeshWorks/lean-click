@@ -36,6 +36,8 @@ only `Terminal` fixes `κ` to an `IO` action (`Terminal.App σ`).
 | `RepoImpl/Help.lean` | the help page and usage line from `allParams` |
 | `RepoImpl/Resolve.lean` | one parameter: source precedence, prompt, conversion, required, eager |
 | `RepoImpl/Parse.lean` | `parseWith`, group dispatch, messages, exit codes |
+| `APIs/Click.lean` | click's decorator vocabulary: `command`, `option`, `argument`, types |
+| `Typed.lean` | `ClickType` and the `click_command` macro: commands as typed functions |
 | `Specifications/Parse.lean` | the ten headline properties |
 | `Proofs/*.lean` | their proofs; `Verified.lean` bundles `VerifiedParser`/`VerifiedHelp` | This is
 load-bearing: a round-trip property of a function is an equation that
@@ -65,12 +67,16 @@ be a Hoare triple over a heap.
 
 ### Proved
 
-`parse_deterministic`, `help_lists_every_param` (plus
+`parse_env_local`, `help_lists_every_param` (plus
 `help_lists_every_argument`, `help_lists_every_subcommand`),
-`undeclared_option_rejected`, `required_missing_error`, `nargs_arity`,
-`choice_in_set`, `bool_flag_pairs`, `envvar_fallback`,
-`group_dispatch_first_match`, `exit_code_range`, with their lemmas in
-`Proofs/`. The axiom gate's theorem count also includes the compiler's
+`undeclared_option_rejected`, `required_missing_error`, `required_present`,
+`nargs_arity`, `choice_in_set`, `bool_flag_pairs`,
+`commandline_beats_envvar`, `envvar_beats_default`, `default_when_absent`,
+`group_dispatch_first_match`, `exit_code_range`, `framework_exit_codes`,
+with their lemmas in `Proofs/`. The parse-level proofs share one step,
+`parseArgs_entry` (the entry for a parameter is what `resolveParam` makes of
+its scanned command line), and the help proofs one theory of string
+containment (`IsInfix`, `concatS_infix`, `renderSection_infix`). The axiom gate's theorem count also includes the compiler's
 `inj`/`sizeOf_spec` lemmas; the hand-written theorems are the `theorem`
 declarations under `LeanClick/Proofs/`.
 
@@ -106,9 +112,8 @@ parameter callbacks, deprecation warnings, `prompt_required=False`.
 
 ### Complexity
 
-The scanner appends to its accumulators (`largs ++ [tok]`), which is
-quadratic in the number of argv tokens; command lines are short, and the
-appending form is what the scanner proofs are stated against.
+The scanner accumulates events and positionals in reverse and reverses
+once at the end, so it is linear in the number of argv tokens.
 `Terminal.pathCandidates` is linear in the total argv length (suffixes are
 taken only for option-looking tokens of at most 256 characters, and
 deduplication uses a hash set).

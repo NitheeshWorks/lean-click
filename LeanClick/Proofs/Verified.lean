@@ -21,30 +21,38 @@ open Spec
 
 /-- The parser layer: scanning, resolution, dispatch, exit codes. -/
 structure VerifiedParser (σ : Type) where
-  parseDeterministic : ParseDeterministic (σ := σ)
+  parseEnvLocal : ParseEnvLocal (σ := σ)
   undeclaredOptionRejected : UndeclaredOptionRejected (σ := σ)
-  requiredMissingError : RequiredMissingError (σ := σ)
+  requiredMissingError : RequiredMissingError
+  requiredPresent : RequiredPresent (σ := σ)
   nargsArity : NargsArity
   choiceInSet : ChoiceInSet
   boolFlagPairs : BoolFlagPairs (σ := σ)
-  envvarFallback : EnvvarFallback
+  commandlineBeatsEnvvar : CommandlineBeatsEnvvar (σ := σ)
+  envvarBeatsDefault : EnvvarBeatsDefault (σ := σ)
+  defaultWhenAbsent : DefaultWhenAbsent (σ := σ)
   groupDispatchFirstMatch : GroupDispatchFirstMatch (σ := σ)
   exitCodeRange : ExitCodeRange
+  frameworkExitCodes : FrameworkExitCodes
 
 /-- The help layer: the page is rendered from the parser's own table. -/
 structure VerifiedHelp (σ : Type) where
   helpListsEveryParam : HelpListsEveryParam (σ := σ)
 
 theorem theVerifiedParser (σ : Type) : VerifiedParser σ where
-  parseDeterministic := parse_deterministic
+  parseEnvLocal := parse_env_local
   undeclaredOptionRejected := undeclared_option_rejected
   requiredMissingError := required_missing_error
+  requiredPresent := required_present
   nargsArity := nargs_arity
   choiceInSet := choice_in_set
   boolFlagPairs := bool_flag_pairs
-  envvarFallback := envvar_fallback
+  commandlineBeatsEnvvar := commandline_beats_envvar
+  envvarBeatsDefault := envvar_beats_default
+  defaultWhenAbsent := default_when_absent
   groupDispatchFirstMatch := group_dispatch_first_match
   exitCodeRange := exit_code_range
+  frameworkExitCodes := framework_exit_codes
 
 theorem theVerifiedHelp (σ : Type) : VerifiedHelp σ where
   helpListsEveryParam := help_lists_every_param

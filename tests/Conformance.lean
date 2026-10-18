@@ -66,9 +66,9 @@ def envOf (vars : List (String × String)) : Env := { vars }
 
 /-! ## tests/test_basic.py -/
 
-def sOpt : Cmd := mkCmd "cli" [Param.opt ["--s"]]
-def iOpt : Cmd := mkCmd "cli" [(Param.opt ["--i"] .int).withDefault "42"]
-def fOpt : Cmd := mkCmd "cli" [(Param.opt ["--f"] .float).withDefault "42.0"]
+def sOpt : Cmd := command "cli" [option ["--s"] (default := "no value")]
+def iOpt : Cmd := command "cli" [option ["--i"] (default := 42)]
+def fOpt : Cmd := command "cli" [option ["--f"] (default := 42.0)]
 def onOff (d : Option String) : Cmd :=
   mkCmd "cli" [match d with | some x => (Param.flag ["--on/--off"]).withDefault x | none => Param.flag ["--on/--off"]]
 def fFlag (d : Option String) : Cmd :=
@@ -81,7 +81,7 @@ def basicGroup : Cmd :=
     [mkCmd "subcommand" [] (some "This is a subcommand.")]
 
 def basicCases : List Case := [
-  pc "tests/test_basic.py::test_string_option" "string option absent" ((run sOpt []).val "s" == "None"),
+  pc "tests/test_basic.py::test_string_option" "string option default" ((run sOpt []).val "s" == "no value"),
   pc "tests/test_basic.py::test_string_option" "string option --s=42" ((run sOpt ["--s=42"]).val "s" == "42"),
   pc "tests/test_basic.py::test_string_option" "string option needs a value"
     (has (run sOpt ["--s"]).out "Error: Option '--s' requires an argument." && (run sOpt ["--s"]).code == 2),
@@ -426,24 +426,24 @@ def cmdCases : List Case := [
 
 /-! ## fastapi-cli: the `dev` / `run` shape (typer on click) -/
 
-def devCmd (name host : String) (reload : String) : Cmd :=
-  mkCmd name [
-    (Param.arg "path" (.path {})).requiredParam false |>.withHelp "A path to a Python file or package directory.",
-    (Param.opt ["--host"]).withDefault host |>.withHelp "The host to serve on.",
-    (Param.opt ["--port"] .int).withDefault "8000" |>.withEnvvar ["PORT"] |>.withHelp "The port to serve on.",
-    (Param.flag ["--reload/--no-reload"]).withDefault reload |>.withHelp "Enable auto-reload.",
-    (Param.opt ["--root-path"]).withDefault "",
-    Param.opt ["--app"],
-    Param.opt ["--entrypoint", "-e"],
-    (Param.flag ["--proxy-headers/--no-proxy-headers"]).withDefault "true",
-    Param.flag ["--verbose", "-v"]] (some "Run a FastAPI app in development mode.")
+def devCmd (name host : String) (reload : Bool) : Cmd :=
+  command name (help := "Run a FastAPI app in development mode.") [
+    argument "path" (type := Path) (required := false)
+      (help := "A path to a Python file or package directory."),
+    option ["--host"] (default := host) (help := "The host to serve on."),
+    option ["--port"] (default := 8000) (envvar := ["PORT"]) (help := "The port to serve on."),
+    option ["--reload/--no-reload"] (default := reload) (help := "Enable auto-reload."),
+    option ["--root-path"] (default := ""),
+    option ["--app"],
+    option ["--entrypoint", "-e"],
+    option ["--proxy-headers/--no-proxy-headers"] (default := true),
+    option ["--verbose", "-v"] (isFlag := true)]
 
 def fastapiCli : Cmd :=
-  Command.group {
-      name := "fastapi", helpOptionNames := some ["-h", "--help"],
-      params := [Param.versionOption "0.0.0" (template := "FastAPI CLI version: %(version)s"),
-        Param.flag ["--verbose/--no-verbose"]] }
-    [devCmd "dev" "127.0.0.1" "true", devCmd "run" "0.0.0.0" "false"]
+  group "fastapi" (contextSettings := { helpOptionNames := some ["-h", "--help"] })
+    [versionOption "0.0.0" (message := "FastAPI CLI version: %(version)s"),
+     option ["--verbose/--no-verbose"]]
+    [devCmd "dev" "127.0.0.1" true, devCmd "run" "0.0.0.0" false]
 
 def fastapiCases : List Case := [
   pc "fastapi-cli tests/test_cli.py::test_dev" "dev defaults"
@@ -477,7 +477,49 @@ def fastapiCases : List Case := [
      r.code == 2 && has r.out "Invalid value for '--port': 'eighty' is not a valid integer.")
 ]
 
-def cases : List Case := basicCases ++ optionCases ++ argCases ++ cmdCases ++ fastapiCases
+/-! ## Typed commands (`click_command`), typer's rules as in fastapi-cli -/
+
+/-- Serve an app. -/
+click_command serveT
+    (path : Argument (Option String)) "A path."
+    (host : String := "127.0.0.1") "The host."
+    (port : Nat := 8000) "The port." [envvar := ["PORT"]]
+    (reload : Bool := true) "Reload."
+    (workers : Option Nat := none)
+    (tag : List String := [])
+    (level : LeanClick.IntIn 0 3 := ⟨1, by decide⟩)
+    : IO Unit :=
+  IO.println s!"{path} {host} {port} {reload} {workers} {tag} {level.val}"
+
+def typedValues (argv : List String) (env : Env := {}) : IO (Option String) := do
+  let d := serveT.dispatch "serve" argv env
+  match d.frames.getLast?, d.halt with
+  | some f, none =>
+    let r ← (do
+      let path ← ClickType.fetch (Option String) f.args "path"
+      let host ← ClickType.fetch String f.args "host"
+      let port ← ClickType.fetch Nat f.args "port"
+      let reload ← ClickType.fetch Bool f.args "reload"
+      let workers ← ClickType.fetch (Option Nat) f.args "workers"
+      let tag ← ClickType.fetch (List String) f.args "tag"
+      let level ← ClickType.fetch (IntIn 0 3) f.args "level"
+      pure s!"{path} {host} {port} {reload} {workers} {tag} {level.val}" : Terminal.ClickM String).run
+    pure (match r with | .ok s => some s | .error _ => none)
+  | _, _ => pure none
+
+def typedCases : List Case := [
+  ⟨"fastapi-cli tests/test_cli.py::test_dev", "typed command values arrive typed", do
+    pure ((← typedValues ["main.py", "--port", "9", "--no-reload", "--workers", "2", "--tag", "a", "--tag", "b", "--level", "3"])
+      == some "(some main.py) 127.0.0.1 9 false (some 2) [a, b] 3")⟩,
+  ⟨"fastapi-cli tests/test_cli.py::test_dev_env_vars", "typed command defaults and envvar", do
+    pure ((← typedValues [] (envOf [("PORT", "8111")])) == some "none 127.0.0.1 8111 true none [] 1")⟩,
+  pc "tests/test_options.py::test_counting" "typed refined range rejects out-of-range"
+    (has (run (Command.mk serveT.spec false () []) ["--level", "5"]).out "5 is not in the range 0<=x<=3."),
+  pc "fastapi-cli tests/test_cli.py::test_dev_help" "typed command help: option spellings from binder names"
+    (has (helpPage serveT "serve") "--reload / --no-reload" && has (helpPage serveT "serve") "--workers INTEGER RANGE" && has (helpPage serveT "serve") "[PATH]  A path.")
+]
+
+def cases : List Case := basicCases ++ optionCases ++ argCases ++ cmdCases ++ fastapiCases ++ typedCases
 
 def main : IO UInt32 := do
   let mut failures := 0

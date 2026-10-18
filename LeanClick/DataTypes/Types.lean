@@ -136,7 +136,27 @@ inductive Value where
   | bool (b : Bool)
   | file (f : FileArg)
   | list (vs : List Value)
-  deriving Repr, Inhabited
+  deriving Inhabited
+
+/-- `Repr` by structural recursion (the derived printer of a nested
+inductive is `partial`). -/
+def Value.reprPrec : Value → Nat → Std.Format
+  | .none, _ => "LeanClick.Value.none"
+  | .str s, p => Repr.addAppParen ("LeanClick.Value.str " ++ repr s) p
+  | .int n, p => Repr.addAppParen ("LeanClick.Value.int " ++ reprArg n) p
+  | .dec d, p => Repr.addAppParen ("LeanClick.Value.dec " ++ reprArg d) p
+  | .bool b, p => Repr.addAppParen ("LeanClick.Value.bool " ++ repr b) p
+  | .file f, p => Repr.addAppParen ("LeanClick.Value.file " ++ reprArg f) p
+  | .list vs, p =>
+    Repr.addAppParen ("LeanClick.Value.list " ++
+      Std.Format.bracket "[" (Std.Format.joinSep (vs.attach.map fun ⟨v, _⟩ => Value.reprPrec v 0)
+        ("," ++ Std.Format.line)) "]") p
+termination_by v => sizeOf v
+decreasing_by
+  have := List.sizeOf_lt_of_mem ‹v ∈ vs›
+  simp_wf; omega
+
+instance : Repr Value := ⟨Value.reprPrec⟩
 
 /-- Forget the refinement of a parsed value. -/
 def ParamType.erase : (t : ParamType) → t.Carrier → Value

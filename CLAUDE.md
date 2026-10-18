@@ -21,7 +21,7 @@ lake env lean LeanClick/Proofs/Foo.lean     # check one file (never bare `lean`)
 ## Rules that CI enforces
 
 * `scripts/Axioms.lean` checks every declaration (theorems and definitions):
-  no `sorry`/`admit`, no `partial def` (derived `Repr` printers excepted), no
+  no `sorry`/`admit`, no `partial def` (`scripts/gate-allow.txt` stays empty), no
   `unsafe`, no `@[implemented_by]`/`@[extern]`, no `native_decide`/`bv_decide`, under `LeanClick/`.
 * Every theorem reaches only `propext`, `Quot.sound`, `Classical.choice`.
 * Every symbol in `docs/traceability.toml` resolves; every test path exists.

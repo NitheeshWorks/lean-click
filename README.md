@@ -3,67 +3,107 @@
 [![Lean 4](https://img.shields.io/badge/built%20with-Lean%204-blue.svg)](https://lean-lang.org)
 [![Proofs](https://img.shields.io/badge/proofs-machine%20checked-brightgreen.svg)](CONTRIBUTING.md#verification)
 
-A clean-room port of [click](https://github.com/pallets/click) to Lean 4: a command-line parser whose help text is rendered from the same table the parser is proved against.
+A clean-room port of [click](https://github.com/pallets/click) to Lean 4:
+composable command-line interfaces whose help page is rendered from the same
+table the parser is proved against.
 
-Part of the verified FastAPI stack: [lean-fastapi](https://github.com/NitheeshWorks/lean-fastapi)
-and its dependencies, each ported as its own repo with its proofs. This one
-depends on: none (Lean core only).
+## A Simple Example
 
-## What "verified" means here
+click's own quickstart, translated:
 
-* Public functions take the weakest precondition they need and return the
-  strongest postcondition, as a refinement type `{r // Post r}` or an
-  `Except` of one. Invariants live in types, not comments.
-* Every theorem is machine-checked. CI fails on `sorry` and on any axiom
-  beyond Lean's own `propext`, `Quot.sound` and `Classical.choice`.
-* What is tested rather than proved is listed, with the reason, in
-  [CONTRIBUTING.md](CONTRIBUTING.md#verification) and in
-  `docs/traceability.toml`.
+```lean
+import LeanClick
+open LeanClick
+
+/-- Simple program that greets NAME for a total of COUNT times. -/
+click_command hello
+    (count : Int := 1) "Number of greetings."
+    (name : String) "The person to greet." [prompt := "Your name"]
+    : IO Unit := do
+  for _ in [0:count.toNat] do
+    IO.println s!"Hello, {name}!"
+
+def main (args : List String) : IO UInt32 := hello.run () args
+```
+
+```
+$ lake exe hello --count=3
+Your name: Click
+Hello, Click!
+Hello, Click!
+Hello, Click!
+
+$ lake exe hello --help
+Usage: hello [OPTIONS]
+
+  Simple program that greets NAME for a total of COUNT times.
+
+Options:
+  --count INTEGER  Number of greetings.
+  --name TEXT      The person to greet.
+  --help           Show this message and exit.
+```
+
+A command is a typed Lean function, as typer (and fastapi-cli) write click
+commands: a binder with a default is an option (`root_path` is
+`--root-path`), one without is an argument, a `Bool` with a default is a
+`--x/--no-x` flag pair, `Option α` is optional, `List α` repeatable,
+`IntIn lo hi` an `IntRange` whose values carry their bounds proof. The doc
+comment is the help text; a string after a binder is its help; `[envvar :=
+["PORT"], decls := ["--entrypoint", "-e"], prompt := "...", type := Path
+(exists_ := true)]` passes click's keywords. The body receives typed values,
+never strings looked up by name. `examples/FastapiCli.lean`
+(`lake exe example`) is `fastapi dev` / `fastapi run` in this style.
+
+The decorator vocabulary is there too, for groups and hand-built commands:
+`command`, `group`, `option`, `argument`, `versionOption`, the types
+`STRING` `INT` `FLOAT` `BOOL` `Choice` `Path` `File` `IntRange`
+`FloatRange`, and click's keyword arguments (`default`, `help`, `required`,
+`envvar`, `multiple`, `nargs`, `isFlag`, `flagValue`, `count`, `prompt`,
+`showDefault`, `hidden`, `metavar`, `contextSettings`). Errors, help pages
+and exit codes match click's text. The pure parser is
+`LeanClick.parse cmd argv env`, whose result is refined by its
+postcondition (`ParsedFor`).
+
+## What is proved
+
+Every theorem is machine-checked; CI fails on `sorry`, on `partial`, and on
+any axiom beyond `propext`, `Quot.sound`, `Classical.choice`.
+
+| In words | Lean |
+|---|---|
+| Parsing reads the environment only through the variables the command declares | `parse_env_local : (∀ n ∈ cmd.envNames s, e₁.get n = e₂.get n) → e₁.fs = e₂.fs → e₁.answers = e₂.answers → cmd.parseArgs s path argv e₁ = cmd.parseArgs s path argv e₂` |
+| Every spelling a visible option accepts is on its `--help` page | `help_lists_every_param : p ∈ cmd.allParams s → p.isOption → ¬p.hidden → ∀ o ∈ p.allOpts, IsInfix o (cmd.formatHelp s path)` |
+| An undeclared long option fails with `No such option` | `undeclared_option_rejected : … → cmd.parseArgs s path (pre ++ tok :: post) env = .error (.error ⟨.noSuchOption tok _, _⟩)` |
+| A required parameter with no value gives `Missing option` / `Missing argument` | `required_missing_error : … → resolveParam fs ans none env p = .error (.error p.missingError)` |
+| A successful parse leaves no required parameter missing | `required_present : cmd.parseArgs s path argv env = .ok r → ∀ e ∈ r.entries, e.param.required → e.value.isMissing = false` |
+| A `nargs = n` value holds exactly `n` values | `nargs_arity : e.param.shape = .tuple n → e.value = .tuple xs → xs.length = n` |
+| A choice converts iff a declared choice matches, to the first match | `choice_in_set : (∃ c, convert fs (.choice cs cS) s = .ok c ∧ c.val = v) ↔ cs.find? (fun c => normChoice cS c == normChoice cS s) = some v` |
+| Over any sequence of a flag pair's spellings, the last one decides | `bool_flag_pairs : … → cmd.parseArgs s path argv env = .ok r → ∃ e ∈ r.entries, e.param = p ∧ e.source = .commandline ∧ e.toValue = .bool (decide (argv.getLast h ∈ opts))` |
+| The command line beats the environment variable | `commandline_beats_envvar : … → cmd.parseArgs s path [o, v] env = .ok r → ∃ e ∈ r.entries, e.param = p ∧ e.source = .commandline` |
+| The environment variable beats the default | `envvar_beats_default : … → cmd.parseArgs s path [] env = .ok r → ∃ e ∈ r.entries, e.param = p ∧ e.source = .environment` |
+| The default applies when neither is given | `default_when_absent : … → cmd.parseArgs s path [] env = .ok r → ∃ e ∈ r.entries, e.param = p ∧ e.source = .default` |
+| A group runs the first subcommand with the name | `group_dispatch_first_match : cmd.parseLevel s path argv env = .ok lv → lv.sub = some (c, name, rest) → cmd.subcommands.find? (·.name == name) = some c` |
+| Exit codes are bytes; click's own are 0, 1, 2 | `exit_code_range : t.exitCode < 256`, `framework_exit_codes : t.isFramework → t.exitCode ≤ 2` |
+
+Choice values are `{c // c ∈ choices}` and range values carry their bounds
+proof, by type. What is tested rather than proved (text wrapping, close-match
+hints, number parsing, the `Terminal` module) is listed in
+[CONTRIBUTING.md](CONTRIBUTING.md#verification) and `docs/traceability.toml`.
 
 ## Getting started
 
 ```
-lake build            # library, proofs, and both test executables
+lake build            # library, proofs, tests, examples
 lake exe props        # property tests (seeded; `lake exe props 42`)
-lake exe conformance  # cases re-expressed from the upstream test suite
+lake exe conformance  # cases re-expressed from click's test suite
 scripts/check.sh      # the whole CI gate, locally
 ```
 
-Toolchain: `leanprover/lean4:v4.35.0` (pinned in `lean-toolchain`; `elan` installs it).
+Toolchain: `leanprover/lean4:v4.35.0`.
 
-## Usage
-
-```lean
-import LeanClick
-open LeanClick LeanClick.Terminal
-
-def dev : App Unit := App.command {
-    name := "dev", help := some "Run a FastAPI app in development mode.",
-    params := [
-      (Param.arg "path" (.path { exists_ := true })).requiredParam false,
-      (Param.opt ["--host"]).withDefault "127.0.0.1",
-      (Param.opt ["--port"] .int).withDefault "8000" |>.withEnvvar ["PORT"],
-      (Param.flag ["--reload/--no-reload"]).withDefault "true"] }
-  (fun ctx => do echo s!"port {ctx.params.getInt? "port"}")
-
-def main (args : List String) : IO UInt32 := Terminal.main dev () args
-```
-
-The pure parser is `LeanClick.parse cmd argv env`, returning the parsed
-arguments with their postcondition; `Command.dispatch` parses a whole group
-invocation; `helpPage cmd` renders `--help`. See `examples/FastapiCli.lean`
-(`lake exe example`).
-
-## Status
-
-Milestone 10 slice: options and arguments (string, int, float, bool, choice,
-path, file, int/float ranges), `nargs`, `multiple`, `required`, defaults,
-envvars and automatic envvar prefixes, boolean flag pairs, constant and count
-flags, commands and groups with `Context`, help and usage rendering, click's
-error messages and exit codes, `--help`/`--version`, prompts and
-confirmation. Proved: the ten headline theorems listed in
-[CONTRIBUTING.md](CONTRIBUTING.md#verification); tested: text wrapping,
-close-match hints, number parsing and the `Terminal` module.
+Part of the verified FastAPI stack: [lean-fastapi](https://github.com/NitheeshWorks/lean-fastapi)
+builds `fastapi dev` / `fastapi run` on this repo. Depends on Lean core only.
 
 ## License
 

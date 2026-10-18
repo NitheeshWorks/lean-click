@@ -10,12 +10,19 @@ open Spec
 
 /-! ## Exit codes -/
 
-theorem exit_code_range : ∀ t : Termination, t.exitCode < 256 ∧ (t.isFramework = true → t.exitCode ≤ 2) := by
+theorem exit_code_range : ExitCodeRange := by
   intro t
   rcases t with _ | h | e
   · simp [Termination.exitCode]
   · cases h <;> simp [Termination.exitCode]
-  · cases e <;> simp [Termination.exitCode, Termination.isFramework] <;> omega
+  · cases e <;> simp [Termination.exitCode] <;> omega
+
+theorem framework_exit_codes : FrameworkExitCodes := by
+  intro t ht
+  rcases t with _ | h | e
+  · simp [Termination.exitCode]
+  · cases h <;> simp [Termination.exitCode]
+  · cases e <;> simp_all [Termination.exitCode, Termination.isFramework]
 
 /-- A usage error, however it surfaces, exits with 2. -/
 theorem usage_error_exit_2 (e : UsageError) :
@@ -72,9 +79,6 @@ theorem resolveParam_source (fs : String → Option FileInfo) (ans : Option Stri
   have := finishParam_ok fs p _ _ e h
   exact ⟨this.1, this.2.1⟩
 
-theorem envvar_fallback : EnvvarFallback :=
-  ⟨consume_commandline, consume_environment, consume_default, resolveParam_source⟩
-
 /-! ## Shapes -/
 
 theorem takeValues_length (opt : String) (n : Nat) (att : Option String) (rest vals : List String)
@@ -97,7 +101,8 @@ theorem takeValues_length (opt : String) (n : Nat) (att : Option String) (rest v
       simp only [List.length_take]
       omega
 
-theorem entry_tuple_length (e : Entry) (n : Nat) (xs : List e.param.type.Carrier)
+/-- A parsed `nargs = n` value holds exactly `n` values. -/
+theorem nargs_arity (e : Entry) (n : Nat) (xs : List e.param.type.Carrier)
     (hs : e.param.shape = .tuple n) (hv : e.value = .tuple xs) : xs.length = n := by
   have h := e.h_fits
   rw [hv, hs] at h
@@ -109,36 +114,39 @@ theorem entry_many_length (e : Entry) (n : Nat) (xss : List (List e.param.type.C
   rw [hv, hs] at h
   exact h
 
-theorem nargs_arity : NargsArity :=
-  ⟨takeValues_length, entry_tuple_length, entry_many_length⟩
 
 /-! ## Choices -/
 
 theorem choice_mem (cs : List String) (cS : Bool) (x : (ParamType.choice cs cS).Carrier) : x.val ∈ cs :=
   x.property
 
-theorem convert_choice (fs : String → Option FileInfo) (cs : List String) (cS : Bool) (s : String) c
-    (h : convert fs (.choice cs cS) s = .ok c) :
-    c.val ∈ cs ∧ normChoice cS c.val = normChoice cS s ∧
-    ∃ pre post, cs = pre ++ c.val :: post ∧ ∀ d ∈ pre, normChoice cS d ≠ normChoice cS s := by
-  simp only [convert] at h
-  split at h
-  · rename_i c' hm
-    cases h
-    unfold matchChoice at hm
-    split at hm
-    · rename_i c'' hf
-      cases hm
-      rw [List.find?_eq_some_iff_append] at hf
-      obtain ⟨hp, pre, post, hcs, hpre⟩ := hf
-      refine ⟨List.mem_of_find?_eq_some ‹_›, by simpa using hp, pre, post, hcs, ?_⟩
-      intro d hd
-      have := hpre d hd
-      simpa using this
-    · cases hm
-  · cases h
+/-- A choice converts exactly when a declared choice matches, to the first match. -/
+theorem choice_in_set (fs : String → Option FileInfo) (cs : List String) (cS : Bool) (s v : String) :
+    (∃ c, convert fs (.choice cs cS) s = .ok c ∧ c.val = v) ↔
+    cs.find? (fun c => normChoice cS c == normChoice cS s) = some v := by
+  simp only [convert, matchChoice]
+  constructor
+  · rintro ⟨c, hc, rfl⟩
+    split at hc
+    · rename_i c' hm
+      split at hm
+      · rename_i c'' hf; cases hm; cases hc; exact hf
+      · cases hm
+    · cases hc
+  · intro hf
+    have hmem := List.mem_of_find?_eq_some hf
+    refine ⟨⟨v, hmem⟩, ?_, rfl⟩
+    split
+    · rename_i c' hm
+      split at hm
+      · rename_i c'' hf'
+        rw [hf] at hf'; cases hf'; cases hm; rfl
+      · cases hm
+    · rename_i hm
+      split at hm
+      · cases hm
+      · rename_i hf'; rw [hf] at hf'; cases hf'
 
-theorem choice_in_set : ChoiceInSet := ⟨choice_mem, convert_choice⟩
 
 /-! ## Group dispatch -/
 
@@ -161,14 +169,7 @@ theorem parseLevel_sub (cmd : Command σ) (s : Settings) (path : String) (argv :
           · cases h
           · split at h <;> cases h
 
-theorem group_dispatch_first_match : GroupDispatchFirstMatch (σ := σ) := by
-  intro cmd s path argv env lv c name rest h hs
-  have hf := parseLevel_sub cmd s path argv env lv c name rest h hs
-  unfold Command.findSub at hf
-  rw [List.find?_eq_some_iff_append] at hf
-  obtain ⟨hp, pre, post, hl, hpre⟩ := hf
-  refine ⟨by simpa using hp, pre, post, hl, ?_⟩
-  intro d hd
-  simpa using hpre d hd
+theorem group_dispatch_first_match : GroupDispatchFirstMatch (σ := σ) :=
+  fun cmd s path argv env lv c name rest h hs => parseLevel_sub cmd s path argv env lv c name rest h hs
 
 end LeanClick

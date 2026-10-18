@@ -248,6 +248,10 @@ def main (cmd : App σ) (init : σ) (argv : List String) (prog : String := cmd.n
   report t
   return UInt32.ofNat t.exitCode
 
+/-- `hello()` in click: run the command with the process arguments. -/
+def _root_.LeanClick.Command.run {σ : Type} (cmd : App σ) (init : σ) (argv : List String) : IO UInt32 :=
+  Terminal.main cmd init argv
+
 /-- Open a `File` value for reading and return its contents (`-` is
 standard input). -/
 def readFileArg (f : FileArg) : ClickM String := do

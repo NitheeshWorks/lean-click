@@ -23,3 +23,8 @@ root = "tests.Conformance"
 [[lean_exe]]
 name = "example"
 root = "examples.FastapiCli"
+
+# click's README quickstart: `lake exe hello --count=3`.
+[[lean_exe]]
+name = "hello"
+root = "examples.Hello"

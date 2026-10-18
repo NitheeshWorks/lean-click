@@ -1,5 +1,6 @@
 import LeanClick.APIs
 import LeanClick.Terminal
+import LeanClick.Typed
 
 /-!
 # LeanClick
