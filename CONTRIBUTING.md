@@ -99,7 +99,21 @@ Listed here with the reason, and in `docs/traceability.toml` with
 * Python number parsing and printing (`parseInt`, `parseDec`, `showDec`):
   round-trip property tests.
 * `Terminal.lean`: prompts, confirmation, the filesystem view, the exit code
-  reporting. Effectful; exercised by `tests/apps/FastapiCli.lean`.
+  reporting, and the termui helpers (`echo` and styles, pager, progress
+  bars, `edit`, `launch`, `getchar`, `File` streams). Effectful; exercised
+  by whole-process golden runs (`tests/golden/click.json`) of
+  `tests/apps/Hello.lean`, `tests/apps/Prompts.lean` and every program in
+  `examples/`, each against click 8.5.0 running the Python original.
+
+### Examples
+
+`examples/` ports click's `examples/` one to one, same names and layout;
+`examples/MANIFEST.toml` maps every upstream file (checked by
+`stack-tools/check-examples.py`). Each program is a `lean_exe` in
+`lakefile.toml`. To add or change a scenario, edit `EXAMPLES` in
+`tests/golden/generate.py` and regenerate `tests/golden/click.json`; the
+runs happen in `tests/golden/work` with exactly the listed environment.
+If a port needs something the Python does not, fix the library instead.
 
 ### Deviations from upstream
 
@@ -110,20 +124,26 @@ not hide input; path permission checks assumed true; `nargs=0` arguments
 (UP-009); unbounded ranges show no range text (UP-023); `--help`/`--version`
 never read automatic environment variables (UP-011); parameters sharing a
 name are not arbitrated; boolean flags have no explicit `None` default; an
-option-looking unknown subcommand is re-scanned rather than re-parsed.
+option-looking unknown subcommand is re-scanned rather than re-parsed;
+`version_option()` needs its version (no installed-distribution lookup);
+parameter callbacks are pure, so side effects on `ctx.obj` move to the
+command (aliases); complex's plugins are listed statically; aliases writes
+its config as text (UP-042).
 The shell completion scripts are this port's own.
 A group nested in a chained group is refused (at compile time by the
 builders, at parse time for raw constructors), where click 8.5.0's
 constructor path would run it. Excluded, with reasons in
 `docs/traceability.toml`: `token_normalize_func`, group result
-callbacks, Windows console support, custom `ParamType` classes,
+callbacks, Windows console support,
 deprecation warnings, `prompt_required=False`, lazy subcommand loading.
 
 Implemented beyond the first slice: chained groups (`group ... (chain :=
 true)`), `default_map` (`ContextSettings.defaultMap`, source
 `DEFAULT_MAP`), the `UUID`, `DateTime` and `Tuple` types (refined by
 `uuidCanonical` and `Timestamp.valid`; `tuple_arity`), parameter callbacks
-(`callback :=`), and shell completion (`_PROG_COMPLETE`, bash/zsh/fish,
+(`callback :=`, typed on typed binders), custom types (`ClickType.custom`,
+a `ParamType` subclass's `convert`; `Param.typeCheck`), `confirmationOption`
+and `passwordOption`, and shell completion (`_PROG_COMPLETE`, bash/zsh/fish,
 `RepoImpl/Complete.lean`).
 
 ### Complexity

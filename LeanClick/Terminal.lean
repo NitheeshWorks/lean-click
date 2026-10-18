@@ -137,48 +137,240 @@ def launch (url : String) (locate : Bool := false) : IO UInt32 := do
     child.wait
   catch _ => return 127
 
-/-- `click.edit`: edit the text in `$VISUAL`/`$EDITOR` (else `vi`) and
-return the result, or `none` when the file was not changed. -/
-def edit (text : String) (extension : String := ".txt") : IO (Option String) := do
-  let editor := (← IO.getEnv "VISUAL").getD ((← IO.getEnv "EDITOR").getD "vi")
-  let (h, path) ← IO.FS.createTempFile
+/-- The editor `click.edit` runs: `editor`, else `$VISUAL`, else `$EDITOR`,
+else the first of `editor`, `nano`, `vim` on the path, else `vi`
+(click's `Editor.get_editor`). -/
+def getEditor (editor : Option String := none) : IO String := do
+  if let some e := editor then return e
+  if let some e ← IO.getEnv "VISUAL" then return e
+  if let some e ← IO.getEnv "EDITOR" then return e
+  let path := ((← IO.getEnv "PATH").getD "").splitOn ":"
+  for e in ["editor", "nano", "vim"] do
+    for d in path do
+      if !d.isEmpty && (← (System.FilePath.mk d / e).pathExists) then return e
+  return "vi"
+
+/-- `click.edit(text)`: write the text (with a final newline) to a
+temporary file, run the editor on it, and return what it holds, or `none`
+when the editor did not save (`require_save`). The editor command is split
+the way a POSIX shell splits words, without a shell (`shlex.split`); a
+failing editor is `ClickException("<editor>: Editing failed")`. -/
+def edit (text : String := "") (editor : Option String := none) (requireSave : Bool := true)
+    (extension : String := ".txt") : IO (Option String) := do
+  let editor ← getEditor editor
+  let text := if !text.isEmpty && !text.endsWith "\n" then text ++ "\n" else text
+  let (h, tmp) ← IO.FS.createTempFile
   h.putStr text
   h.flush
-  let path' := path.toString ++ extension
-  IO.FS.rename path path'
-  let before ← (System.FilePath.mk path').metadata
-  let child ← IO.Process.spawn { cmd := "sh", args := #["-c", editor ++ " \"$1\"", "editor", path'] }
-  let _ ← child.wait
-  let after ← (System.FilePath.mk path').metadata
-  let result ← IO.FS.readFile path'
-  IO.FS.removeFile path'
-  if after.modified == before.modified && result == text then return none
-  return some result
+  let path := System.FilePath.mk (tmp.toString ++ extension)
+  IO.FS.rename tmp path
+  try
+    let before := (← path.metadata).modified
+    let argv := splitArgString editor ++ [path.toString]
+    let code ← try
+        let child ← IO.Process.spawn { cmd := argv.headD editor, args := (argv.drop 1).toArray }
+        child.wait
+      catch e => throw (IO.userError s!"{editor}: Editing failed: {e}")
+    if code != 0 then throw (IO.userError s!"{editor}: Editing failed")
+    if requireSave && (← path.metadata).modified == before then return none
+    return some ((← IO.FS.readFile path).replace "\r\n" "\n")
+  finally
+    try IO.FS.removeFile path catch _ => pure ()
 
-/-- click's `progressbar` over a list: on a terminal it redraws a bar
-(`label  [####----]  percent`); otherwise it prints the label once, as
-click does. `step` handles each item. -/
-def progressbar {α : Type} (items : List α) (label : String := "") (fillChar : String := "#")
-    (emptyChar : String := "-") (width : Nat := 36) (step : α → IO Unit := fun _ => pure ()) : IO Unit := do
-  if !(← isTty) then
-    echo label
-    for x in items do step x
+/-- click's `progressbar(...)` settings (`termui.progressbar`'s defaults). -/
+structure ProgressBar (α : Type) where
+  items : List α
+  length : Option Nat := some items.length
+  label : String := ""
+  hidden : Bool := false
+  showEta : Bool := true
+  showPercent : Option Bool := none
+  showPos : Bool := false
+  itemShowFunc : Option (Option α → Option String) := none
+  fillChar : String := "#"
+  emptyChar : String := "-"
+  barTemplate : String := "%(label)s  [%(bar)s]  %(info)s"
+  infoSep : String := "  "
+  /-- `0` fills the terminal width. -/
+  width : Nat := 36
+  updateMinSteps : Nat := 1
+
+/-- The running state of a bar (click's `ProgressBar` attributes). -/
+structure BarState (α : Type) where
+  pos : Float := 0
+  avg : List Float := []
+  start : Float
+  lastEta : Float
+  etaKnown : Bool := false
+  finished : Bool := false
+  maxWidth : Option Nat := none
+  current : Option α := none
+  lastLine : Option String := none
+  completed : Float := 0
+  width : Nat
+
+/-- A progress bar in use (inside `withProgressbar`). -/
+structure Bar (α : Type) where
+  cfg : ProgressBar α
+  state : IO.Ref (BarState α)
+  tty : Bool
+
+/-- `click.progressbar(iterable, ...)`. -/
+def progressbar {α : Type} (items : List α) (label : String := "") (hidden : Bool := false)
+    (showEta : Bool := true) (showPercent : Option Bool := none) (showPos : Bool := false)
+    (itemShowFunc : Option (Option α → Option String) := none) (fillChar : String := "#")
+    (emptyChar : String := "-") (barTemplate : String := "%(label)s  [%(bar)s]  %(info)s")
+    (infoSep : String := "  ") (width : Nat := 36) (updateMinSteps : Nat := 1) : ProgressBar α :=
+  { items, label, hidden, showEta, showPercent, showPos, itemShowFunc, fillChar, emptyChar,
+    barTemplate, infoSep, width, updateMinSteps }
+
+/-- `click.progressbar(length=n, ...)`: the items are `0, ..., n - 1`. -/
+def progressbarLength (length : Nat) (label : String := "") (hidden : Bool := false)
+    (showEta : Bool := true) (showPercent : Option Bool := none) (showPos : Bool := false)
+    (fillChar : String := "#") (emptyChar : String := "-")
+    (barTemplate : String := "%(label)s  [%(bar)s]  %(info)s") (infoSep : String := "  ")
+    (width : Nat := 36) (updateMinSteps : Nat := 1) : ProgressBar Nat :=
+  { items := List.range length, length := some length, label, hidden, showEta, showPercent,
+    showPos, fillChar, emptyChar, barTemplate, infoSep, width, updateMinSteps }
+
+namespace Bar
+variable {α : Type}
+
+private def now : IO Float := do return (← IO.monoNanosNow).toFloat / 1e9
+
+private def pct (b : Bar α) (st : BarState α) : Float :=
+  if st.finished then 1.0
+  else
+    let len := (b.cfg.length.getD 1).toFloat
+    min (st.pos / (if len == 0 then 1 else len)) 1.0
+
+private def two (n : Nat) : String := if n < 10 then s!"0{n}" else toString n
+
+private def formatEta (b : Bar α) (st : BarState α) : String :=
+  if !st.etaKnown then "" else
+  let tpi := if st.avg.isEmpty then 0 else st.avg.foldl (· + ·) 0 / st.avg.length.toFloat
+  let eta := match b.cfg.length with
+    | some l => if st.finished then 0 else tpi * (l.toFloat - st.pos)
+    | none => 0
+  let t := eta.toUInt64.toNat
+  let (s, t) := (t % 60, t / 60)
+  let (m, t) := (t % 60, t / 60)
+  let (h, d) := (t % 24, t / 24)
+  if d > 0 then s!"{d}d {two h}:{two m}:{two s}" else s!"{two h}:{two m}:{two s}"
+
+private def formatPos (b : Bar α) (st : BarState α) : String :=
+  let p := if st.pos == st.pos.floor then toString st.pos.toUInt64 else toString st.pos
+  match b.cfg.length with
+  | some l => s!"{p}/{l}"
+  | none => p
+
+private def formatBar (b : Bar α) (st : BarState α) : String :=
+  let rep := fun (n : Nat) (c : String) => String.join (List.replicate n c)
+  match b.cfg.length with
+  | some _ =>
+    let n := (pct b st * st.width.toFloat).toUInt64.toNat
+    rep n b.cfg.fillChar ++ rep (st.width - n) b.cfg.emptyChar
+  | none => if st.finished then rep st.width b.cfg.fillChar else rep (max st.width 1) b.cfg.emptyChar
+
+private def formatLine (b : Bar α) (st : BarState α) : String :=
+  let showPercent := match b.cfg.showPercent, b.cfg.length with
+    | none, some _ => !b.cfg.showPos
+    | p, _ => p.getD false
+  let pctS := let n := (pct b st * 100).toUInt64.toNat
+    let s := toString n
+    String.ofList (List.replicate (3 - min 3 s.length) ' ') ++ s ++ "%"
+  let bits := (if b.cfg.showPos then [formatPos b st] else []) ++ (if showPercent then [pctS] else []) ++
+    (if b.cfg.showEta && st.etaKnown && !st.finished then [formatEta b st] else []) ++
+    (match b.cfg.itemShowFunc with
+      | some f => (f st.current).toList
+      | none => [])
+  let line := ((b.cfg.barTemplate.replace "%(label)s" b.cfg.label).replace "%(bar)s" (formatBar b st)).replace
+    "%(info)s" (b.cfg.infoSep.intercalate bits)
+  String.ofList (line.toList.reverse.dropWhile Char.isWhitespace).reverse
+
+/-- click's `render_progress`: off a terminal, the label once. -/
+def render (b : Bar α) : IO Unit := do
+  if b.cfg.hidden then return
+  let st ← b.state.get
+  if !b.tty then
+    if st.lastLine != some b.cfg.label then
+      b.state.set { st with lastLine := some b.cfg.label }
+      echo b.cfg.label
     return
-  let total := items.length
-  let draw := fun (done : Nat) => do
-    let filled := if total == 0 then width else done * width / total
-    let pct := if total == 0 then 100 else done * 100 / total
-    let bar := String.join (List.replicate filled fillChar) ++ String.join (List.replicate (width - filled) emptyChar)
-    let h ← IO.getStdout
-    h.putStr s!"\r{label}  [{bar}]  {pct}%"
-    h.flush
-  draw 0
-  let mut done := 0
-  for x in items do
-    step x
-    done := done + 1
-    draw done
-  echo ""
+  let mut st := st
+  let mut buf := ""
+  if b.cfg.width == 0 then
+    let clutter := (unstyle (formatLine b { st with width := 0 })).length
+    let cols := ((← IO.getEnv "COLUMNS").bind String.toNat?).getD 80
+    let newWidth := cols - clutter
+    if newWidth < st.width && st.maxWidth.isSome then
+      buf := buf ++ "\r" ++ String.ofList (List.replicate (st.maxWidth.getD 0) ' ')
+      st := { st with maxWidth := some newWidth }
+    st := { st with width := newWidth }
+  let clearWidth := st.maxWidth.getD st.width
+  let line := formatLine b st
+  let len := (unstyle line).length
+  if st.maxWidth.isNone || st.maxWidth.getD 0 < len then st := { st with maxWidth := some len }
+  let out := buf ++ "\r" ++ line ++ String.ofList (List.replicate (clearWidth - len) ' ')
+  if st.lastLine != some out then
+    st := { st with lastLine := some out }
+    echo out (nl := false)
+  b.state.set st
+
+private def makeStep (b : Bar α) (n : Float) : IO Unit := do
+  let st ← b.state.get
+  let pos := st.pos + n
+  let finished := st.finished || (match b.cfg.length with | some l => pos ≥ l.toFloat | none => false)
+  let t ← now
+  if t - st.lastEta < 1.0 then
+    b.state.set { st with pos, finished }
+    return
+  let step := if pos != 0 then (t - st.start) / pos else t - st.start
+  b.state.set { st with pos, finished, lastEta := t, avg := st.avg.drop (st.avg.length - 6) ++ [step],
+                        etaKnown := b.cfg.length.isSome }
+
+/-- `bar.update(n_steps, current_item)`. -/
+def update (b : Bar α) (n : Float) (item : Option α := none) : IO Unit := do
+  b.state.modify fun st => { st with current := item.orElse fun _ => st.current, completed := st.completed + n }
+  let st ← b.state.get
+  if st.completed ≥ b.cfg.updateMinSteps.toFloat then
+    makeStep b st.completed
+    render b
+    b.state.modify fun st => { st with completed := 0 }
+
+/-- Iterating a bar yields its items and advances it after each one. -/
+instance : ForIn IO (Bar α) α where
+  forIn b init f := do
+    let mut acc := init
+    for x in b.cfg.items do
+      if b.tty then
+        b.state.modify fun st => { st with current := some x }
+        if (← b.state.get).completed == 0 then render b
+      match ← f x acc with
+      | .done a => return a
+      | .yield a =>
+        acc := a
+        if b.tty then update b 1
+    return acc
+
+end Bar
+
+/-- `with click.progressbar(...) as bar:`: draw the bar, run the body,
+then finish the line. -/
+def withProgressbar {α β : Type} (cfg : ProgressBar α) (body : Bar α → IO β) : IO β := do
+  let t ← Bar.now
+  let tty ← isTty
+  let state ← IO.mkRef ({ start := t, lastEta := t, width := cfg.width } : BarState α)
+  let b : Bar α := { cfg, state, tty }
+  b.render
+  let r ← body b
+  let st ← state.get
+  if st.completed != 0 then
+    Bar.makeStep b st.completed
+    state.modify fun st => { st with completed := 0 }
+    b.render
+  if !cfg.hidden && tty then echo "" 
+  return r
 
 /-- `ctx.exit(code)`. -/
 def exit (code : Nat := 0) : ClickM σ := throw (.exit code)
@@ -189,6 +381,21 @@ def abort : ClickM σ := throw .abort
 /-- `ctx.fail(message)`: a usage error in the context. -/
 def fail (ctx : Context σ) (message : String) : ClickM α :=
   throw (.usage ⟨.usage message, some ⟨ctx.commandPath, ctx.usage, some "--help"⟩⟩)
+
+/-- `click.BadParameter(message, param_hint=...)` raised from a callback
+or a command body; the running command's context is attached when it
+reaches `main`, as click's `augment_usage_errors` does. -/
+def badParameter (message : String) (paramHint : List String := []) : ClickError :=
+  let hint := if paramHint.isEmpty then none else some (" / ".intercalate (paramHint.map pyRepr))
+  .usage ⟨.badParameter hint message, none⟩
+
+/-- `click.UsageError(message)` raised from a callback or a command body. -/
+def usageError (message : String) : ClickError := .usage ⟨.usage message, none⟩
+
+/-- A usage error raised without a context gets the running command's. -/
+def _root_.LeanClick.ClickError.inContext (info : CtxInfo) : ClickError → ClickError
+  | .usage ⟨k, none⟩ => .usage ⟨k, some info⟩
+  | e => e
 
 /-- Read one line; `none` at end of input. -/
 def readLine : IO (Option String) := do
@@ -218,6 +425,26 @@ def confirm (text : String) (default : Option Bool := some false) (fuel : Nat :=
         else do echo "Error: invalid input"; loop f
   loop fuel
 
+/-- click's `_mask_hidden_input`: a hidden answer is not echoed in an
+error message, neither quoted (`repr`) nor bare between non-word
+characters. -/
+def maskHiddenInput (message value : String) : String :=
+  let mask := "'***'"
+  let message := message.replace (pyRepr value) mask
+  if value.isEmpty then message else
+  let word := fun (c : Char) => c.isAlphanum || c == '_'
+  let v := value.toList
+  let rec go : Nat → List Char → Option Char → List Char → List Char
+    | 0, rest, _, acc => acc.reverse ++ rest
+    | _, [], _, acc => acc.reverse
+    | f + 1, c :: rest, prev, acc =>
+      let cs := c :: rest
+      if cs.take v.length == v && !(prev.map word).getD false &&
+          !((cs.drop v.length).head?.map word).getD false then
+        go f (cs.drop v.length) (v.getLast?) (mask.toList.reverse ++ acc)
+      else go f rest (some c) (c :: acc)
+  String.ofList (go (message.length + 1) message.toList none [])
+
 /-- `click.prompt` for a parameter: shows the default and the choices,
 re-asks until the value converts, and asks twice with a confirmation
 prompt. `none` means abort. Input is not hidden (`hide_input` is deviation
@@ -238,35 +465,60 @@ def promptParam (fs : String → Option FileInfo) (p : Param) (dflt : Option Str
     | some d => if showD then s!" [{d}]" else ""
     | none => ""
   let text := ps.text ++ choices ++ shown ++ ": "
+  -- click's `value_proc`, the parameter's `process_value`: the type's
+  -- conversion, then a custom type's and the callback's checks; a
+  -- `BadParameter` re-asks, an abort ends the prompt
+  let valueProc := fun (v : String) => (match convert fs p.type v with
+    | .error msg => .error (some msg)
+    | .ok c => match p.checks with
+      | none => .ok ()
+      | some f => match f (ParamType.erase p.type c) with
+        | .error (.bad msg) => .error (some msg)
+        | .error .abort => .error none
+        | .ok _ => .ok () : Except (Option String) Unit)
+  let read := fun (prompt : String) => do
+    echo prompt (nl := false)
+    match ← readLine with
+    | none => do
+      if ps.hideInput then echo "" (err := true)
+      pure none
+    | some v => pure (some v)
+  -- the first answer: an empty one takes the default, or asks again
   let rec ask : Nat → IO (Option String)
     | 0 => pure none
     | f + 1 => do
-      echo text (nl := false)
-      match ← readLine with
-      | none => do
-        if ps.hideInput then echo "" (err := true)
-        pure none
+      match ← read text with
+      | none => pure none
       | some "" => match dflt with
         | some d => pure (some d)
         | none => ask f
-      | some v =>
-        match convert fs p.type v with
-        | .error msg => do echo s!"Error: {msg}"; ask f
-        | .ok _ => pure (some v)
+      | some v => pure (some v)
+  -- the confirmation: asked again while empty, unless both are empty
+  let confirmText := s!"{ps.confirmationText.getD "Repeat for confirmation"}: "
+  let rec again (v : String) : Nat → IO (Option String)
+    | 0 => pure none
+    | f + 1 => do
+      match ← read confirmText with
+      | none => pure none
+      | some w => if !w.isEmpty || v.isEmpty then pure (some w) else again v f
   let rec loop : Nat → IO (Option String)
     | 0 => pure none
     | f + 1 => do
       match ← ask fuel with
       | none => pure none
       | some v =>
-        if !ps.confirmation then pure (some v)
-        else do
-          echo "Repeat for confirmation: " (nl := false)
-          match ← readLine with
-          | none => pure none
-          | some w =>
-            if v == w then pure (some v)
-            else do echo "Error: The two entered values do not match."; loop f
+        match valueProc v with
+        | .error none => pure none
+        | .error (some msg) => do
+          echo s!"Error: {if ps.hideInput then maskHiddenInput msg v else msg}"
+          loop f
+        | .ok () =>
+          if !ps.confirmation then pure (some v)
+          else match ← again v fuel with
+            | none => pure none
+            | some w =>
+              if v == w then pure (some v)
+              else do echo "Error: The two entered values do not match."; loop f
   loop fuel
 
 /-- `os.path.normpath` of an absolute path: drop `.` and empty segments,
@@ -404,7 +656,7 @@ def runAux (prog : String) :
             | none => if lv.chained.isEmpty then none else some "*",
           help := cmd.getHelp s path, usage := cmd.getUsage s path }
       match ← (cmd.callback.run ctx).run with
-      | .error e => pure (.raised e)
+      | .error e => pure (.raised (e.inContext (cmd.ctxInfo s path)))
       | .ok obj' =>
         match lv.sub with
         | none =>
@@ -416,7 +668,7 @@ def runAux (prog : String) :
                 { infoName := name, commandPath := cpath, params := pa, parent := some ctx, obj := obj',
                   help := c.getHelp cs cpath, usage := c.getUsage cs cpath }
               match ← (c.callback.run cctx).run with
-              | .error e => pure (.raised e)
+              | .error e => pure (.raised (e.inContext (c.ctxInfo cs cpath)))
               | .ok _ => runChain more
           runChain lv.chained
         | some (c, name, rest) =>
@@ -431,6 +683,20 @@ def report : Termination → IO Unit
   | .halted (.prompt _ _ _) => echo "Aborted!" (err := true)
   | .halted .abort => echo "Aborted!" (err := true)
   | .raised e => echo e.render (err := true) (nl := false)
+
+/-- The whole process environment, in order (`os.environ`). Lean core
+reads single variables only, so this reads `/proc/self/environ`, and runs
+`env -0` where that does not exist. -/
+def environ : IO (List (String × String)) := do
+  let raw ← try IO.FS.readBinFile "/proc/self/environ"
+    catch _ => do
+      let out ← IO.Process.output { cmd := "env", args := #["-0"] }
+      pure out.stdout.toUTF8
+  let text := (String.fromUTF8? raw).getD ""
+  return (text.splitOn "\x00").filterMap fun kv =>
+    match kv.splitOn "=" with
+    | k :: rest => if k.isEmpty then none else some (k, "=".intercalate rest)
+    | [] => none
 
 /-- Shell completion (`_PROG_COMPLETE=bash_source|bash_complete|...`):
 `some code` when the variable asked for it. -/
@@ -458,6 +724,7 @@ def shellComplete (cmd : App σ) (prog : String) : IO (Option UInt32) := do
           let cword := cwordVar.toNat?.getD 0
           ((words.drop 1).take (cword - 1), words.getD cword "")
       let items := cmd.complete prog args incomplete
+        { vars := ← environ, cwd := (← IO.currentDir).toString, width := ← terminalWidth }
       echo ("\n".intercalate (items.map (CompletionItem.format shell)))
       return some 0
     else return some 1
@@ -474,8 +741,26 @@ def main (cmd : App σ) (init : σ) (argv : List String) (prog : String := cmd.n
   return UInt32.ofNat t.exitCode
 
 /-- `hello()` in click: run the command with the process arguments. -/
-def _root_.LeanClick.Command.run {σ : Type} (cmd : App σ) (init : σ) (argv : List String) : IO UInt32 :=
-  Terminal.main cmd init argv
+def _root_.LeanClick.Command.run {σ : Type} (cmd : App σ) (init : σ) (argv : List String)
+    (prog : String := cmd.name) : IO UInt32 :=
+  Terminal.main cmd init argv prog
+
+/-- Open a `File` value as a stream (`-` is standard input, or standard
+output for a writing mode), as click's `File.convert` does; the handle
+reads and writes bytes (`h.read 1024`, `h.write chunk`). -/
+def openFile (f : FileArg) : ClickM IO.FS.Stream := do
+  let writing := f.mode.toList.any (fun c => c == 'w' || c == 'a' || c == 'x')
+  if f.name == "-" then
+    return ← if writing then IO.getStdout else IO.getStdin
+  let mode : IO.FS.Mode :=
+    if f.mode.toList.contains 'a' then .append
+    else if f.mode.toList.contains 'x' then .writeNew
+    else if writing then .write
+    else if f.mode.toList.contains '+' then .readWrite
+    else .read
+  match ← (IO.FS.Handle.mk f.name mode).toBaseIO with
+  | .ok h => pure (IO.FS.Stream.ofHandle h)
+  | .error e => throw (.fileError f.name (toString e))
 
 /-- Open a `File` value for reading and return its contents (`-` is
 standard input). -/

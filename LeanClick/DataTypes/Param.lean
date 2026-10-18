@@ -69,10 +69,48 @@ inductive ShowDefault where
 structure PromptSpec where
   text : String
   confirmation : Bool := false
+  /-- The confirmation prompt's own text (`confirmation_prompt="..."`);
+  click's default is `Repeat for confirmation`. -/
+  confirmationText : Option String := none
   hideInput : Bool := false
   /-- click's `prompt_required`. -/
   required : Bool := true
   deriving DecidableEq, Repr, Inhabited
+
+/-- click's `prompt=` and `confirmation_prompt=` arguments: off, on with
+the default text (`True`), or a text. -/
+inductive PromptText where
+  | off
+  | auto
+  | text (s : String)
+  deriving DecidableEq, Repr, Inhabited
+
+instance : Coe String PromptText := ⟨.text⟩
+instance : Coe Bool PromptText := ⟨fun b => if b then .auto else .off⟩
+instance : Coe (Option String) PromptText := ⟨fun o => match o with | some s => .text s | none => .off⟩
+
+/-- The text of a prompt, with `auto` being the given default. -/
+def PromptText.resolve (p : PromptText) (auto : String) : Option String :=
+  match p with
+  | .off => none
+  | .auto => some auto
+  | .text s => some s
+
+/-- `prompt=True`'s text: the name with `_` as spaces, capitalised
+(Python's `str.capitalize`). -/
+def promptTextOf (name : String) : String :=
+  let t := String.ofList (name.toList.map fun c => if c == '_' then ' ' else c)
+  match t.toList with
+  | c :: r => String.ofList (c.toUpper :: r.map Char.toLower)
+  | [] => t
+
+/-- The prompt a parameter declares from `prompt=`, `confirmation_prompt=`
+and `hide_input=`. -/
+def PromptText.spec (name : String) (prompt confirmation : PromptText) (hideInput : Bool) :
+    Option PromptSpec :=
+  (prompt.resolve (promptTextOf name)).map fun text =>
+    { text, hideInput, confirmation := confirmation != .off,
+      confirmationText := match confirmation with | .text s => some s | _ => none }
 
 /-- What the filesystem says about a path (for `Path`/`File` checks). -/
 structure FileInfo where
@@ -149,6 +187,10 @@ structure Param where
   /-- click's parameter `callback`: sees the converted value, may replace it
   or reject it with a `BadParameter` message. -/
   callback : Option (Value → Except CallbackError Value) := none
+  /-- A custom type's conversion (a `click.ParamType` subclass's
+  `convert`), run on the value the parser's own type produced and before
+  `callback`; `.bad msg` is the type's `self.fail(msg)`. -/
+  typeCheck : Option (Value → Except CallbackError Value) := none
   /-- click's `shell_complete=`: completions for the incomplete word. -/
   shellComplete : Option (Env → String → List CompletionItem) := none
   /-- The default came from the context's `default_map`. -/
@@ -157,6 +199,14 @@ structure Param where
     first | decide | (simp [Decl.isBoolFlag]; done) | (intro h; simp_all [Decl.isBoolFlag])
   h_count : decl.isCount = true → type.isIntRange = true := by
     first | decide | (simp [Decl.isCount, ParamType.isIntRange]; done) | (intro h; simp_all [Decl.isCount, ParamType.isIntRange])
+
+/-- What runs on a converted value: a custom type's conversion, then the
+parameter's callback (click's `process_value` order). -/
+def Param.checks (p : Param) : Option (Value → Except CallbackError Value) :=
+  match p.typeCheck, p.callback with
+  | none, c => c
+  | some t, none => some t
+  | some t, some c => some fun v => t v >>= c
 
 /-- Where a parameter's value came from (click's `ParameterSource`), in
 precedence order. -/

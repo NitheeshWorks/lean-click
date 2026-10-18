@@ -26,6 +26,14 @@ lake exe conformance
 echo "== traceability =="
 python3 scripts/traceability-check.py
 
+# the examples manifest (completeness against upstream needs the local
+# upstream-spec clone, so CI does not run it)
+CHECK_EXAMPLES=../stack-tools/check-examples.py
+if [[ -f "$CHECK_EXAMPLES" ]]; then
+  echo "== examples manifest =="
+  python3 "$CHECK_EXAMPLES" .
+fi
+
 if [[ "${1:-}" == "--pbt" ]]; then
   echo "== plausible =="
   (cd tests/pbt && lake build && ./.lake/build/bin/pbt)

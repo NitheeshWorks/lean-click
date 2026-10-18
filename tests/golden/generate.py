@@ -288,4 +288,168 @@ for argv, inp in PROCESS:
                          env={"COLUMNS": "80"})
     out.append({"process": "hello", "upstream": "README.md (A Simple Example)", "argv": argv, "input": inp, "code": res.returncode,
                 "stdout": res.stdout, "stderr": res.stderr})
+
+# Prompts as a real process, against `lake exe prompts` (tests/apps/Prompts.lean).
+PROMPTS = """
+import click
+
+@click.group()
+def prompts():
+    pass
+
+def validate(ctx, param, value):
+    if value < 0:
+        raise click.BadParameter("should be positive")
+    return value
+
+@prompts.command("validate")
+@click.option("-a", type=int, callback=validate, prompt=True)
+def validate_cmd(a):
+    click.echo(a)
+
+@prompts.command()
+@click.option("--n", type=int, prompt=True)
+def number(n):
+    click.echo(n)
+
+@prompts.command()
+@click.option("--password", prompt="Confirm Password", confirmation_prompt="Confirm Password")
+def password(password):
+    click.echo(repr(password))
+
+@prompts.command()
+@click.option("--flag/--no-flag", prompt=True)
+def flag(flag):
+    click.echo(repr(flag))
+
+prompts(prog_name="prompts")
+"""
+PROMPT_RUNS = [
+    (["validate"], "-12\n60\n", "tests/test_options.py::test_callback_validates_prompt"),
+    (["validate"], "-1\n", "tests/test_options.py::test_callback_validates_prompt"),
+    (["number"], "x\n\n7\n", "tests/test_termui.py::test_hide_input_masks_value_in_error"),
+    (["password"], "pw\nother\npw\n\npw\n", "tests/test_termui.py::test_confirmation_prompt"),
+    (["password"], "\n\n", "tests/test_termui.py::test_confirmation_prompt"),
+    (["flag"], "maybe\ny\n", "tests/test_termui.py::test_flag_value_prompt"),
+    (["flag"], "\n", "tests/test_termui.py::test_flag_value_prompt"),
+    (["flag", "--no-flag"], "", "tests/test_termui.py::test_flag_value_prompt"),
+]
+for argv, inp, up in PROMPT_RUNS:
+    res = subprocess.run([sys.executable, "-I", "-c", PROMPTS, *argv], input=inp, capture_output=True, text=True,
+                         env={"COLUMNS": "80"})
+    out.append({"process": "prompts", "upstream": up, "argv": argv, "input": inp, "code": res.returncode,
+                "stdout": res.stdout, "stderr": res.stderr})
+
+# click's examples/ run as real programs (`examples/MANIFEST.toml`), each
+# against its Lean port (`.lake/build/bin/<name>`). The installed
+# distribution's version, which `version_option()` looks up, is the
+# example's pyproject version. Runs happen in tests/golden/work with only
+# the listed environment; the repository root is written as <ROOT>.
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+EX = ROOT.parent / "upstream-spec" / "click" / "examples"
+WORK = ROOT / "tests" / "golden" / "work"
+RUN_EXAMPLE = r"""
+import sys, importlib, importlib.metadata as md
+md.version = lambda name: "1.0.0"
+src, target, prog, *argv = sys.argv[1:]
+sys.path.insert(0, src)
+mod, func = target.split(":")
+getattr(importlib.import_module(mod), func)(argv, prog_name=prog)
+"""
+ENTRY = {"aliases": ("aliases", "aliases:cli", "aliases/aliases.py"),
+         "colors": ("colors", "colors:cli", "colors/colors.py"),
+         "complex": ("complex", "complex.cli:cli", "complex/complex/cli.py"),
+         "completion": ("completion", "completion:cli", "completion/completion.py"),
+         "inout": ("inout", "inout:cli", "inout/inout.py"),
+         "naval": ("naval", "naval:cli", "naval/naval.py"),
+         "repo": ("repo", "repo:cli", "repo/repo.py"),
+         "termui": ("termui", "termui:cli", "termui/termui.py"),
+         "validation": ("validation", "validation:cli", "validation/validation.py")}
+
+
+def comp(prog, words, cword, shell="bash"):
+    return {f"_{prog.upper()}_COMPLETE": f"{shell}_complete", "COMP_WORDS": words, "COMP_CWORD": str(cword)}
+
+
+EXAMPLES = [
+    ("colors", [], "", {}), ("colors", ["--help"], "", {}),
+    ("naval", [], "", {}), ("naval", ["--help"], "", {}), ("naval", ["--version"], "", {}),
+    ("naval", ["ship", "--help"], "", {}), ("naval", ["ship", "new", "Titanic"], "", {}),
+    ("naval", ["ship", "move", "--help"], "", {}), ("naval", ["ship", "move", "Titanic", "1", "2.5"], "", {}),
+    ("naval", ["ship", "move", "Titanic", "1", "2.5", "--speed", "20"], "", {}),
+    ("naval", ["ship", "move", "Titanic", "x", "2"], "", {}), ("naval", ["ship", "move"], "", {}),
+    ("naval", ["ship", "shoot", "Titanic", "3", "-4"], "", {}),
+    ("naval", ["mine", "--help"], "", {}), ("naval", ["mine", "set", "--help"], "", {}),
+    ("naval", ["mine", "set", "1", "2"], "", {}), ("naval", ["mine", "set", "1", "2", "--drifting"], "", {}),
+    ("naval", ["mine", "set", "1", "2", "--drifting", "--moored"], "", {}),
+    ("naval", ["mine", "remove", "1e3", "0.1"], "", {}), ("naval", ["boat"], "", {}),
+    ("inout", ["--help"], "", {}), ("inout", ["-", "-"], "one\ntwo\n", {}),
+    ("inout", ["foo.txt", "bar.txt", "-"], "", {}), ("inout", ["foo.txt", "-", "-"], "stdin\n", {}),
+    ("inout", ["missing.txt", "-"], "", {}), ("inout", [], "", {}),
+    ("validation", [], "", {}), ("validation", ["--help"], "", {}), ("validation", ["--version"], "", {}),
+    ("validation", ["--count", "3"], "", {}), ("validation", ["--count", "-2"], "", {}),
+    ("validation", ["--count", "4", "--foo", "wat"], "", {}), ("validation", ["--foo", "bar"], "", {}),
+    ("validation", ["--url", "https://user@example.com:8080/a/b;p?q=1&r=2#frag"], "", {}),
+    ("validation", ["--url", "http://example.com"], "", {}), ("validation", ["--url", "ftp://example.com/"], "", {}),
+    ("validation", ["--url", "example.com"], "", {}),
+    ("repo", ["--help"], "", {}), ("repo", ["--version"], "", {}),
+    ("repo", ["clone", "--help"], "", {}), ("repo", ["clone", "foo/bar"], "", {}),
+    ("repo", ["clone", "foo/bar/", "--shallow", "-r", "1.2"], "", {}),
+    ("repo", ["clone", "foo/bar", "/x/baz", "--deep"], "", {}),
+    ("repo", ["delete", "--help"], "", {}), ("repo", ["delete"], "y\n", {}), ("repo", ["delete"], "n\n", {}),
+    ("repo", ["delete"], "maybe\nyes\n", {}), ("repo", ["delete"], "", {}),
+    ("repo", ["--repo-home", "/srv/r", "delete", "--yes"], "", {}),
+    ("repo", ["delete", "--yes"], "", {"REPO_HOME": "/srv/env/../repo"}),
+    ("repo", ["setuser", "--help"], "", {}), ("repo", ["setuser", "--password", "pw"], "ann\nann@example.com\n", {}),
+    ("repo", ["-v", "setuser", "--password", "pw"], "\nann\n\nme@x\n", {}),
+    ("repo", ["-v", "--config", "k1", "v1", "--config", "k2", "v2", "setuser", "--username", "a", "--email", "b",
+              "--password", "xyz"], "", {}),
+    ("repo", ["--config", "k1"], "", {}),
+    ("repo", ["commit", "--help"], "", {}), ("repo", ["commit", "-m", "first", "-m", "second", "a.txt", "b.txt"], "", {}),
+    ("repo", ["commit", "-m", "only"], "", {}), ("repo", ["commit", "a.txt"], "", {"EDITOR": "true"}),
+    ("repo", ["commit"], "", {"EDITOR": "sh -c 'printf \"fix it\\n# Files\" > \"$1\"' sh"}),
+    ("repo", ["commit"], "", {"EDITOR": "sh -c 'printf \"\\n\\n# Files to be committed:\" > \"$1\"' sh"}),
+    ("repo", ["copy", "--help"], "", {}), ("repo", ["copy", "a", "b", "dst"], "", {}),
+    ("repo", ["copy", "dst", "--force"], "", {}), ("repo", ["copy"], "", {}),
+    ("aliases", ["--help"], "", {}), ("aliases", ["push"], "", {}), ("aliases", ["ci"], "", {}),
+    ("aliases", ["st"], "", {}), ("aliases", ["cl"], "", {}), ("aliases", ["p"], "", {}), ("aliases", ["xyz"], "", {}),
+    ("aliases", ["--config", "missing.ini", "push"], "", {}),
+    ("aliases", ["--config", "custom.ini", "pl"], "", {}), ("aliases", ["alias", "--help"], "", {}),
+    ("aliases", ["alias", "sy", "push", "--config_file", "nope.ini"], "", {}),
+    ("complex", ["--help"], "", {}), ("complex", ["init", "--help"], "", {}), ("complex", ["status", "--help"], "", {}),
+    ("complex", ["init"], "", {}), ("complex", ["init", "sub/../repo"], "", {}),
+    ("complex", ["--home", "dir", "init"], "", {}), ("complex", ["--home", "nowhere", "init"], "", {}),
+    ("complex", ["--home", "foo.txt", "init"], "", {}),
+    ("complex", ["status"], "", {}), ("complex", ["-v", "status"], "", {}),
+    ("complex", ["status"], "", {"COMPLEX_VERBOSE": "1"}), ("complex", ["foo"], "", {}),
+    ("completion", ["--help"], "", {}), ("completion", ["ls", "--dir", "dir"], "", {}),
+    ("completion", ["show-env", "LEANCLICK_DEMO"], "", {"LEANCLICK_DEMO": "it works"}),
+    ("completion", ["group", "select-user", "alice"], "", {}), ("completion", ["group", "--help"], "", {}),
+    ("completion", [], "", comp("completion", "completion ", 1)),
+    ("completion", [], "", comp("completion", "completion gr", 1)),
+    ("completion", [], "", {**comp("completion", "completion show-env LEANCLICK_D", 2), "LEANCLICK_DEMO": "1"}),
+    ("completion", [], "", comp("completion", "completion group select-user ", 3)),
+    ("completion", [], "", comp("completion", "completion group select-user ak", 3)),
+    ("completion", [], "", comp("completion", "completion group select-user b", 3, "zsh")),
+    ("completion", [], "", comp("completion", "completion ls --dir d", 3)),
+    ("termui", ["--help"], "", {}), ("termui", ["colordemo"], "", {}), ("termui", ["pager"], "", {}),
+    ("termui", ["progress", "--help"], "", {}), ("termui", ["progress", "--count", "0"], "", {}),
+    ("termui", ["progress", "--count", "5"], "", {}),
+    ("termui", ["edit"], "", {"EDITOR": "true"}),
+    ("termui", ["edit"], "", {"EDITOR": "sh -c 'printf \"hello\\n\\n# Everything below\" > \"$1\"' sh"}),
+    ("termui", ["edit"], "", {"EDITOR": "sh -c 'printf \"\\n\" > \"$1\"' sh"}),
+    ("termui", ["clear"], "", {}), ("termui", ["pause"], "", {}), ("termui", ["open", "--help"], "", {}),
+    ("termui", ["locate", "--help"], "", {}), ("termui", ["menu", "--help"], "", {}),
+]
+for ex, argv, inp, env in EXAMPLES:
+    prog, target, path = ENTRY[ex]
+    src = EX / ex
+    full_env = {"COLUMNS": "80", "PATH": "/usr/bin:/bin", **env}
+    res = subprocess.run([sys.executable, "-I", "-B", "-c", RUN_EXAMPLE, str(src), target, prog, *argv], input=inp,
+                         capture_output=True, text=True, env=full_env, cwd=WORK)
+    fix = lambda t: t.replace(str(ROOT), "<ROOT>")
+    out.append({"process": prog, "upstream": f"examples/{path}", "argv": argv, "input": inp, "env": full_env,
+                "cwd": "tests/golden/work", "code": res.returncode, "stdout": fix(res.stdout), "stderr": fix(res.stderr)})
 print(json.dumps(out, indent=1, ensure_ascii=False))

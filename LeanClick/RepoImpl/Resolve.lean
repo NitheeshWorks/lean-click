@@ -290,7 +290,7 @@ def resolveCore (fs : String → Option FileInfo) (answer : Option String)
 /-- click's parameter `callback`, run right after the conversion: it may
 reject the value (`BadParameter`) or replace it. -/
 def applyCallback (p : Param) (e : Entry) : Except Stop Entry :=
-  match p.callback with
+  match p.checks with
   | none => .ok e
   | some f =>
     match f e.toValue with

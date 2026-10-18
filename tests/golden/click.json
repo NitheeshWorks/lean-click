@@ -1588,5 +1588,2068 @@
   "code": 2,
   "stdout": "",
   "stderr": "Usage: hello [OPTIONS]\nTry 'hello --help' for help.\n\nError: No such option '--bogus'.\n"
+ },
+ {
+  "process": "prompts",
+  "upstream": "tests/test_options.py::test_callback_validates_prompt",
+  "argv": [
+   "validate"
+  ],
+  "input": "-12\n60\n",
+  "code": 0,
+  "stdout": "A: Error: should be positive\nA: 60\n",
+  "stderr": ""
+ },
+ {
+  "process": "prompts",
+  "upstream": "tests/test_options.py::test_callback_validates_prompt",
+  "argv": [
+   "validate"
+  ],
+  "input": "-1\n",
+  "code": 1,
+  "stdout": "A: Error: should be positive\nA: ",
+  "stderr": "Aborted!\n"
+ },
+ {
+  "process": "prompts",
+  "upstream": "tests/test_termui.py::test_hide_input_masks_value_in_error",
+  "argv": [
+   "number"
+  ],
+  "input": "x\n\n7\n",
+  "code": 0,
+  "stdout": "N: Error: 'x' is not a valid integer.\nN: N: 7\n",
+  "stderr": ""
+ },
+ {
+  "process": "prompts",
+  "upstream": "tests/test_termui.py::test_confirmation_prompt",
+  "argv": [
+   "password"
+  ],
+  "input": "pw\nother\npw\n\npw\n",
+  "code": 0,
+  "stdout": "Confirm Password: Confirm Password: Error: The two entered values do not match.\nConfirm Password: Confirm Password: Confirm Password: 'pw'\n",
+  "stderr": ""
+ },
+ {
+  "process": "prompts",
+  "upstream": "tests/test_termui.py::test_confirmation_prompt",
+  "argv": [
+   "password"
+  ],
+  "input": "\n\n",
+  "code": 1,
+  "stdout": "Confirm Password: Confirm Password: Confirm Password: ",
+  "stderr": "Aborted!\n"
+ },
+ {
+  "process": "prompts",
+  "upstream": "tests/test_termui.py::test_flag_value_prompt",
+  "argv": [
+   "flag"
+  ],
+  "input": "maybe\ny\n",
+  "code": 0,
+  "stdout": "Flag [y/N]: Error: invalid input\nFlag [y/N]: True\n",
+  "stderr": ""
+ },
+ {
+  "process": "prompts",
+  "upstream": "tests/test_termui.py::test_flag_value_prompt",
+  "argv": [
+   "flag"
+  ],
+  "input": "\n",
+  "code": 0,
+  "stdout": "Flag [y/N]: False\n",
+  "stderr": ""
+ },
+ {
+  "process": "prompts",
+  "upstream": "tests/test_termui.py::test_flag_value_prompt",
+  "argv": [
+   "flag",
+   "--no-flag"
+  ],
+  "input": "",
+  "code": 0,
+  "stdout": "False\n",
+  "stderr": ""
+ },
+ {
+  "process": "colors",
+  "upstream": "examples/colors/colors.py",
+  "argv": [],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "I am colored black\nI am colored red\nI am colored green\nI am colored yellow\nI am colored blue\nI am colored magenta\nI am colored cyan\nI am colored white\nI am colored bright_black\nI am colored bright_red\nI am colored bright_green\nI am colored bright_yellow\nI am colored bright_blue\nI am colored bright_magenta\nI am colored bright_cyan\nI am colored bright_white\nI am colored black and bold\nI am colored red and bold\nI am colored green and bold\nI am colored yellow and bold\nI am colored blue and bold\nI am colored magenta and bold\nI am colored cyan and bold\nI am colored white and bold\nI am colored bright_black and bold\nI am colored bright_red and bold\nI am colored bright_green and bold\nI am colored bright_yellow and bold\nI am colored bright_blue and bold\nI am colored bright_magenta and bold\nI am colored bright_cyan and bold\nI am colored bright_white and bold\nI am reverse colored black\nI am reverse colored red\nI am reverse colored green\nI am reverse colored yellow\nI am reverse colored blue\nI am reverse colored magenta\nI am reverse colored cyan\nI am reverse colored white\nI am reverse colored bright_black\nI am reverse colored bright_red\nI am reverse colored bright_green\nI am reverse colored bright_yellow\nI am reverse colored bright_blue\nI am reverse colored bright_magenta\nI am reverse colored bright_cyan\nI am reverse colored bright_white\nI am blinking\nI am underlined\n",
+  "stderr": ""
+ },
+ {
+  "process": "colors",
+  "upstream": "examples/colors/colors.py",
+  "argv": [
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: colors [OPTIONS]\n\n  This script prints some colors. It will also automatically remove all ANSI\n  styles if data is piped into a file.\n\n  Give it a try!\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: naval [OPTIONS] COMMAND [ARGS]...\n\n  Naval Fate.\n\n  This is the docopt example adopted to Click but with some actual commands\n  implemented and not just the empty parsing which really is not all that\n  interesting.\n\nOptions:\n  --version  Show the version and exit.\n  --help     Show this message and exit.\n\nCommands:\n  mine  Manages mines.\n  ship  Manages ships.\n"
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: naval [OPTIONS] COMMAND [ARGS]...\n\n  Naval Fate.\n\n  This is the docopt example adopted to Click but with some actual commands\n  implemented and not just the empty parsing which really is not all that\n  interesting.\n\nOptions:\n  --version  Show the version and exit.\n  --help     Show this message and exit.\n\nCommands:\n  mine  Manages mines.\n  ship  Manages ships.\n",
+  "stderr": ""
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "--version"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "naval, version 1.0.0\n",
+  "stderr": ""
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "ship",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: naval ship [OPTIONS] COMMAND [ARGS]...\n\n  Manages ships.\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  move   Moves SHIP to the new location X,Y.\n  new    Creates a new ship.\n  shoot  Makes SHIP fire to X,Y.\n",
+  "stderr": ""
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "ship",
+   "new",
+   "Titanic"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Created ship Titanic\n",
+  "stderr": ""
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "ship",
+   "move",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: naval ship move [OPTIONS] SHIP X Y\n\n  Moves SHIP to the new location X,Y.\n\nOptions:\n  --speed KN  Speed in knots.\n  --help      Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "ship",
+   "move",
+   "Titanic",
+   "1",
+   "2.5"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Moving ship Titanic to 1.0,2.5 with speed 10\n",
+  "stderr": ""
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "ship",
+   "move",
+   "Titanic",
+   "1",
+   "2.5",
+   "--speed",
+   "20"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Moving ship Titanic to 1.0,2.5 with speed 20\n",
+  "stderr": ""
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "ship",
+   "move",
+   "Titanic",
+   "x",
+   "2"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: naval ship move [OPTIONS] SHIP X Y\nTry 'naval ship move --help' for help.\n\nError: Invalid value for 'X': 'x' is not a valid float.\n"
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "ship",
+   "move"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: naval ship move [OPTIONS] SHIP X Y\nTry 'naval ship move --help' for help.\n\nError: Missing argument 'SHIP'.\n"
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "ship",
+   "shoot",
+   "Titanic",
+   "3",
+   "-4"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: naval ship shoot [OPTIONS] SHIP X Y\nTry 'naval ship shoot --help' for help.\n\nError: No such option '-4'.\n"
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "mine",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: naval mine [OPTIONS] COMMAND [ARGS]...\n\n  Manages mines.\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  remove  Removes a mine at a specific coordinate.\n  set     Sets a mine at a specific coordinate.\n",
+  "stderr": ""
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "mine",
+   "set",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: naval mine set [OPTIONS] X Y\n\n  Sets a mine at a specific coordinate.\n\nOptions:\n  --moored    Moored (anchored) mine. Default.\n  --drifting  Drifting mine.\n  --help      Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "mine",
+   "set",
+   "1",
+   "2"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Set moored mine at 1.0,2.0\n",
+  "stderr": ""
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "mine",
+   "set",
+   "1",
+   "2",
+   "--drifting"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Set drifting mine at 1.0,2.0\n",
+  "stderr": ""
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "mine",
+   "set",
+   "1",
+   "2",
+   "--drifting",
+   "--moored"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Set moored mine at 1.0,2.0\n",
+  "stderr": ""
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "mine",
+   "remove",
+   "1e3",
+   "0.1"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Removed mine at 1000.0,0.1\n",
+  "stderr": ""
+ },
+ {
+  "process": "naval",
+  "upstream": "examples/naval/naval.py",
+  "argv": [
+   "boat"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: naval [OPTIONS] COMMAND [ARGS]...\nTry 'naval --help' for help.\n\nError: No such command 'boat'.\n"
+ },
+ {
+  "process": "inout",
+  "upstream": "examples/inout/inout.py",
+  "argv": [
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: inout [OPTIONS] [INPUT]... OUTPUT\n\n  This script works similar to the Unix `cat` command but it writes into a\n  specific file (which could be the standard output as denoted by the ``-``\n  sign).\n\n  Copy stdin to stdout:\n      inout - -\n\n  Copy foo.txt and bar.txt to stdout:\n      inout foo.txt bar.txt -\n\n  Write stdin into the file foo.txt\n      inout - foo.txt\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "inout",
+  "upstream": "examples/inout/inout.py",
+  "argv": [
+   "-",
+   "-"
+  ],
+  "input": "one\ntwo\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "one\ntwo\n",
+  "stderr": ""
+ },
+ {
+  "process": "inout",
+  "upstream": "examples/inout/inout.py",
+  "argv": [
+   "foo.txt",
+   "bar.txt",
+   "-"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "foo contents\nbar\nno newline",
+  "stderr": ""
+ },
+ {
+  "process": "inout",
+  "upstream": "examples/inout/inout.py",
+  "argv": [
+   "foo.txt",
+   "-",
+   "-"
+  ],
+  "input": "stdin\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "foo contents\nstdin\n",
+  "stderr": ""
+ },
+ {
+  "process": "inout",
+  "upstream": "examples/inout/inout.py",
+  "argv": [
+   "missing.txt",
+   "-"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: inout [OPTIONS] [INPUT]... OUTPUT\nTry 'inout --help' for help.\n\nError: Invalid value for '[INPUT]...': 'missing.txt': No such file or directory\n"
+ },
+ {
+  "process": "inout",
+  "upstream": "examples/inout/inout.py",
+  "argv": [],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: inout [OPTIONS] [INPUT]... OUTPUT\nTry 'inout --help' for help.\n\nError: Missing argument 'OUTPUT'.\n"
+ },
+ {
+  "process": "validation",
+  "upstream": "examples/validation/validation.py",
+  "argv": [],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "count: 2\nfoo: None\nurl: None\n",
+  "stderr": ""
+ },
+ {
+  "process": "validation",
+  "upstream": "examples/validation/validation.py",
+  "argv": [
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: validation [OPTIONS]\n\n  Validation.\n\n  This example validates parameters in different ways.  It does it through\n  callbacks, through a custom type as well as by validating manually in the\n  function.\n\nOptions:\n  --count INTEGER  A positive even number.\n  --foo TEXT       A mysterious parameter.\n  --url URL        A URL\n  --version        Show the version and exit.\n  --help           Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "validation",
+  "upstream": "examples/validation/validation.py",
+  "argv": [
+   "--version"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "validation, version 1.0.0\n",
+  "stderr": ""
+ },
+ {
+  "process": "validation",
+  "upstream": "examples/validation/validation.py",
+  "argv": [
+   "--count",
+   "3"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: validation [OPTIONS]\nTry 'validation --help' for help.\n\nError: Invalid value for '--count': Should be a positive, even integer.\n"
+ },
+ {
+  "process": "validation",
+  "upstream": "examples/validation/validation.py",
+  "argv": [
+   "--count",
+   "-2"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: validation [OPTIONS]\nTry 'validation --help' for help.\n\nError: Invalid value for '--count': Should be a positive, even integer.\n"
+ },
+ {
+  "process": "validation",
+  "upstream": "examples/validation/validation.py",
+  "argv": [
+   "--count",
+   "4",
+   "--foo",
+   "wat"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "count: 4\nfoo: wat\nurl: None\n",
+  "stderr": ""
+ },
+ {
+  "process": "validation",
+  "upstream": "examples/validation/validation.py",
+  "argv": [
+   "--foo",
+   "bar"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: validation [OPTIONS]\nTry 'validation --help' for help.\n\nError: Invalid value for '--foo': If a value is provided it needs to be the value \"wat\".\n"
+ },
+ {
+  "process": "validation",
+  "upstream": "examples/validation/validation.py",
+  "argv": [
+   "--url",
+   "https://user@example.com:8080/a/b;p?q=1&r=2#frag"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "count: 2\nfoo: None\nurl: ParseResult(scheme='https', netloc='user@example.com:8080', path='/a/b', params='p', query='q=1&r=2', fragment='frag')\n",
+  "stderr": ""
+ },
+ {
+  "process": "validation",
+  "upstream": "examples/validation/validation.py",
+  "argv": [
+   "--url",
+   "http://example.com"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "count: 2\nfoo: None\nurl: ParseResult(scheme='http', netloc='example.com', path='', params='', query='', fragment='')\n",
+  "stderr": ""
+ },
+ {
+  "process": "validation",
+  "upstream": "examples/validation/validation.py",
+  "argv": [
+   "--url",
+   "ftp://example.com/"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: validation [OPTIONS]\nTry 'validation --help' for help.\n\nError: Invalid value for '--url': invalid URL scheme (ftp). Only HTTP URLs are allowed\n"
+ },
+ {
+  "process": "validation",
+  "upstream": "examples/validation/validation.py",
+  "argv": [
+   "--url",
+   "example.com"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: validation [OPTIONS]\nTry 'validation --help' for help.\n\nError: Invalid value for '--url': invalid URL scheme (). Only HTTP URLs are allowed\n"
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: repo [OPTIONS] COMMAND [ARGS]...\n\n  Repo is a command line tool that showcases how to build complex command line\n  interfaces with Click.\n\n  This tool is supposed to look like a distributed version control system to\n  show how something like this can be structured.\n\nOptions:\n  --repo-home PATH    Changes the repository folder location.\n  --config KEY VALUE  Overrides a config key/value pair.\n  -v, --verbose       Enables verbose mode.\n  --version           Show the version and exit.\n  --help              Show this message and exit.\n\nCommands:\n  clone    Clones a repository.\n  commit   Commits outstanding changes.\n  copy     Copies files.\n  delete   Deletes a repository.\n  setuser  Sets the user credentials.\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "--version"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "repo, version 1.0\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "clone",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: repo clone [OPTIONS] SRC [DEST]\n\n  Clones a repository.\n\n  This will clone the repository at SRC into the folder DEST.  If DEST is not\n  provided this will automatically use the last path component of SRC and\n  create that folder.\n\nOptions:\n  --shallow / --deep  Makes a checkout shallow or deep.  Deep by default.\n  -r, --rev TEXT      Clone a specific revision instead of HEAD.\n  --help              Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "clone",
+   "foo/bar"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Cloning repo foo/bar to bar\nChecking out revision HEAD\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "clone",
+   "foo/bar/",
+   "--shallow",
+   "-r",
+   "1.2"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Cloning repo foo/bar/ to .\nMaking shallow checkout\nChecking out revision 1.2\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "clone",
+   "foo/bar",
+   "/x/baz",
+   "--deep"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Cloning repo foo/bar to baz\nChecking out revision HEAD\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "delete",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: repo delete [OPTIONS]\n\n  Deletes a repository.\n\n  This will throw away the current repository.\n\nOptions:\n  --yes   Confirm the action without prompting.\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "delete"
+  ],
+  "input": "y\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Do you want to continue? [y/N]: Destroying repo <ROOT>/tests/golden/work/.repo\nDeleted!\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "delete"
+  ],
+  "input": "n\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 1,
+  "stdout": "Do you want to continue? [y/N]: ",
+  "stderr": "Aborted!\n"
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "delete"
+  ],
+  "input": "maybe\nyes\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Do you want to continue? [y/N]: Error: invalid input\nDo you want to continue? [y/N]: Destroying repo <ROOT>/tests/golden/work/.repo\nDeleted!\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "delete"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 1,
+  "stdout": "Do you want to continue? [y/N]: ",
+  "stderr": "Aborted!\n"
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "--repo-home",
+   "/srv/r",
+   "delete",
+   "--yes"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Destroying repo /srv/r\nDeleted!\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "delete",
+   "--yes"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "REPO_HOME": "/srv/env/../repo"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Destroying repo /srv/repo\nDeleted!\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "setuser",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: repo setuser [OPTIONS]\n\n  Sets the user credentials.\n\n  This will override the current user config.\n\nOptions:\n  --username TEXT  The developer's shown username.\n  --email TEXT     The developer's email address\n  --password TEXT  The login password.\n  --help           Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "setuser",
+   "--password",
+   "pw"
+  ],
+  "input": "ann\nann@example.com\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Username: E-Mail: Changed credentials.\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "-v",
+   "setuser",
+   "--password",
+   "pw"
+  ],
+  "input": "\nann\n\nme@x\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Username: Username: E-Mail: E-Mail: Changed credentials.\n",
+  "stderr": "  config[username] = ann\n  config[email] = me@x\n  config[password] = **\n"
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "-v",
+   "--config",
+   "k1",
+   "v1",
+   "--config",
+   "k2",
+   "v2",
+   "setuser",
+   "--username",
+   "a",
+   "--email",
+   "b",
+   "--password",
+   "xyz"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Changed credentials.\n",
+  "stderr": "  config[k1] = v1\n  config[k2] = v2\n  config[username] = a\n  config[email] = b\n  config[password] = ***\n"
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "--config",
+   "k1"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Error: Option '--config' requires 2 arguments.\n"
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "commit",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: repo commit [OPTIONS] [FILES]...\n\n  Commits outstanding changes.\n\n  Commit changes to the given files into the repository.  You will need to\n  \"repo push\" to push up your changes to other repositories.\n\n  If a list of files is omitted, all changes reported by \"repo status\" will be\n  committed.\n\nOptions:\n  -m, --message TEXT  The commit message.  If provided multiple times each\n                      argument gets converted into a new line.\n  --help              Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "commit",
+   "-m",
+   "first",
+   "-m",
+   "second",
+   "a.txt",
+   "b.txt"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Files to be committed: ('a.txt', 'b.txt')\nCommit message:\nfirst\nsecond\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "commit",
+   "-m",
+   "only"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Files to be committed: ()\nCommit message:\nonly\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "commit",
+   "a.txt"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "EDITOR": "true"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Aborted!\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "commit"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "EDITOR": "sh -c 'printf \"fix it\\n# Files\" > \"$1\"' sh"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Files to be committed: ()\nCommit message:\nfix it\n# Files\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "commit"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "EDITOR": "sh -c 'printf \"\\n\\n# Files to be committed:\" > \"$1\"' sh"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Aborted! Empty commit message\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "copy",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: repo copy [OPTIONS] [SRC]... DST\n\n  Copies one or multiple files to a new location.  This copies all files from\n  SRC to DST.\n\nOptions:\n  --force  forcibly copy over an existing managed file\n  --help   Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "copy",
+   "a",
+   "b",
+   "dst"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Copy from a -> dst\nCopy from b -> dst\n",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "copy",
+   "dst",
+   "--force"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "process": "repo",
+  "upstream": "examples/repo/repo.py",
+  "argv": [
+   "copy"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: repo copy [OPTIONS] [SRC]... DST\nTry 'repo copy --help' for help.\n\nError: Missing argument 'DST'.\n"
+ },
+ {
+  "process": "aliases",
+  "upstream": "examples/aliases/aliases.py",
+  "argv": [
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: aliases [OPTIONS] COMMAND [ARGS]...\n\n  An example application that supports aliases.\n\nOptions:\n  --config FILE  The config file to use instead of the default.\n  --help         Show this message and exit.\n\nCommands:\n  alias   Adds an alias to the specified configuration file.\n  clone   Clones a repository.\n  commit  Commits pending changes.\n  pull    Pulls changes.\n  push    Pushes changes.\n  status  Shows the status.\n",
+  "stderr": ""
+ },
+ {
+  "process": "aliases",
+  "upstream": "examples/aliases/aliases.py",
+  "argv": [
+   "push"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Push\n",
+  "stderr": ""
+ },
+ {
+  "process": "aliases",
+  "upstream": "examples/aliases/aliases.py",
+  "argv": [
+   "ci"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Commit\n",
+  "stderr": ""
+ },
+ {
+  "process": "aliases",
+  "upstream": "examples/aliases/aliases.py",
+  "argv": [
+   "st"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Status for <ROOT>/tests/golden/work\n",
+  "stderr": ""
+ },
+ {
+  "process": "aliases",
+  "upstream": "examples/aliases/aliases.py",
+  "argv": [
+   "cl"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Clone\n",
+  "stderr": ""
+ },
+ {
+  "process": "aliases",
+  "upstream": "examples/aliases/aliases.py",
+  "argv": [
+   "p"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: aliases [OPTIONS] COMMAND [ARGS]...\nTry 'aliases --help' for help.\n\nError: Too many matches: pull, push\n"
+ },
+ {
+  "process": "aliases",
+  "upstream": "examples/aliases/aliases.py",
+  "argv": [
+   "xyz"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: aliases [OPTIONS] COMMAND [ARGS]...\nTry 'aliases --help' for help.\n\nError: No such command 'xyz'.\n"
+ },
+ {
+  "process": "aliases",
+  "upstream": "examples/aliases/aliases.py",
+  "argv": [
+   "--config",
+   "missing.ini",
+   "push"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: aliases [OPTIONS] COMMAND [ARGS]...\nTry 'aliases --help' for help.\n\nError: Invalid value for '--config': File 'missing.ini' does not exist.\n"
+ },
+ {
+  "process": "aliases",
+  "upstream": "examples/aliases/aliases.py",
+  "argv": [
+   "--config",
+   "custom.ini",
+   "pl"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Pull\n",
+  "stderr": ""
+ },
+ {
+  "process": "aliases",
+  "upstream": "examples/aliases/aliases.py",
+  "argv": [
+   "alias",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: aliases alias [OPTIONS] ALIAS CMD\n\n  Adds an alias to the specified configuration file.\n\nOptions:\n  --config_file FILE\n  --help              Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "aliases",
+  "upstream": "examples/aliases/aliases.py",
+  "argv": [
+   "alias",
+   "sy",
+   "push",
+   "--config_file",
+   "nope.ini"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: aliases alias [OPTIONS] ALIAS CMD\nTry 'aliases alias --help' for help.\n\nError: Invalid value for '--config_file': File 'nope.ini' does not exist.\n"
+ },
+ {
+  "process": "complex",
+  "upstream": "examples/complex/complex/cli.py",
+  "argv": [
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: complex [OPTIONS] COMMAND [ARGS]...\n\n  A complex command line interface.\n\nOptions:\n  --home DIRECTORY  Changes the folder to operate on.\n  -v, --verbose     Enables verbose mode.\n  --help            Show this message and exit.\n\nCommands:\n  init    Initializes a repo.\n  status  Shows file changes.\n",
+  "stderr": ""
+ },
+ {
+  "process": "complex",
+  "upstream": "examples/complex/complex/cli.py",
+  "argv": [
+   "init",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: complex init [OPTIONS] [PATH]\n\n  Initializes a repository.\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "complex",
+  "upstream": "examples/complex/complex/cli.py",
+  "argv": [
+   "status",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: complex status [OPTIONS]\n\n  Shows file changes in the current working directory.\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "complex",
+  "upstream": "examples/complex/complex/cli.py",
+  "argv": [
+   "init"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "",
+  "stderr": "Initialized the repository in <ROOT>/tests/golden/work\n"
+ },
+ {
+  "process": "complex",
+  "upstream": "examples/complex/complex/cli.py",
+  "argv": [
+   "init",
+   "sub/../repo"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "",
+  "stderr": "Initialized the repository in <ROOT>/tests/golden/work/repo\n"
+ },
+ {
+  "process": "complex",
+  "upstream": "examples/complex/complex/cli.py",
+  "argv": [
+   "--home",
+   "dir",
+   "init"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "",
+  "stderr": "Initialized the repository in <ROOT>/tests/golden/work/dir\n"
+ },
+ {
+  "process": "complex",
+  "upstream": "examples/complex/complex/cli.py",
+  "argv": [
+   "--home",
+   "nowhere",
+   "init"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: complex [OPTIONS] COMMAND [ARGS]...\nTry 'complex --help' for help.\n\nError: Invalid value for '--home': Directory 'nowhere' does not exist.\n"
+ },
+ {
+  "process": "complex",
+  "upstream": "examples/complex/complex/cli.py",
+  "argv": [
+   "--home",
+   "foo.txt",
+   "init"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: complex [OPTIONS] COMMAND [ARGS]...\nTry 'complex --help' for help.\n\nError: Invalid value for '--home': Directory 'foo.txt' is a file.\n"
+ },
+ {
+  "process": "complex",
+  "upstream": "examples/complex/complex/cli.py",
+  "argv": [
+   "status"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "",
+  "stderr": "Changed files: none\n"
+ },
+ {
+  "process": "complex",
+  "upstream": "examples/complex/complex/cli.py",
+  "argv": [
+   "-v",
+   "status"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "",
+  "stderr": "Changed files: none\nbla bla bla, debug info\n"
+ },
+ {
+  "process": "complex",
+  "upstream": "examples/complex/complex/cli.py",
+  "argv": [
+   "status"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "COMPLEX_VERBOSE": "1"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "",
+  "stderr": "Changed files: none\nbla bla bla, debug info\n"
+ },
+ {
+  "process": "complex",
+  "upstream": "examples/complex/complex/cli.py",
+  "argv": [
+   "foo"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: complex [OPTIONS] COMMAND [ARGS]...\nTry 'complex --help' for help.\n\nError: No such command 'foo'.\n"
+ },
+ {
+  "process": "completion",
+  "upstream": "examples/completion/completion.py",
+  "argv": [
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: completion [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  group     A group that holds a subcommand\n  ls\n  show-env  A command to print environment variables\n",
+  "stderr": ""
+ },
+ {
+  "process": "completion",
+  "upstream": "examples/completion/completion.py",
+  "argv": [
+   "ls",
+   "--dir",
+   "dir"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "only.txt\n",
+  "stderr": ""
+ },
+ {
+  "process": "completion",
+  "upstream": "examples/completion/completion.py",
+  "argv": [
+   "show-env",
+   "LEANCLICK_DEMO"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "LEANCLICK_DEMO": "it works"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Environment variable: LEANCLICK_DEMO\nValue: it works\n",
+  "stderr": ""
+ },
+ {
+  "process": "completion",
+  "upstream": "examples/completion/completion.py",
+  "argv": [
+   "group",
+   "select-user",
+   "alice"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Chosen user is alice\n",
+  "stderr": ""
+ },
+ {
+  "process": "completion",
+  "upstream": "examples/completion/completion.py",
+  "argv": [
+   "group",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: completion group [OPTIONS] COMMAND [ARGS]...\n\n  A group that holds a subcommand\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  select-user  Choose a user\n",
+  "stderr": ""
+ },
+ {
+  "process": "completion",
+  "upstream": "examples/completion/completion.py",
+  "argv": [],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "_COMPLETION_COMPLETE": "bash_complete",
+   "COMP_WORDS": "completion ",
+   "COMP_CWORD": "1"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "plain,group\nplain,ls\nplain,show-env\n",
+  "stderr": ""
+ },
+ {
+  "process": "completion",
+  "upstream": "examples/completion/completion.py",
+  "argv": [],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "_COMPLETION_COMPLETE": "bash_complete",
+   "COMP_WORDS": "completion gr",
+   "COMP_CWORD": "1"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "plain,group\n",
+  "stderr": ""
+ },
+ {
+  "process": "completion",
+  "upstream": "examples/completion/completion.py",
+  "argv": [],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "_COMPLETION_COMPLETE": "bash_complete",
+   "COMP_WORDS": "completion show-env LEANCLICK_D",
+   "COMP_CWORD": "2",
+   "LEANCLICK_DEMO": "1"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "plain,LEANCLICK_DEMO\n",
+  "stderr": ""
+ },
+ {
+  "process": "completion",
+  "upstream": "examples/completion/completion.py",
+  "argv": [],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "_COMPLETION_COMPLETE": "bash_complete",
+   "COMP_WORDS": "completion group select-user ",
+   "COMP_CWORD": "3"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "plain,bob\nplain,alice\nplain,jerry\n",
+  "stderr": ""
+ },
+ {
+  "process": "completion",
+  "upstream": "examples/completion/completion.py",
+  "argv": [],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "_COMPLETION_COMPLETE": "bash_complete",
+   "COMP_WORDS": "completion group select-user ak",
+   "COMP_CWORD": "3"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "plain,alice\nplain,jerry\n",
+  "stderr": ""
+ },
+ {
+  "process": "completion",
+  "upstream": "examples/completion/completion.py",
+  "argv": [],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "_COMPLETION_COMPLETE": "zsh_complete",
+   "COMP_WORDS": "completion group select-user b",
+   "COMP_CWORD": "3"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "plain\nbob\nbutcher\nplain\nalice\nbaker\n",
+  "stderr": ""
+ },
+ {
+  "process": "completion",
+  "upstream": "examples/completion/completion.py",
+  "argv": [],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "_COMPLETION_COMPLETE": "bash_complete",
+   "COMP_WORDS": "completion ls --dir d",
+   "COMP_CWORD": "3"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "dir,d\n",
+  "stderr": ""
+ },
+ {
+  "process": "termui",
+  "upstream": "examples/termui/termui.py",
+  "argv": [
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: termui [OPTIONS] COMMAND [ARGS]...\n\n  This script showcases different terminal UI helpers in Click.\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  clear      Clears the entire screen.\n  colordemo  Demonstrates ANSI color support.\n  edit       Opens an editor with some text in it.\n  locate     Opens a file or URL In the default application.\n  menu       Shows a simple menu.\n  open       Opens a file or URL In the default application.\n  pager      Demonstrates using the pager.\n  pause      Waits for the user to press a button.\n  progress   Demonstrates the progress bar.\n",
+  "stderr": ""
+ },
+ {
+  "process": "termui",
+  "upstream": "examples/termui/termui.py",
+  "argv": [
+   "colordemo"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "I am colored red\nI am background colored red\nI am colored green\nI am background colored green\nI am colored blue\nI am background colored blue\n",
+  "stderr": ""
+ },
+ {
+  "process": "termui",
+  "upstream": "examples/termui/termui.py",
+  "argv": [
+   "pager"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "0. Hello World!\n1. Hello World!\n2. Hello World!\n3. Hello World!\n4. Hello World!\n5. Hello World!\n6. Hello World!\n7. Hello World!\n8. Hello World!\n9. Hello World!\n10. Hello World!\n11. Hello World!\n12. Hello World!\n13. Hello World!\n14. Hello World!\n15. Hello World!\n16. Hello World!\n17. Hello World!\n18. Hello World!\n19. Hello World!\n20. Hello World!\n21. Hello World!\n22. Hello World!\n23. Hello World!\n24. Hello World!\n25. Hello World!\n26. Hello World!\n27. Hello World!\n28. Hello World!\n29. Hello World!\n30. Hello World!\n31. Hello World!\n32. Hello World!\n33. Hello World!\n34. Hello World!\n35. Hello World!\n36. Hello World!\n37. Hello World!\n38. Hello World!\n39. Hello World!\n40. Hello World!\n41. Hello World!\n42. Hello World!\n43. Hello World!\n44. Hello World!\n45. Hello World!\n46. Hello World!\n47. Hello World!\n48. Hello World!\n49. Hello World!\n50. Hello World!\n51. Hello World!\n52. Hello World!\n53. Hello World!\n54. Hello World!\n55. Hello World!\n56. Hello World!\n57. Hello World!\n58. Hello World!\n59. Hello World!\n60. Hello World!\n61. Hello World!\n62. Hello World!\n63. Hello World!\n64. Hello World!\n65. Hello World!\n66. Hello World!\n67. Hello World!\n68. Hello World!\n69. Hello World!\n70. Hello World!\n71. Hello World!\n72. Hello World!\n73. Hello World!\n74. Hello World!\n75. Hello World!\n76. Hello World!\n77. Hello World!\n78. Hello World!\n79. Hello World!\n80. Hello World!\n81. Hello World!\n82. Hello World!\n83. Hello World!\n84. Hello World!\n85. Hello World!\n86. Hello World!\n87. Hello World!\n88. Hello World!\n89. Hello World!\n90. Hello World!\n91. Hello World!\n92. Hello World!\n93. Hello World!\n94. Hello World!\n95. Hello World!\n96. Hello World!\n97. Hello World!\n98. Hello World!\n99. Hello World!\n100. Hello World!\n101. Hello World!\n102. Hello World!\n103. Hello World!\n104. Hello World!\n105. Hello World!\n106. Hello World!\n107. Hello World!\n108. Hello World!\n109. Hello World!\n110. Hello World!\n111. Hello World!\n112. Hello World!\n113. Hello World!\n114. Hello World!\n115. Hello World!\n116. Hello World!\n117. Hello World!\n118. Hello World!\n119. Hello World!\n120. Hello World!\n121. Hello World!\n122. Hello World!\n123. Hello World!\n124. Hello World!\n125. Hello World!\n126. Hello World!\n127. Hello World!\n128. Hello World!\n129. Hello World!\n130. Hello World!\n131. Hello World!\n132. Hello World!\n133. Hello World!\n134. Hello World!\n135. Hello World!\n136. Hello World!\n137. Hello World!\n138. Hello World!\n139. Hello World!\n140. Hello World!\n141. Hello World!\n142. Hello World!\n143. Hello World!\n144. Hello World!\n145. Hello World!\n146. Hello World!\n147. Hello World!\n148. Hello World!\n149. Hello World!\n150. Hello World!\n151. Hello World!\n152. Hello World!\n153. Hello World!\n154. Hello World!\n155. Hello World!\n156. Hello World!\n157. Hello World!\n158. Hello World!\n159. Hello World!\n160. Hello World!\n161. Hello World!\n162. Hello World!\n163. Hello World!\n164. Hello World!\n165. Hello World!\n166. Hello World!\n167. Hello World!\n168. Hello World!\n169. Hello World!\n170. Hello World!\n171. Hello World!\n172. Hello World!\n173. Hello World!\n174. Hello World!\n175. Hello World!\n176. Hello World!\n177. Hello World!\n178. Hello World!\n179. Hello World!\n180. Hello World!\n181. Hello World!\n182. Hello World!\n183. Hello World!\n184. Hello World!\n185. Hello World!\n186. Hello World!\n187. Hello World!\n188. Hello World!\n189. Hello World!\n190. Hello World!\n191. Hello World!\n192. Hello World!\n193. Hello World!\n194. Hello World!\n195. Hello World!\n196. Hello World!\n197. Hello World!\n198. Hello World!\n199. Hello World!\n",
+  "stderr": ""
+ },
+ {
+  "process": "termui",
+  "upstream": "examples/termui/termui.py",
+  "argv": [
+   "progress",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: termui progress [OPTIONS]\n\n  Demonstrates the progress bar.\n\nOptions:\n  --count INTEGER RANGE  The number of items to process.  [1<=x<=100000]\n  --help                 Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "termui",
+  "upstream": "examples/termui/termui.py",
+  "argv": [
+   "progress",
+   "--count",
+   "0"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: termui progress [OPTIONS]\nTry 'termui progress --help' for help.\n\nError: Invalid value for '--count': 0 is not in the range 1<=x<=100000.\n"
+ },
+ {
+  "process": "termui",
+  "upstream": "examples/termui/termui.py",
+  "argv": [
+   "progress",
+   "--count",
+   "5"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Processing accounts\nCommitting transaction\nCounting\n\nSlowing progress bar\n",
+  "stderr": ""
+ },
+ {
+  "process": "termui",
+  "upstream": "examples/termui/termui.py",
+  "argv": [
+   "edit"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "EDITOR": "true"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "You did not enter anything!\n",
+  "stderr": ""
+ },
+ {
+  "process": "termui",
+  "upstream": "examples/termui/termui.py",
+  "argv": [
+   "edit"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "EDITOR": "sh -c 'printf \"hello\\n\\n# Everything below\" > \"$1\"' sh"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Message:\nhello\n\n# Everything below\n",
+  "stderr": ""
+ },
+ {
+  "process": "termui",
+  "upstream": "examples/termui/termui.py",
+  "argv": [
+   "edit"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "EDITOR": "sh -c 'printf \"\\n\" > \"$1\"' sh"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Empty message!\n",
+  "stderr": ""
+ },
+ {
+  "process": "termui",
+  "upstream": "examples/termui/termui.py",
+  "argv": [
+   "clear"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "process": "termui",
+  "upstream": "examples/termui/termui.py",
+  "argv": [
+   "pause"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "process": "termui",
+  "upstream": "examples/termui/termui.py",
+  "argv": [
+   "open",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: termui open [OPTIONS] URL\n\n  Opens a file or URL In the default application.\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "termui",
+  "upstream": "examples/termui/termui.py",
+  "argv": [
+   "locate",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: termui locate [OPTIONS] URL\n\n  Opens a file or URL In the default application.\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "termui",
+  "upstream": "examples/termui/termui.py",
+  "argv": [
+   "menu",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "cwd": "tests/golden/work",
+  "code": 0,
+  "stdout": "Usage: termui menu [OPTIONS]\n\n  Shows a simple menu.\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
  }
 ]

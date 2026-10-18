@@ -96,8 +96,8 @@ def Choice (choices : List String) (caseSensitive : Bool := true) : ParamType :=
 /-- `click.Path(exists=False, file_okay=True, dir_okay=True, ...)`. -/
 def Path (exists_ : Bool := false) (fileOkay : Bool := true) (dirOkay : Bool := true)
     (writable : Bool := false) (readable : Bool := true) (executable : Bool := false)
-    (allowDash : Bool := false) : ParamType :=
-  .path { exists_, fileOkay, dirOkay, writable, readable, executable, allowDash }
+    (allowDash : Bool := false) (resolvePath : Bool := false) : ParamType :=
+  .path { exists_, fileOkay, dirOkay, writable, readable, executable, allowDash, resolvePath }
 
 /-- `click.File(mode="r")`. -/
 def File (mode : String := "r") (lazy : Option Bool := none) : ParamType := .file { mode, lazy }
@@ -116,8 +116,8 @@ def FloatRange (min : Option Dec := none) (max : Option Dec := none) (minOpen : 
 def option (decls : List String) (type : Option ParamType := none) (default : DefaultArg := .unset)
     (help : String := "") (required : Bool := false) (envvar : List String := [])
     (multiple : Bool := false) (nargs : Nat := 1) (isFlag : Bool := false)
-    (flagValue : Option String := none) (count : Bool := false) (prompt : Option String := none)
-    (confirmationPrompt : Bool := false) (hideInput : Bool := false) (showDefault : Bool := false)
+    (flagValue : Option String := none) (count : Bool := false) (prompt : PromptText := .off)
+    (confirmationPrompt : PromptText := .off) (hideInput : Bool := false) (exposeValue : Bool := true) (showDefault : Bool := false)
     (showEnvvar : Bool := false) (showChoices : Bool := true) (hidden : Bool := false)
     (metavar : Option String := none) (isEager : Bool := false)
     (callback : Option (Value → Except CallbackError Value) := none)
@@ -144,7 +144,7 @@ def option (decls : List String) (type : Option ParamType := none) (default : De
     default := dtoks, help := if help.isEmpty then none else some help, required,
     envvar, hidden, metavar, showEnvvar, showChoices,
     showDefault := if showDefault then .yes else .auto,
-    prompt := prompt.map fun t => { text := t, confirmation := confirmationPrompt, hideInput },
+    prompt := PromptText.spec base.name prompt confirmationPrompt hideInput, exposeValue,
     eager := if isEager then some .help else none, callback, shellComplete }
 
 /-- `click.argument(name, ...)`; `nargs := -1` takes any number. Required
@@ -160,6 +160,15 @@ def argument (name : String) (type : Option ParamType := none) (default : Defaul
   { base with
     default := default.tokens, envvar, metavar, help := if help.isEmpty then none else some help,
     required := required.getD (base.required && default.tokens.isNone), callback, shellComplete }
+
+/-- `click.confirmation_option()`. -/
+def confirmationOption (decls : List String := ["--yes"]) (help : String := "Confirm the action without prompting.")
+    (prompt : String := "Do you want to continue?") : Param :=
+  Param.confirmationOption decls (help := help) (prompt := prompt)
+
+/-- `click.password_option()`. -/
+def passwordOption (decls : List String := ["--password"]) (help : String := "") : Param :=
+  Param.passwordOption decls (help := help)
 
 /-- `click.version_option(version)`. -/
 def versionOption (version : String) (message : String := "%(prog)s, version %(version)s")

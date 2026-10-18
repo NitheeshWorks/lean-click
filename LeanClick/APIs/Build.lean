@@ -27,11 +27,18 @@ def parseDecls (decls : List String) : String × List String × List String :=
     let (name, opts, sec, possible) := st
     if isIdentifier d then (some d, opts, sec, possible)
     else
-      let splitCh := if d.startsWith "/" then ';' else '/'
-      match d.splitOn (String.ofList [splitCh]) with
-      | first :: second :: more =>
-        let first := String.ofList ((first.toList.reverse.dropWhile Char.isWhitespace).reverse)
-        let second := lstrip ((String.ofList [splitCh]).intercalate (second :: more))
+      -- `decl.split(split_char, 1)`, by structural recursion on the
+      -- characters so the kernel can evaluate it (`click_command`'s `decide`)
+      let splitCh := match d.toList with | '/' :: _ => ';' | _ => '/'
+      let rec go : List Char → List Char × Option (List Char)
+        | [] => ([], none)
+        | c :: rest => if c == splitCh then ([], some rest) else
+          let (a, b) := go rest
+          (c :: a, b)
+      match go d.toList with
+      | (firstCs, some secondCs) =>
+        let first := String.ofList ((firstCs.reverse.dropWhile Char.isWhitespace).reverse)
+        let second := String.ofList (secondCs.dropWhile Char.isWhitespace)
         let (opts, possible) := if first.isEmpty then (opts, possible)
           else (opts ++ [first], possible ++ [splitOpt first])
         let sec := if second.isEmpty then sec else sec ++ [second]
@@ -81,8 +88,9 @@ def arg (decl : String) (type : ParamType := .string) (nargs : ArgNargs := .exac
 /-- `click.version_option(version)`. -/
 def versionOption (version : String) (decls : List String := ["--version"])
     (template : String := "%(prog)s, version %(version)s") : Param :=
-  let (_, opts, _) := parseDecls decls
-  { name := "__version__", decl := .option opts (.boolFlag []), type := .bool,
+  -- the spellings are taken as given (no `/` pairs), so a command's table
+  -- stays computable by the kernel (`click_command`'s `decide`)
+  { name := "__version__", decl := .option decls (.boolFlag []), type := .bool,
     help := some "Show the version and exit.", eager := some (.version version template),
     exposeValue := false, allowFromAutoenv := false }
 
@@ -103,11 +111,28 @@ def withPrompt (p : Param) (text : String) (confirmation : Bool := false) (hideI
   { p with prompt := some { text, confirmation, hideInput, required } }
 /-- `prompt=True`: the prompt text is the capitalised name. -/
 def withNamePrompt (p : Param) : Param :=
-  let t := replaceChar p.name '_' ' '
-  let t := match t.toList with
-    | c :: r => String.ofList (c.toUpper :: r.map Char.toLower)
-    | [] => t
-  p.withPrompt t
+  p.withPrompt (promptTextOf p.name)
+
+/-- `click.confirmation_option()`: a `--yes` flag that asks
+`Do you want to continue?` when absent and aborts on no; its value is not
+passed to the callback. The spellings are taken as given (no `/` pairs).
+-/
+def confirmationOption (decls : List String := ["--yes"]) (name : String := "yes")
+    (help : String := "Confirm the action without prompting.")
+    (prompt : String := "Do you want to continue?") : Param :=
+  { name, decl := .option decls (.boolFlag []), type := .bool, help := some help,
+    prompt := some { text := prompt }, exposeValue := false,
+    callback := some fun v => match v with
+      | .bool false => .error .abort
+      | v => .ok v }
+
+/-- `click.password_option()`: `--password`, prompted for (`Password`)
+with hidden input and a confirmation prompt. -/
+def passwordOption (decls : List String := ["--password"]) (name : String := "password")
+    (help : String := "") : Param :=
+  { name, decl := .option decls (.value 1 false), type := .string,
+    help := if help.isEmpty then none else some help,
+    prompt := some { text := promptTextOf name, confirmation := true, hideInput := true } }
 
 end Param
 

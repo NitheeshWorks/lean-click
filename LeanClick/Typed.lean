@@ -42,6 +42,13 @@ class ClickType (α : Type) where
   type : ParamType
   ofValue : Value → Option α
   toTokens : α → List String
+  /-- The parsed value an `α` is (the inverse of `ofValue`), for callbacks
+  that return a new value. -/
+  toValue : α → Value
+  /-- A custom type (a `click.ParamType` subclass): its name, which is the
+  options' metavar, and its `convert` of the value `type` produced, failing
+  with the type's message (`self.fail`). -/
+  custom : Option (String × (Value → Except String Value)) := none
   /-- `Bool`: a flag. -/
   isFlag : Bool := false
   /-- `List α`: repeatable. -/
@@ -55,37 +62,45 @@ abbrev Argument (α : Type) := α
 /-- An integer in `[lo, hi]`, carrying its bounds proof: `IntRange(lo, hi)`. -/
 abbrev IntIn (lo hi : Int) := {n : Int // lo ≤ n ∧ n ≤ hi}
 
+instance : ToString Dec := ⟨showDec⟩
+
 def Dec.toFloat (d : Dec) : Float := Float.ofInt d.mant / (10 : Float) ^ d.exp.toFloat
 
 instance : ClickType String where
   type := .string
   ofValue | .str s => some s | _ => none
   toTokens s := [s]
+  toValue := .str
 
 instance : ClickType Int where
   type := .int
   ofValue | .int n => some n | _ => none
   toTokens n := [toString n]
+  toValue := .int
 
 instance : ClickType Nat where
   type := .intRange { min := some 0 }
   ofValue | .int n => if 0 ≤ n then some n.toNat else none | _ => none
   toTokens n := [toString n]
+  toValue n := .int n
 
 instance (lo hi : Int) : ClickType (IntIn lo hi) where
   type := .intRange { min := some lo, max := some hi }
   ofValue | .int n => if h : lo ≤ n ∧ n ≤ hi then some ⟨n, h⟩ else none | _ => none
   toTokens n := [toString n.val]
+  toValue n := .int n.val
 
 instance : ClickType Dec where
   type := .float
   ofValue | .dec d => some d | _ => none
   toTokens d := [showDec d]
+  toValue := .dec
 
 instance : ClickType Float where
   type := .float
   ofValue | .dec d => some d.toFloat | _ => none
   toTokens f := [toString f]
+  toValue f := match parseDec (toString f) with | some d => .dec d | none => .none
 
 /-- A UUID in canonical text form. -/
 abbrev Uuid := {s : String // uuidCanonical s = true}
@@ -94,6 +109,7 @@ instance : ClickType Uuid where
   type := .uuid
   ofValue | .str s => if h : uuidCanonical s = true then some ⟨s, h⟩ else none | _ => none
   toTokens u := [u.val]
+  toValue u := .str u.val
 
 /-- A real calendar date and time. -/
 abbrev ValidDateTime := {d : LeanClick.Timestamp // d.valid = true}
@@ -102,23 +118,35 @@ instance : ClickType ValidDateTime where
   type := .dateTime
   ofValue | .dateTime d => if h : d.valid = true then some ⟨d, h⟩ else none | _ => none
   toTokens d := [showDateTime d.val]
+  toValue d := .dateTime d.val
 
 instance : ClickType Bool where
   type := .bool
   ofValue | .bool b => some b | _ => none
   toTokens b := [if b then "true" else "false"]
+  toValue := .bool
   isFlag := true
+
+/-- A `click.File` value; give the mode with `type := some (File "rb")`. -/
+instance : ClickType FileArg where
+  type := .file {}
+  ofValue | .file f => some f | _ => none
+  toTokens f := [f.name]
+  toValue := .file
 
 /-- A pair is `Tuple [α, β]`: two values, each with its own type. -/
 instance {α β : Type} [ClickType α] [ClickType β] : ClickType (α × β) where
   type := .tuple [ClickType.type α, ClickType.type β]
   ofValue | .list [a, b] => do return (← ClickType.ofValue a, ← ClickType.ofValue b) | _ => none
   toTokens p := ClickType.toTokens p.1 ++ ClickType.toTokens p.2
+  toValue p := .list [ClickType.toValue p.1, ClickType.toValue p.2]
 
 instance {α : Type} [ClickType α] : ClickType (Option α) where
   type := ClickType.type α
   ofValue | .none => some none | v => (ClickType.ofValue v).map some
   toTokens | some a => ClickType.toTokens a | none => []
+  toValue | some a => ClickType.toValue a | none => .none
+  custom := ClickType.custom α
   isFlag := ClickType.isFlag α
   optional := true
 
@@ -126,6 +154,8 @@ instance {α : Type} [ClickType α] : ClickType (List α) where
   type := ClickType.type α
   ofValue | .list vs => vs.mapM ClickType.ofValue | _ => none
   toTokens as := as.flatMap ClickType.toTokens
+  toValue as := .list (as.map ClickType.toValue)
+  custom := ClickType.custom α
   multiple := true
 
 namespace ClickType
@@ -158,12 +188,39 @@ def spellingsOf (isFlag : Bool) (name : String) (decls : List String) : List Str
       (a :: acc.1, if b.isEmpty then acc.2 else b :: acc.2)) ([], [])
   else (decls, [])
 
+/-- A custom type's conversion as a parameter's `typeCheck`: absent values
+are left alone, and a repeated or multi-value parameter converts each item. -/
+def customCheck (α : Type) [ClickType α] : Option (Value → Except CallbackError Value) :=
+  (ClickType.custom α).map fun (_, conv) =>
+    let one := fun (v : Value) => match conv v with
+      | .ok w => .ok w
+      | .error msg => .error (CallbackError.bad msg)
+    fun v => match v with
+      | .none => .ok .none
+      | .list vs => (vs.mapM one).map .list
+      | v => one v
+
+/-- A typed callback (`callback=`) on the parsed value: it sees and returns
+an `α`. -/
+def typedCallback (α : Type) [ClickType α] (f : α → Except CallbackError α) :
+    Value → Except CallbackError Value := fun v =>
+  match ClickType.ofValue v with
+  | some x => (f x).map ClickType.toValue
+  | none => .ok v
+
 /-- The parameter a typed option binder declares. -/
 def option (α : Type) [ClickType α] (name : String) (default : Option α := none) (help : String := "")
     (envvar : List String := []) (decls : List String := []) (hidden : Bool := false)
-    (showDefault : Bool := false) (prompt : Option String := none) (metavar : Option String := none)
-    (type : Option ParamType := none) (callback : Option (Value → Except CallbackError Value) := none) :
+    (showDefault : Bool := false) (prompt : PromptText := .off) (confirmationPrompt : PromptText := .off)
+    (hideInput : Bool := false) (metavar : Option String := none)
+    (type : Option ParamType := none) (callback : Option (α → Except CallbackError α) := none)
+    (exposeValue : Bool := true) (password : Bool := false)
+    (shellComplete : Option (Env → String → List CompletionItem) := none) :
     Param :=
+  -- `click.password_option()`: prompted for, hidden, asked twice
+  let (prompt, confirmationPrompt, hideInput) :=
+    if password then ((if prompt == .off then .auto else prompt), (if confirmationPrompt == .off then .auto else confirmationPrompt), true)
+    else (prompt, confirmationPrompt, hideInput)
   let (prim, sec) := spellingsOf (ClickType.isFlag α) name decls
   let base : Param :=
     if ClickType.isFlag α then { name, decl := .option prim (.boolFlag sec), type := .bool }
@@ -173,14 +230,18 @@ def option (α : Type) [ClickType α] (name : String) (default : Option α := no
   { base with
     default := (default.map ClickType.toTokens).filter (!·.isEmpty),
     help := if help.isEmpty then none else some help,
-    required := default.isNone && prompt.isNone && !ClickType.optional α && !ClickType.multiple α &&
+    required := default.isNone && prompt == .off && !ClickType.optional α && !ClickType.multiple α &&
       !ClickType.isFlag α,
-    envvar, hidden, metavar, showDefault := if showDefault then .yes else .auto,
-    prompt := prompt.map fun t => { text := t }, callback }
+    envvar, hidden, showDefault := if showDefault then .yes else .auto,
+    metavar := metavar.orElse fun _ => (ClickType.custom α).map fun (n, _) => upper n,
+    prompt := PromptText.spec name prompt confirmationPrompt hideInput, exposeValue,
+    typeCheck := customCheck α, callback := callback.map (typedCallback α), shellComplete }
 
 /-- The parameter a typed argument binder declares. -/
 def argument (α : Type) [ClickType α] (name : String) (default : Option α := none) (help : String := "")
-    (envvar : List String := []) (metavar : Option String := none) (type : Option ParamType := none) :
+    (envvar : List String := []) (metavar : Option String := none) (type : Option ParamType := none)
+    (callback : Option (α → Except CallbackError α) := none)
+    (shellComplete : Option (Env → String → List CompletionItem) := none) :
     Param :=
   let t := type.getD (ClickType.type α)
   let nargs : ArgNargs := if ClickType.multiple α then .star else .exactly (if t.isComposite then t.arity else 1)
@@ -189,7 +250,7 @@ def argument (α : Type) [ClickType α] (name : String) (default : Option α := 
     default := (default.map ClickType.toTokens).filter (!·.isEmpty),
     help := if help.isEmpty then none else some help,
     required := default.isNone && !ClickType.optional α && !ClickType.multiple α,
-    envvar, metavar }
+    envvar, metavar, typeCheck := customCheck α, callback := callback.map (typedCallback α), shellComplete }
 
 /-- The typed value of a parameter. A value the parser produced always
 converts (the declared type is `ClickType.type α`); the error is the
@@ -207,7 +268,7 @@ one given wins, and `default` names the value used when none is. -/
 def ClickType.flagValueGroup (name : String) (values : List (String × String × String))
     (default : Option String := none) : List Param :=
   values.map fun (decl, v, help) =>
-    let base := Param.flagValue [decl] v
+    let base : Param := { name, decl := .option [decl] (.constFlag v false) }
     { base with
       name, help := if help.isEmpty then none else some help,
       default := if default == some v then some [v] else none }
@@ -255,17 +316,25 @@ open Lean in
 def expandClick (isGroup : Bool) (doc? : Option (TSyntax `Lean.Parser.Command.docComment)) (name : Ident)
     (ckws : Array (TSyntax `clickKw)) (bs : Array (TSyntax `clickBinder)) (ret body : Term) :
     MacroM Syntax := do
+  -- a line holding just `\b` is click's no-rewrap marker, the backspace a
+  -- Python docstring's `\b` escape is
   let help : String := match doc? with
-    | some d => (d.getDocString).trimAscii.copy
+    | some d => "\n".intercalate (((d.getDocString).trimAscii.copy.splitOn "\n").map fun l =>
+        if l.trimAscii.copy == "\\b" then "\x08" else l)
     | none => ""
   let ckw ← clickKwPairs ckws
   let cliName : Term := match ckw.find? (·.1.getId == `name) with
     | some (_, v) => v
     | none => Syntax.mkStrLit (replaceChar name.getId.toString '_' '-')
   let resolve? := (ckw.find? (·.1.getId == `resolve)).map (·.2)
-  let cmdKws := ckw.filter fun (n, _) => n.getId != `name && n.getId != `resolve
+  let extraParams? := (ckw.find? (·.1.getId == `params)).map (·.2)
+  -- `help := "..."` (click's `@command(help=...)`) stands for the docstring
+  let helpKw? := (ckw.find? (·.1.getId == `help)).map (·.2)
+  let cmdKws := ckw.filter fun (n, _) =>
+    n.getId != `name && n.getId != `resolve && n.getId != `params && n.getId != `help
   let mainName := mkIdentFrom name (name.getId ++ `main)
-  let ctxId := mkIdent `ctx
+  -- hygienic, so a binder may be called `ctx`
+  let ctxId := mkIdent (← Macro.addMacroScope `clickCtx)
   let mut binders : Array (TSyntax `Lean.Parser.Term.bracketedBinder) := #[]
   let mut params : Array Term := #[]
   let mut fetches : Array (Ident × Term) := #[]
@@ -275,17 +344,20 @@ def expandClick (isGroup : Bool) (doc? : Option (TSyntax `Lean.Parser.Command.do
     match b with
     | `(clickBinder| ($x:ident : $t:term $[:= $d?]?) $[$h?:str]? $[[$kws:clickKw,*]]?) =>
       let kv ← clickKwPairs (match kws with | some k => k.getElems | none => #[])
+      -- the callback's own name for the value, so a binder named like the
+      -- command does not hide `<command>.main`
+      let v := mkIdent (← Macro.addMacroScope x.getId)
       match t with
       | `(Pass $τ:term) =>
         objTy := some τ
         binders := binders.push (← `(bracketedBinder| ($x : $τ)))
-        fetches := fetches.push (x, ← `(pure $(ctxId).obj))
-        args := args.push x
+        fetches := fetches.push (v, ← `(pure $(ctxId).obj))
+        args := args.push v
       | `(Context $τ:term) =>
         objTy := some τ
         binders := binders.push (← `(bracketedBinder| ($x : LeanClick.Context $τ)))
-        fetches := fetches.push (x, ← `(pure $ctxId))
-        args := args.push x
+        fetches := fetches.push (v, ← `(pure $ctxId))
+        args := args.push v
       | _ =>
         let pname := Syntax.mkStrLit x.getId.toString
         let helpLit : Term := match h? with | some h => h | none => Syntax.mkStrLit ""
@@ -296,12 +368,12 @@ def expandClick (isGroup : Bool) (doc? : Option (TSyntax `Lean.Parser.Command.do
             | none => `(none)
           params := params.push (← `(LeanClick.ClickType.flagValueGroup $pname $vals $dflt))
           binders := binders.push (← `(bracketedBinder| ($x : $t)))
-          fetches := fetches.push (x, ← `(LeanClick.ClickType.fetch $t $(ctxId).params $pname))
-          args := args.push x
+          fetches := fetches.push (v, ← `(LeanClick.ClickType.fetch $t $(ctxId).params $pname))
+          args := args.push v
         | none =>
           -- typer's rule: no default means an argument, unless the binder is
           -- given option spellings or a prompt
-          let optionKw := kv.any fun (n, _) => n.getId == `decls || n.getId == `prompt
+          let optionKw := kv.any fun (n, _) => n.getId == `decls || n.getId == `prompt || n.getId == `password
           let (isArg, τ) ← match t with
             | `(Argument $τ:term) => pure (true, τ)
             | _ => pure (d?.isNone && !optionKw, t)
@@ -313,14 +385,25 @@ def expandClick (isGroup : Bool) (doc? : Option (TSyntax `Lean.Parser.Command.do
           let call := appendNamedArgs call kv
           params := params.push (← `([$call]))
           binders := binders.push (← `(bracketedBinder| ($x : $τ)))
-          fetches := fetches.push (x, ← `(LeanClick.ClickType.fetch $τ $(ctxId).params $pname))
-          args := args.push x
+          fetches := fetches.push (v, ← `(LeanClick.ClickType.fetch $τ $(ctxId).params $pname))
+          args := args.push v
     | _ => Macro.throwUnsupported
+  -- a command that neither receives the context nor its object works with
+  -- any object type (it hands the object on), so it fits any group
+  let returnsUnit' := match ret with
+    | `(IO Unit) | `(Terminal.ClickM Unit) | `(LeanClick.Terminal.ClickM Unit) | `(ClickM Unit) => true
+    | _ => false
+  let generic := objTy.isNone && (!isGroup || returnsUnit')
+  -- not hygienic, so callers can write `cmd (σ := τ)`
+  let σId := mkIdent `σ
   let σ : Term ← match objTy with
     | some τ => pure τ
-    | none => `(Unit)
-  let helpLit := Syntax.mkStrLit help
-  let c1 ← `(command| $[$doc?:docComment]? def $mainName $binders:bracketedBinder* : $ret := $body)
+    | none => if generic then pure σId else `(Unit)
+  let helpLit : Term := helpKw?.getD (Syntax.mkStrLit help)
+  -- a binder is a declared parameter even when the body ignores it (its
+  -- name is the option's spelling, so it cannot be renamed to `_x`)
+  let c1 ← `(command| set_option linter.unusedVariables false in
+    $[$doc?:docComment]? def $mainName $binders:bracketedBinder* : $ret := $body)
   -- a body returning `Unit` hands the context's object on unchanged
   let returnsUnit := match ret with
     | `(IO Unit) | `(Terminal.ClickM Unit) | `(LeanClick.Terminal.ClickM Unit) | `(ClickM Unit) => true
@@ -329,24 +412,37 @@ def expandClick (isGroup : Bool) (doc? : Option (TSyntax `Lean.Parser.Command.do
     else `(do let r ← ($mainName $args* : $ret); pure r)
   for (x, fetch) in fetches.reverse do
     cb ← `($fetch >>= fun $x:ident => $cb)
-  let paramList ← `(List.flatten [$params,*])
+  let paramList ← match extraParams? with
+    | some extra => `(List.flatten [$params,*] ++ $extra)
+    | none => `(List.flatten [$params,*])
   let handlers ← match resolve? with
     | some r => `(({ run := fun $ctxId => $cb, resolve := some $r } : LeanClick.Terminal.Handlers $σ))
     | none => `(({ run := fun $ctxId => $cb } : LeanClick.Terminal.Handlers $σ))
+  let paramsId := mkIdentFrom name (name.getId ++ `params)
+  let c0 ← `(command| /-- The command's parameters. -/ def $paramsId : List LeanClick.Param := $paramList)
   let builder : Ident := mkIdent (if isGroup then ``LeanClick.group else ``LeanClick.command)
-  let call ← `($builder $cliName $paramList (callback := $handlers) (help := $helpLit))
+  let call ← `($builder $cliName $paramsId (callback := $handlers) (help := $helpLit))
   let call := appendNamedArgs call cmdKws
-  let c2 ← `(command| def $name : LeanClick.Terminal.App $σ := $call)
+  let c2 ← if generic then `(command| def $name {$σId : Type} : LeanClick.Terminal.App $σ := $call)
+    else `(command| def $name : LeanClick.Terminal.App $σ := $call)
   -- no two parameters share a spelling (the `Unambiguous` hypothesis of
   -- the flag and precedence theorems), proved when the command is compiled
   let unambId := mkIdentFrom name (name.getId ++ `unambiguous)
-  let c3 ← `(command|
+  -- the kernel `decide` runs on the closed parameter list
+  let hp ← `((by show ((LeanClick.table $paramsId).map (·.opt)).Nodup; decide))
+  let c3 ← if generic then `(command|
+    /-- No two parameters of the command share a spelling, in any context
+    whose help option names are distinct (inherited ones included). -/
+    theorem $unambId : ∀ {$σId : Type} (s : LeanClick.Settings), s.helpOptionNames.Nodup →
+        LeanClick.Command.Unambiguous (@$name $σId) s :=
+      fun s h => LeanClick.Command.unambiguous_of $name s $hp h)
+    else `(command|
     /-- No two parameters of the command share a spelling, in any context
     whose help option names are distinct (inherited ones included). -/
     theorem $unambId : ∀ s : LeanClick.Settings, s.helpOptionNames.Nodup →
         LeanClick.Command.Unambiguous $name s :=
-      fun s h => LeanClick.Command.unambiguous_of $name s (by decide) h)
-  return mkNullNode #[c1, c2, c3]
+      fun s h => LeanClick.Command.unambiguous_of $name s $hp h)
+  return mkNullNode #[c1, c0, c2, c3]
 
 macro_rules
   | `($[$doc?:docComment]? click_command $name:ident $[[$ckws:clickKw,*]]? $bs:clickBinder* : $ret := $body) =>

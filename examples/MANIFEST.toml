@@ -1,0 +1,214 @@
+# click's examples/, ported one to one; checked by
+# stack-tools/check-examples.py. Printed output of every ported program is
+# compared with click 8.5.0 running the original (tests/golden/click.json).
+
+[meta]
+upstream = "click"
+sources = ["examples"]
+helpers = ["examples/complex/complex/environment.lean"]
+
+[[example]]
+upstream = "examples/README"
+lean = "examples/README.md"
+status = "ported"
+
+[[example]]
+upstream = "examples/aliases/aliases.py"
+lean = "examples/aliases/aliases.lean"
+status = "ported"
+output = "tests/golden/click.json::process aliases"
+
+[[example]]
+upstream = "examples/aliases/aliases.ini"
+lean = "examples/aliases/aliases.ini"
+status = "ported"
+
+[[example]]
+upstream = "examples/aliases/README"
+lean = "examples/aliases/README.md"
+status = "ported"
+
+[[example]]
+upstream = "examples/aliases/pyproject.toml"
+status = "excluded"
+reason = "packaging; the program is the `aliases` lean_exe in lakefile.toml"
+
+[[example]]
+upstream = "examples/colors/colors.py"
+lean = "examples/colors/colors.lean"
+status = "ported"
+output = "tests/golden/click.json::process colors"
+
+[[example]]
+upstream = "examples/colors/README"
+lean = "examples/colors/README.md"
+status = "ported"
+
+[[example]]
+upstream = "examples/colors/pyproject.toml"
+status = "excluded"
+reason = "packaging; the program is the `colors` lean_exe in lakefile.toml"
+
+[[example]]
+upstream = "examples/completion/completion.py"
+lean = "examples/completion/completion.lean"
+status = "ported"
+output = "tests/golden/click.json::process completion"
+
+[[example]]
+upstream = "examples/completion/README"
+lean = "examples/completion/README.md"
+status = "ported"
+
+[[example]]
+upstream = "examples/completion/pyproject.toml"
+status = "excluded"
+reason = "packaging; the program is the `completion` lean_exe in lakefile.toml"
+
+[[example]]
+upstream = "examples/complex/complex/cli.py"
+lean = "examples/complex/complex/cli.lean"
+status = "ported"
+output = "tests/golden/click.json::process complex"
+
+[[example]]
+upstream = "examples/complex/complex/commands/cmd_init.py"
+lean = "examples/complex/complex/commands/cmd_init.lean"
+status = "ported"
+output = "tests/golden/click.json::process complex"
+
+[[example]]
+upstream = "examples/complex/complex/commands/cmd_status.py"
+lean = "examples/complex/complex/commands/cmd_status.lean"
+status = "ported"
+output = "tests/golden/click.json::process complex"
+
+[[example]]
+upstream = "examples/complex/complex/__init__.py"
+status = "excluded"
+reason = "empty Python package marker; Lean modules need none"
+
+[[example]]
+upstream = "examples/complex/complex/commands/__init__.py"
+status = "excluded"
+reason = "empty Python package marker; Lean modules need none"
+
+[[example]]
+upstream = "examples/complex/README"
+lean = "examples/complex/README.md"
+status = "ported"
+
+[[example]]
+upstream = "examples/complex/pyproject.toml"
+status = "excluded"
+reason = "packaging; the program is the `complex` lean_exe in lakefile.toml"
+
+[[example]]
+upstream = "examples/imagepipe/imagepipe.py"
+status = "excluded"
+reason = "every command is Pillow image processing (open, resize, crop, blur, sharpen, paste, display, save of JPEG files); no image library exists for Lean in this stack, so there is no output to reproduce"
+
+[[example]]
+upstream = "examples/imagepipe/README"
+status = "excluded"
+reason = "README of the excluded imagepipe example"
+
+[[example]]
+upstream = "examples/imagepipe/example01.jpg"
+status = "excluded"
+reason = "input image of the excluded imagepipe example"
+
+[[example]]
+upstream = "examples/imagepipe/example02.jpg"
+status = "excluded"
+reason = "input image of the excluded imagepipe example"
+
+[[example]]
+upstream = "examples/imagepipe/.gitignore"
+status = "excluded"
+reason = "ignores the excluded imagepipe example's output images"
+
+[[example]]
+upstream = "examples/imagepipe/pyproject.toml"
+status = "excluded"
+reason = "packaging of the excluded imagepipe example"
+
+[[example]]
+upstream = "examples/inout/inout.py"
+lean = "examples/inout/inout.lean"
+status = "ported"
+output = "tests/golden/click.json::process inout"
+
+[[example]]
+upstream = "examples/inout/README"
+lean = "examples/inout/README.md"
+status = "ported"
+
+[[example]]
+upstream = "examples/inout/pyproject.toml"
+status = "excluded"
+reason = "packaging; the program is the `inout` lean_exe in lakefile.toml"
+
+[[example]]
+upstream = "examples/naval/naval.py"
+lean = "examples/naval/naval.lean"
+status = "ported"
+output = "tests/golden/click.json::process naval"
+
+[[example]]
+upstream = "examples/naval/README"
+lean = "examples/naval/README.md"
+status = "ported"
+
+[[example]]
+upstream = "examples/naval/pyproject.toml"
+status = "excluded"
+reason = "packaging; the program is the `naval` lean_exe in lakefile.toml"
+
+[[example]]
+upstream = "examples/repo/repo.py"
+lean = "examples/repo/repo.lean"
+status = "ported"
+output = "tests/golden/click.json::process repo"
+
+[[example]]
+upstream = "examples/repo/README"
+lean = "examples/repo/README.md"
+status = "ported"
+
+[[example]]
+upstream = "examples/repo/pyproject.toml"
+status = "excluded"
+reason = "packaging; the program is the `repo` lean_exe in lakefile.toml"
+
+[[example]]
+upstream = "examples/termui/termui.py"
+lean = "examples/termui/termui.lean"
+status = "ported"
+output = "tests/golden/click.json::process termui"
+
+[[example]]
+upstream = "examples/termui/README"
+lean = "examples/termui/README.md"
+status = "ported"
+
+[[example]]
+upstream = "examples/termui/pyproject.toml"
+status = "excluded"
+reason = "packaging; the program is the `termui` lean_exe in lakefile.toml"
+
+[[example]]
+upstream = "examples/validation/validation.py"
+lean = "examples/validation/validation.lean"
+status = "ported"
+output = "tests/golden/click.json::process validation"
+
+[[example]]
+upstream = "examples/validation/README"
+lean = "examples/validation/README.md"
+status = "ported"
+
+[[example]]
+upstream = "examples/validation/pyproject.toml"
+status = "excluded"
+reason = "packaging; the program is the `validation` lean_exe in lakefile.toml"

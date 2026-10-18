@@ -170,7 +170,7 @@ holds for it. -/
 def GetIsConverted : Prop :=
   ∀ (cmd : Command σ) (s : Settings) (path : String) (argv : List String) (env : Env)
     (r : ParsedArgs) (name : String) (e : Entry),
-    cmd.parseArgs s path argv env = .ok r → r.entry? name = some e → e.param.callback = none →
+    cmd.parseArgs s path argv env = .ok r → r.entry? name = some e → e.param.checks = none →
     r.get name = e.toValue
 
 /-- Exit codes are bytes. -/

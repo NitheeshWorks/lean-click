@@ -399,7 +399,7 @@ theorem resolveParam_boolFlag (fs : String → Option FileInfo) (ans : Option St
   have h := hcore
   clear hcore
   obtain ⟨name, decl, type, required, default, envvar, help, metavar, hidden, showDefault,
-    showEnvvar, showChoices, prompt, eager, exposeValue, allowFromAutoenv, callback, shellComplete, fromDefaultMap, h_bool, h_count⟩ := p
+    showEnvvar, showChoices, prompt, eager, exposeValue, allowFromAutoenv, callback, typeCheck, shellComplete, fromDefaultMap, h_bool, h_count⟩ := p
   simp only at hd hea
   subst hd hea
   have ht : type = .bool := h_bool rfl

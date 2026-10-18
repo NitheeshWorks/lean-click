@@ -55,6 +55,11 @@ comment is the help text; a string after a binder is its help; `[envvar :=
 never strings looked up by name. `tests/apps/FastapiCli.lean`
 (`lake exe example`) is `fastapi dev` / `fastapi run` in this style.
 
+[`examples/`](examples/README.md) holds click's own example programs
+(aliases, colors, completion, complex, inout, naval, repo, termui,
+validation), ported one to one; each is a `lake build` target, and its
+output is compared byte for byte with click 8.5.0 running the original.
+
 The decorator vocabulary is there too, for groups and hand-built commands:
 `command`, `group` (with `chain := true`), `option`, `argument`,
 `versionOption`, the types `STRING` `INT` `FLOAT` `BOOL` `UUID` `DateTime`

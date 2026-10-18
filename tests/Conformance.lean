@@ -371,7 +371,7 @@ click_command serveT
   IO.println s!"{path} {host} {port} {reload} {workers} {tag} {level.val}"
 
 def typedValues (argv : List String) (env : Env := {}) : IO (Option String) := do
-  let d := serveT.dispatch "serve" argv env
+  let d := (serveT (σ := Unit)).dispatch "serve" argv env
   match d.frames.getLast?, d.halt with
   | some f, none =>
     let r ← (do
@@ -629,7 +629,7 @@ def goldenFixtures : List (String × Cmd) := [
   ("hint3", hintGroup [option ["--help-file", "--help"]]),
   ("hint4", hintGroup [option ["--host", "-h"], option ["--help-file", "--help"]]),
   ("flagmap", group "cli" [] [nopCmd "foo" [option ["--name/--no-name"] (isFlag := true) (showDefault := true) (help := "name flag")]]),
-  ("typedserve", Command.mk serve.spec false () [])
+  ("typedserve", Command.mk (serve (σ := Unit)).spec false () [])
 ]
 
 def jsonStr (j : Lean.Json) (k : String) : String := (j.getObjValAs? String k).toOption.getD ""
@@ -642,18 +642,31 @@ def processCase (prog : String) (j : Lean.Json) : Case :=
   let code := ((j.getObjValAs? Nat "code").toOption).getD 99
   let wantOut := jsonStr j "stdout"
   let wantErr := jsonStr j "stderr"
+  -- the scenario's whole environment (nothing inherited), as the generator ran it
+  let env : Array (String × Option String) := match j.getObjVal? "env" with
+    | .ok (.obj kvs) => kvs.toArray.filterMap fun (k, v) => match v with | .str s => some (k, some s) | _ => none
+    | _ => #[("COLUMNS", some "80")]
+  let cwd := match j.getObjVal? "cwd" with | .ok (.str d) => some d | _ => none
   ⟨jsonStr j "upstream", s!"process {prog} {argv} (tests/golden/click.json)", do
+    let root ← IO.currentDir
+    let bin := root / ".lake" / "build" / "bin" / prog
+    unless ← bin.pathExists do
+      IO.println s!"      no program {bin} (lake build {prog})"
+      return false
     let child ← IO.Process.spawn {
-      cmd := s!".lake/build/bin/{prog}", args := argv.toArray,
-      stdin := .piped, stdout := .piped, stderr := .piped, env := #[("COLUMNS", some "80")] }
+      cmd := (root / ".lake" / "build" / "bin" / prog).toString, args := argv.toArray,
+      cwd := cwd.map (root / ·), stdin := .piped, stdout := .piped, stderr := .piped,
+      env, inheritEnv := (j.getObjVal? "env").toOption.isNone }
     let (stdin, child) ← child.takeStdin
     stdin.putStr input
     stdin.flush
     let outTask ← IO.asTask child.stdout.readToEnd
     let errTask ← IO.asTask child.stderr.readToEnd
     let rc ← child.wait
-    let out ← IO.ofExcept outTask.get
-    let err ← IO.ofExcept errTask.get
+    -- the repository root is written as <ROOT> in the recording
+    let fix := fun (t : String) => t.replace root.toString "<ROOT>"
+    let out := fix (← IO.ofExcept outTask.get)
+    let err := fix (← IO.ofExcept errTask.get)
     let ok := rc.toNat == code && out == wantOut && err == wantErr
     unless ok do
       IO.println s!"      code {rc} want {code}"

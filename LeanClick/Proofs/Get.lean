@@ -36,7 +36,7 @@ theorem resolveCore_override (fs : String → Option FileInfo) (ans : Option Str
 /-- The override of a resolved entry is its callback's result, or nothing
 without a callback. -/
 def Entry.CallbackResult (e : Entry) : Prop :=
-  match e.param.callback with
+  match e.param.checks with
   | none => e.override = none
   | some f => ∃ v, f e.toValue = .ok v ∧ e.override = some v
 
@@ -78,8 +78,8 @@ theorem parse_callbackResult {σ : Type} (cmd : Command σ) (s : Settings) (path
 no callback, the callback's result when it has one. -/
 theorem get_entry (a : ParsedArgs) (name : String) (e : Entry) (he : a.entry? name = some e)
     (hcb : e.CallbackResult) :
-    (e.param.callback = none → a.get name = e.toValue) ∧
-    (∀ f, e.param.callback = some f → ∃ v, f e.toValue = .ok v ∧ a.get name = v) := by
+    (e.param.checks = none → a.get name = e.toValue) ∧
+    (∀ f, e.param.checks = some f → ∃ v, f e.toValue = .ok v ∧ a.get name = v) := by
   unfold Entry.CallbackResult at hcb
   have hg : a.get name = e.override.getD e.toValue := by simp [ParsedArgs.get, he]
   constructor
@@ -95,7 +95,7 @@ theorem get_entry (a : ParsedArgs) (name : String) (e : Entry) (he : a.entry? na
 without a callback. -/
 theorem parse_get_eq_toValue {σ : Type} (cmd : Command σ) (s : Settings) (path : String)
     (argv : List String) (env : Env) (r : ParsedArgs) (h : cmd.parseArgs s path argv env = .ok r)
-    (name : String) (e : Entry) (he : r.entry? name = some e) (hn : e.param.callback = none) :
+    (name : String) (e : Entry) (he : r.entry? name = some e) (hn : e.param.checks = none) :
     r.get name = e.toValue :=
   (get_entry r name e he (parse_callbackResult cmd s path argv env r h e
     (List.mem_of_find?_eq_some he))).1 hn

@@ -150,11 +150,11 @@ test = ["tests/Props.lean::intRoundtrip", "tests/Props.lean::decRoundtrip"]
 
 [[requirement]]
 id = "terminal.prompts"
-upstream = "README.md (A Simple Example), run as a process"
-title = "Prompts, confirmation, re-prompt on invalid input, Aborted! on EOF"
+upstream = "tests/test_options.py::test_callback_validates_prompt"
+title = "Prompts as a process: the answer goes through the type and the callbacks (value_proc) and is asked again on BadParameter; a typed prompt re-asks after an invalid answer; confirmation prompts with their own text re-ask on mismatch and while empty; boolean flags confirm with [y/N] and re-ask on invalid input; hidden answers are masked in error messages; Aborted! on end of input"
 status = "tested"
-realises = ["LeanClick.Terminal.promptParam", "LeanClick.Terminal.confirm", "LeanClick.Terminal.parseInteractive"]
-test = ["tests/apps/FastapiCli.lean", "tests/golden/click.json"]
+realises = ["LeanClick.Terminal.promptParam", "LeanClick.Terminal.confirm", "LeanClick.Terminal.parseInteractive", "LeanClick.Terminal.maskHiddenInput", "LeanClick.PromptText.spec"]
+test = ["tests/apps/Prompts.lean", "tests/apps/Hello.lean", "tests/golden/click.json"]
 
 [[requirement]]
 id = "terminal.main"
@@ -410,3 +410,108 @@ title = "What a callback reads (ParsedArgs.get) is the parsed entry's converted 
 status = "implemented"
 realises = ["LeanClick.ParsedArgs.get"]
 theorem = ["LeanClick.parse_get_eq_toValue", "LeanClick.get_entry", "LeanClick.parse_callbackResult"]
+
+[[requirement]]
+id = "examples.ported"
+upstream = "examples/ (aliases, colors, completion, complex, inout, naval, repo, termui, validation)"
+title = "click's example programs ported one to one; every printed line, exit code and stderr byte compared with click 8.5.0 running the original as a process"
+status = "tested"
+test = ["examples/MANIFEST.toml", "tests/golden/click.json", "tests/golden/generate.py"]
+
+[[requirement]]
+id = "examples.imagepipe"
+upstream = "examples/imagepipe/imagepipe.py"
+title = "imagepipe is not ported: every command is Pillow image processing"
+status = "excluded"
+
+[[requirement]]
+id = "types.custom"
+upstream = "examples/validation/validation.py"
+title = "Custom parameter types (a ParamType subclass's convert and self.fail): ClickType.custom, run before the callback, per item for repeated values, metavar from the type name"
+status = "tested"
+realises = ["LeanClick.Param.checks", "LeanClick.ClickType.customCheck", "LeanClick.applyCallback"]
+test = ["examples/validation/validation.lean", "tests/golden/click.json"]
+
+[[requirement]]
+id = "options.typed-callback"
+upstream = "tests/test_options.py::test_callback_validates_prompt"
+title = "Typed callbacks on typed binders (callback := f with f : α → Except CallbackError α)"
+status = "tested"
+realises = ["LeanClick.ClickType.typedCallback", "LeanClick.ClickType.toValue"]
+test = ["tests/apps/Prompts.lean", "examples/validation/validation.lean"]
+
+[[requirement]]
+id = "options.confirmation-password"
+upstream = "examples/repo/repo.py"
+title = "click.confirmation_option() and click.password_option()"
+status = "tested"
+realises = ["LeanClick.confirmationOption", "LeanClick.passwordOption", "LeanClick.Param.confirmationOption", "LeanClick.Param.passwordOption"]
+test = ["examples/repo/repo.lean", "tests/golden/click.json"]
+
+[[requirement]]
+id = "terminal.bad-parameter"
+upstream = "examples/validation/validation.py"
+title = "BadParameter(param_hint=...) and UsageError raised from a command body get the running command's context (augment_usage_errors)"
+status = "tested"
+realises = ["LeanClick.Terminal.badParameter", "LeanClick.Terminal.usageError", "LeanClick.ClickError.inContext"]
+test = ["examples/validation/validation.lean", "tests/golden/click.json"]
+
+[[requirement]]
+id = "terminal.files"
+upstream = "examples/inout/inout.py"
+title = "File values opened as byte streams; - is standard input or output"
+status = "tested"
+realises = ["LeanClick.Terminal.openFile"]
+test = ["examples/inout/inout.lean", "tests/golden/click.json"]
+
+[[requirement]]
+id = "terminal.termui"
+upstream = "examples/termui/termui.py"
+title = "style/unstyle, echo stripping ANSI off a terminal, echo_via_pager, progressbar (label once off a terminal), edit (require_save, shlex-split editor, Editing failed), clear and pause (no-ops off a terminal)"
+status = "tested"
+realises = ["LeanClick.style", "LeanClick.unstyle", "LeanClick.Terminal.echo", "LeanClick.Terminal.echoViaPager", "LeanClick.Terminal.withProgressbar", "LeanClick.Terminal.Bar.update", "LeanClick.Terminal.edit", "LeanClick.Terminal.clear", "LeanClick.Terminal.pause"]
+test = ["examples/termui/termui.lean", "examples/colors/colors.lean", "tests/golden/click.json"]
+
+[[requirement]]
+id = "terminal.launch-getchar"
+upstream = "examples/termui/termui.py"
+title = "launch (xdg-open/open, locate opens the folder) and getchar (one key from /dev/tty in raw mode): implemented, not run by the golden suite (they need a desktop or a terminal)"
+status = "implemented"
+realises = ["LeanClick.Terminal.launch", "LeanClick.Terminal.getchar"]
+
+[[requirement]]
+id = "terminal.environ"
+upstream = "examples/completion/completion.py"
+title = "Completion callbacks see the whole environment (os.environ), read from /proc/self/environ"
+status = "tested"
+realises = ["LeanClick.Terminal.environ", "LeanClick.Terminal.shellComplete"]
+test = ["examples/completion/completion.lean", "tests/golden/click.json"]
+
+[[requirement]]
+id = "dev.static-plugins"
+upstream = "examples/complex/complex/cli.py"
+title = "complex's plugin commands are imported and listed statically; Python discovers them with os.listdir and __import__ at run time"
+status = "deviation"
+test = ["examples/complex/complex/cli.lean"]
+
+[[requirement]]
+id = "dev.pure-callbacks"
+upstream = "examples/aliases/aliases.py"
+title = "Parameter callbacks are pure (Value -> Except); a callback with side effects on ctx.obj (aliases' read_config) becomes work in the group's resolver and body"
+status = "deviation"
+test = ["examples/aliases/aliases.lean"]
+
+[[requirement]]
+id = "dev.aliases-write-config"
+upstream = "UP-042"
+title = "aliases' write_config writes the config as text; upstream opens it 'wb' and fails with TypeError after truncating the file"
+status = "deviation"
+test = ["examples/aliases/aliases.lean"]
+
+[[requirement]]
+id = "dev.version-detect"
+upstream = "examples/naval/naval.py"
+title = "version_option() needs the version: click looks the installed distribution up with importlib.metadata, which a Lean program does not have; the ports pass their pyproject version (1.0.0)"
+status = "deviation"
+realises = ["LeanClick.versionOption"]
+test = ["examples/naval/naval.lean", "examples/validation/validation.lean"]

@@ -1,6 +1,6 @@
 name = "LeanClick"
 version = "0.1.0"
-defaultTargets = ["LeanClick", "props", "conformance", "example", "hello"]
+defaultTargets = ["LeanClick", "props", "conformance", "example", "hello", "colors", "naval", "inout", "validation", "repo", "complex", "completion", "termui", "aliases", "prompts"]
 
 # The verified library. Everything under LeanClick/ except Transport.lean is a
 # total function and the proof surface; see CONTRIBUTING.md.
@@ -28,3 +28,51 @@ root = "tests.apps.FastapiCli"
 [[lean_exe]]
 name = "hello"
 root = "tests.apps.Hello"
+
+# click's examples/, ported one to one (see examples/MANIFEST.toml).
+[[lean_exe]]
+name = "colors"
+root = "examples.colors.colors"
+
+[[lean_exe]]
+name = "naval"
+root = "examples.naval.naval"
+
+[[lean_exe]]
+name = "inout"
+root = "examples.inout.inout"
+
+[[lean_exe]]
+name = "validation"
+root = "examples.validation.validation"
+
+[[lean_exe]]
+name = "repo"
+root = "examples.repo.repo"
+
+[[lean_exe]]
+name = "complex"
+root = "examples.complex.complex.cli"
+
+# complex's plugin modules, imported by its program
+[[lean_lib]]
+name = "ComplexPlugins"
+roots = ["examples.complex.complex.environment", "examples.complex.complex.commands.cmd_init",
+         "examples.complex.complex.commands.cmd_status"]
+
+[[lean_exe]]
+name = "completion"
+root = "examples.completion.completion"
+
+[[lean_exe]]
+name = "termui"
+root = "examples.termui.termui"
+
+[[lean_exe]]
+name = "aliases"
+root = "examples.aliases.aliases"
+
+# prompts run as a process (tests/golden/click.json)
+[[lean_exe]]
+name = "prompts"
+root = "tests.apps.Prompts"
