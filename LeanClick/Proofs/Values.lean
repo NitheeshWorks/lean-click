@@ -39,7 +39,7 @@ theorem consume_environment (r : Raw) (env : Option String) (p : Param)
   simp [consume, h]
 
 theorem consume_default (env : Option String) (p : Param)
-    (h : env.bind (envRaw p) = none) : consume none env p = (defaultRaw p, .default) := by
+    (h : env.bind (envRaw p) = none) : consume none env p = (defaultRaw p, p.defaultSource) := by
   simp [consume, h]
 
 theorem wantsPrompt_none (p : Param) (raw : Option Raw) (src : Source) (h : p.prompt = none) :

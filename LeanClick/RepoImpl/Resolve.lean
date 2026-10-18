@@ -105,15 +105,18 @@ def defaultRaw (p : Param) : Option Raw :=
     | .many n => some (.multi (if n == 1 then ds.map ([·]) else batch n ds))
     | _ => some (.tokens ds)
 
+/-- Where an absent parameter's default comes from. -/
+def Param.defaultSource (p : Param) : Source := if p.fromDefaultMap then .defaultMap else .default
+
 /-- `consume_value` without the prompt: command line, then environment,
-then default. -/
+then the default (from `default_map` if it names the parameter). -/
 def consume (cmd : Option Raw) (env : Option String) (p : Param) : Option Raw × Source :=
   match cmd with
   | some r => (some r, .commandline)
   | none =>
     match env.bind (envRaw p) with
     | some r => (some r, .environment)
-    | none => (defaultRaw p, .default)
+    | none => (defaultRaw p, p.defaultSource)
 
 /-- A boolean flag occurrence under the parameter type. -/
 def boolValue (fs : String → Option FileInfo) : (t : ParamType) → Bool → Except String t.Carrier
@@ -202,7 +205,7 @@ def Param.badParameter (p : Param) (msg : String) : UsageError :=
 /-- Does an option prompt, given where its value came from? -/
 def Param.wantsPrompt (p : Param) (raw : Option Raw) (src : Source) : Bool :=
   match p.prompt with
-  | some ps => (raw.isNone || src == .default) && (p.required || ps.required)
+  | some ps => (raw.isNone || src == .default || src == .defaultMap) && (p.required || ps.required)
   | none => false
 
 /-- The value of an absent boolean flag or count, before conversion. -/

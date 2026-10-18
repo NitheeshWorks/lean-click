@@ -36,8 +36,8 @@ structure Run where
   code : Nat
   frames : List (Frame Unit)
 
-def run (c : Cmd) (argv : List String) (env : Env := {}) : Run :=
-  let d := c.dispatch c.name argv env
+def run (c : Cmd) (argv : List String) (env : Env := {}) (defaultMap : Option DefaultMap := none) : Run :=
+  let d := c.dispatch c.name argv env defaultMap
   match d.halt with
   | none => ⟨"", 0, d.frames⟩
   | some (.error e) => ⟨e.render, 2, d.frames⟩
@@ -356,6 +356,19 @@ def cmdCases : List Case := [
     (let g : Cmd := Command.group { name := "cli" } [mkCmd "push" [], mkCmd "declare" [], mkCmd "refine" []]
      has (run g ["pause"]).out "Did you mean 'push'?" &&
      has (run g ["decline"]).out "(Did you mean one of: 'declare', 'refine'?)"),
+  pc "tests/test_commands.py::test_default_maps" "default_map for a subcommand"
+    (let g : Cmd := group "cli" [] [command "foo" [option ["--name"] (default := "normal")]]
+     let r := run g ["foo"] (defaultMap := some (.node [] [("foo", .node [("name", ["changed"])] [])]))
+     r.val "name" == "changed" && r.src "name" == some .defaultMap && (run g ["foo"]).val "name" == "normal"),
+  pc "tests/test_defaults.py::test_flag_default_map" "default_map for a flag pair, in help too"
+    (let g : Cmd := group "cli" [] [command "foo" [option ["--name/--no-name"] (isFlag := true) (showDefault := true) (help := "name flag")]]
+     let dm : Option DefaultMap := some (.node [] [("foo", .node [("name", ["true"])] [])])
+     (run g ["foo"]).val "name" == "False" && has (run g ["foo", "--help"]).out "default: no-name" &&
+     (run g ["foo"] (defaultMap := dm)).val "name" == "True" &&
+     has (run g ["foo", "--help"] (defaultMap := dm)).out "default: name"),
+  pc "tests/test_commands.py::test_default_maps" "command line beats default_map"
+    (let g : Cmd := group "cli" [] [command "foo" [option ["--name"] (default := "normal")]]
+     (run g ["foo", "--name", "x"] (defaultMap := some (.node [] [("foo", .node [("name", ["changed"])] [])]))).val "name" == "x"),
   pc "tests/test_commands.py::test_group_first_match" "first subcommand of a name wins"
     (let g : Cmd := Command.group { name := "cli" } [mkCmd "a" [Param.opt ["--x"]], mkCmd "a" [Param.opt ["--y"]]]
      (run g ["a", "--x", "1"]).val "x" == "1"),

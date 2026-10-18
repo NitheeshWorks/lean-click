@@ -150,6 +150,7 @@ structure ContextSettings where
   ignoreUnknownOptions : Bool := false
   allowExtraArgs : Option Bool := none
   allowInterspersedArgs : Option Bool := none
+  defaultMap : Option DefaultMap := none
 
 /-- `@click.command(name, ...)`: the parameters in decorator order (top to
 bottom), then the callback. -/
@@ -164,7 +165,8 @@ def command {κ : Type} [Inhabited κ] (name : String) (params : List Param := [
         showDefault := contextSettings.showDefault,
         ignoreUnknownOptions := contextSettings.ignoreUnknownOptions,
         allowExtraArgs := contextSettings.allowExtraArgs,
-        allowInterspersedArgs := contextSettings.allowInterspersedArgs }
+        allowInterspersedArgs := contextSettings.allowInterspersedArgs,
+        defaultMap := contextSettings.defaultMap }
     false callback []
 
 /-- `@click.group(name, ...)` with its subcommands. -/
@@ -180,7 +182,8 @@ def group {κ : Type} [Inhabited κ] (name : String) (params : List Param := [])
         showDefault := contextSettings.showDefault,
         ignoreUnknownOptions := contextSettings.ignoreUnknownOptions,
         allowExtraArgs := contextSettings.allowExtraArgs,
-        allowInterspersedArgs := contextSettings.allowInterspersedArgs }
+        allowInterspersedArgs := contextSettings.allowInterspersedArgs,
+        defaultMap := contextSettings.defaultMap }
     true callback commands
 
 namespace Context

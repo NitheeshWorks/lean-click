@@ -97,6 +97,8 @@ structure Param where
   eager : Option Eager := none
   exposeValue : Bool := true
   allowFromAutoenv : Bool := true
+  /-- The default came from the context's `default_map`. -/
+  fromDefaultMap : Bool := false
   h_bool : decl.isBoolFlag = true → type = .bool := by
     first | decide | (simp [Decl.isBoolFlag]; done) | (intro h; simp_all [Decl.isBoolFlag])
   h_count : decl.isCount = true → type.isIntRange = true := by
@@ -107,6 +109,7 @@ precedence order. -/
 inductive Source where
   | commandline
   | environment
+  | defaultMap
   | prompt
   | default
   deriving DecidableEq, Repr, Inhabited
@@ -246,6 +249,18 @@ structure Context (σ : Type) where
   help : String := ""
   usage : String := ""
 
+/-- click's `default_map`: defaults by parameter name, and nested maps by
+subcommand name. -/
+inductive DefaultMap where
+  | node (values : List (String × List String)) (subs : List (String × DefaultMap))
+  deriving Inhabited
+
+def DefaultMap.value? : DefaultMap → String → Option (List String)
+  | .node vs _, n => (vs.find? (·.1 == n)).map (·.2)
+
+def DefaultMap.sub? : DefaultMap → String → Option DefaultMap
+  | .node _ subs, n => (subs.find? (·.1 == n)).map (·.2)
+
 /-- Settings of a command (click's `Command` attributes and the
 `context_settings` that are not inherited). -/
 structure CommandSpec where
@@ -265,6 +280,8 @@ structure CommandSpec where
   ignoreUnknownOptions : Bool := false
   autoEnvvarPrefix : Option String := none
   showDefault : Option Bool := none
+  /-- `context_settings={"default_map": ...}`. -/
+  defaultMap : Option DefaultMap := none
   /-- Group only. -/
   invokeWithoutCommand : Bool := false
   /-- Group only. -/
@@ -291,6 +308,7 @@ structure Settings where
   autoEnvvarPrefix : Option String := none
   showDefault : Option Bool := none
   width : Nat := 80
-  deriving DecidableEq, Repr, Inhabited
+  defaultMap : Option DefaultMap := none
+  deriving Inhabited
 
 end LeanClick

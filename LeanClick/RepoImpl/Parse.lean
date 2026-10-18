@@ -200,9 +200,16 @@ def dispatchAux (prog : String) (env : Env) :
         let d := dispatchAux prog env fuel c (some s) name (cmd.childPath s path name) rest
         ⟨⟨cmd, infoName, path, s, lv.args, some name⟩ :: d.frames, d.halt⟩
 
+/-- The settings above the root context: the terminal width, and a
+`default_map` given to the invocation (click's `main(default_map=...)`),
+placed so the root context finds it under its own name. -/
+def rootParent (prog : String) (width : Nat) (defaultMap : Option DefaultMap) : Settings :=
+  { width, defaultMap := defaultMap.map fun m => .node [] [(prog, m)] }
+
 /-- Parse a whole invocation, every level, without running callbacks. -/
-def Command.dispatch (cmd : Command σ) (prog : String) (argv : List String) (env : Env) : Dispatch σ :=
-  dispatchAux prog env (argv.length + 1) cmd (some { width := env.width }) prog prog argv
+def Command.dispatch (cmd : Command σ) (prog : String) (argv : List String) (env : Env)
+    (defaultMap : Option DefaultMap := none) : Dispatch σ :=
+  dispatchAux prog env (argv.length + 1) cmd (some (rootParent prog env.width defaultMap)) prog prog argv
 
 /-! ## Messages and exit codes -/
 

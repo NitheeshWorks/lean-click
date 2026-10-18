@@ -239,11 +239,11 @@ def report : Termination → IO Unit
   | .raised e => echo e.render (err := true) (nl := false)
 
 /-- `Command.main`: run with `argv`, report, and return the exit code. -/
-def main (cmd : App σ) (init : σ) (argv : List String) (prog : String := cmd.name) :
-    IO UInt32 := do
+def main (cmd : App σ) (init : σ) (argv : List String) (prog : String := cmd.name)
+    (defaultMap : Option DefaultMap := none) : IO UInt32 := do
   let width ← terminalWidth
   let t ← try
-      runAux prog (argv.length + 1) cmd (some { width }) prog prog argv none init
+      runAux prog (argv.length + 1) cmd (some (rootParent prog width defaultMap)) prog prog argv none init
     catch e => pure (.raised (.failure (toString e)))
   report t
   return UInt32.ofNat t.exitCode

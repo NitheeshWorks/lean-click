@@ -139,14 +139,15 @@ def EnvvarBeatsDefault : Prop :=
       ∃ x, convert env.fs p.type w = .ok x ∧ e.toValue = p.type.erase x
 
 /-- The default applies when neither the command line nor the environment
-gives a value. -/
+gives a value; its source is `default_map` when the context's map supplied
+it (`Param.withDefaultMap`), else the declared default. -/
 def DefaultWhenAbsent : Prop :=
   ∀ (cmd : Command σ) (s : Settings) (path : String) (env : Env) (p : Param)
     (opts argv : List String) (d : String) (r : ParsedArgs),
     p ∈ cmd.allParams s → p.decl = .option opts (.value 1 false) → p.prompt = none →
     Absent cmd s p argv → envString env.get s p = none → p.default = some [d] →
     cmd.parseArgs s path argv env = .ok r →
-    ∃ e ∈ r.entries, e.param = p ∧ e.source = .default ∧
+    ∃ e ∈ r.entries, e.param = p ∧ e.source = p.defaultSource ∧
       ∃ x, convert env.fs p.type d = .ok x ∧ e.toValue = p.type.erase x
 
 /-- A group runs the first subcommand registered under the name. -/

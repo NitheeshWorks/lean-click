@@ -29,10 +29,19 @@ uses (`get_help_option_names`). -/
 def Command.helpNames (cmd : Command σ) (s : Settings) : List String :=
   s.helpOptionNames.filter fun n => !(cmd.spec.params.any fun p => p.allOpts.contains n)
 
-/-- The parameter table: declared parameters, then the help option. -/
+/-- A parameter with its default taken from the context's `default_map`
+when the map names it (click's `Context.lookup_default`). -/
+def Param.withDefaultMap (dm : Option DefaultMap) (p : Param) : Param :=
+  match dm.bind (·.value? p.name) with
+  | some ds => { p with default := some ds, fromDefaultMap := true }
+  | none => p
+
+/-- The parameter table: declared parameters (with `default_map` defaults),
+then the help option. -/
 def Command.allParams (cmd : Command σ) (s : Settings) : List Param :=
   let names := cmd.helpNames s
-  cmd.spec.params ++ (if cmd.spec.addHelpOption && !names.isEmpty then [helpParam names] else [])
+  cmd.spec.params.map (Param.withDefaultMap s.defaultMap) ++
+    (if cmd.spec.addHelpOption && !names.isEmpty then [helpParam names] else [])
 
 /-- The settings of a context for `cmd`, invoked as `infoName`, under a
 parent context with settings `parent` (click's `Context.__init__`
@@ -50,7 +59,12 @@ def Command.settings (cmd : Command σ) (parent : Option Settings) (infoName : S
     showDefault := match cmd.spec.showDefault with
       | some b => some b
       | none => base.showDefault
-    width := base.width }
+    width := base.width
+    defaultMap := match cmd.spec.defaultMap with
+      | some m => some m
+      | none => match parent with
+        | some ps => ps.defaultMap.bind (·.sub? infoName)
+        | none => none }
 
 def Command.allowExtraArgs (cmd : Command σ) : Bool := cmd.spec.allowExtraArgs.getD cmd.isGroup
 def Command.interspersed (cmd : Command σ) : Bool := cmd.spec.allowInterspersedArgs.getD (!cmd.isGroup)
