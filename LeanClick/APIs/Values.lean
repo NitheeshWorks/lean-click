@@ -9,18 +9,6 @@ with its refinement erased (`Value`) or through typed accessors.
 
 namespace LeanClick
 
-/-- The value of an entry with its refinements erased. A `multiple`
-option with `nargs=1` gives a flat list, as click's tuple does. -/
-def Entry.toValue (e : Entry) : Value :=
-  let er := e.param.type.erase
-  match e.value with
-  | .none => .none
-  | .one x => er x
-  | .tuple xs => .list (xs.map er)
-  | .many xss =>
-    if e.param.shape == .many 1 then .list (xss.flatMap (fun xs => xs.map er))
-    else .list (xss.map fun xs => .list (xs.map er))
-
 namespace ParsedArgs
 
 /-- The entry for a parameter name. -/

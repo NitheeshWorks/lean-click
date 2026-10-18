@@ -124,13 +124,18 @@ def Param.errorHint (p : Param) : String :=
     else base
   else "'" ++ p.makeMetavar ++ "'"
 
+/-- Insertion before the first element with a key at least as large. -/
+def insertBy {α : Type} (key : α → Nat) (x : α) : List α → List α
+  | [] => [x]
+  | y :: ys => if key x ≤ key y then x :: y :: ys else y :: insertBy key x ys
+
+/-- Stable sort by a natural-number key. -/
+def sortBy {α : Type} (key : α → Nat) (xs : List α) : List α :=
+  xs.foldr (fun x acc => insertBy key x acc) []
+
 /-- Stable sort by prefix length, joined with `, ` (`join_options`). -/
 def joinOptions (opts : List String) : String :=
-  let key := fun (o : String) => (splitOpt o).1.length
-  let rec ins (o : String) : List String → List String
-    | [] => [o]
-    | x :: xs => if key o < key x then o :: x :: xs else x :: ins o xs
-  ", ".intercalate (opts.foldl (fun acc o => ins o acc) [])
+  ", ".intercalate (sortBy (fun o => (splitOpt o).1.length) opts)
 
 /-- `get_help_spec`: the left column of the help row. -/
 def Param.helpSpec (p : Param) : String :=

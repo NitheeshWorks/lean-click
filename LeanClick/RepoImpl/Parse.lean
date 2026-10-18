@@ -22,15 +22,6 @@ open Text
 
 variable {σ : Type}
 
-/-- Stable insertion of `p` by key. -/
-def insertBy {α : Type} (key : α → Nat) (x : α) : List α → List α
-  | [] => [x]
-  | y :: ys => if key x < key y then x :: y :: ys else y :: insertBy key x ys
-
-/-- Stable sort by a natural-number key. -/
-def sortBy {α : Type} (key : α → Nat) (xs : List α) : List α :=
-  xs.foldr (fun x acc => insertBy key x acc) []
-
 /-- `iter_params_for_processing`: eager parameters first, then by first
 appearance in the invocation order, ties (and absent ones) in declaration
 order. -/
@@ -87,6 +78,14 @@ def processAll (order ps : List Param) (resolve : Param → Except Stop Entry) :
   | .error s => .error s
   | .ok _ => ps.mapM resolve
 
+/-- Resolve one parameter of a scanned command line. -/
+def resolveWith (fs : String → Option FileInfo) (answers : List ((String × String) × String))
+    (path : String) (info : CtxInfo) (sc : Scanned) (araws : List (String × Option Raw))
+    (envOf : Param → Option String) (p : Param) : Except Stop Entry :=
+  match resolveParam fs (answers.lookup (path, p.name)) (rawOf sc araws p) (envOf p) p with
+  | .error st => .error (st.withCtx info)
+  | .ok e => .ok e
+
 /-- click's `Command.parse_args`, reading the environment only through
 `envOf`. -/
 def Command.parseWith (cmd : Command σ) (s : Settings) (path : String) (argv : List String)
@@ -104,12 +103,8 @@ def Command.parseWith (cmd : Command σ) (s : Settings) (path : String) (argv : 
     match argRaws args (sc.largs ++ sc.rargs) with
     | .error e => .error (fail e)
     | .ok (araws, leftover) =>
-      let resolve := fun (p : Param) =>
-        match resolveParam fs (answers.lookup (path, p.name)) (rawOf sc araws p) (envOf p) p with
-        | .error st => .error (st.withCtx info)
-        | .ok e => .ok e
       let order := processingOrder ps (sc.events.map (·.dest) ++ args.map (·.name))
-      match processAll order ps resolve with
+      match processAll order ps (resolveWith fs answers path info sc araws envOf) with
       | .error st => .error st
       | .ok entries =>
         if !leftover.isEmpty && !cmd.allowExtraArgs then .error (fail ⟨.usage (extraArgsMsg leftover), none⟩)

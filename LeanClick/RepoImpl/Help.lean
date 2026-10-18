@@ -50,20 +50,24 @@ def renderUsage (width : Nat) (prog args : String) : String :=
     let ind := spaces (pfx.length + 4)
     usagePrefix ++ "\n" ++ fill width ind ind (expandTabs args) ++ "\n"
 
-/-- One definition-list row (`write_dl`): the term verbatim at the
-indent, then the wrapped description. -/
-def renderRow (width indent firstCol : Nat) (row : String × String) : String :=
+/-- What follows the term in a definition-list row: the padding (or a
+line break when the term is too wide) and the wrapped description. -/
+def rowTail (width indent firstCol : Nat) (row : String × String) : String :=
   let (first, second) := row
-  let head := spaces indent ++ first
-  if second.isEmpty then head ++ "\n"
+  if second.isEmpty then "\n"
   else
     let sep := if first.length + 2 ≤ firstCol then spaces (firstCol - first.length)
       else "\n" ++ spaces (firstCol + indent)
     let textWidth := max (width - firstCol - 2) 10
     let lines := splitLines (wrapParagraphs textWidth "" "" second)
     match lines with
-    | [] => head ++ sep ++ "\n"
-    | l :: ls => head ++ sep ++ l ++ "\n" ++ concatS (ls.map fun x => spaces (firstCol + indent) ++ x ++ "\n")
+    | [] => sep ++ "\n"
+    | l :: ls => sep ++ l ++ "\n" ++ concatS (ls.map fun x => spaces (firstCol + indent) ++ x ++ "\n")
+
+/-- One definition-list row (`write_dl`): the term verbatim at the
+indent, then the wrapped description. -/
+def renderRow (width indent firstCol : Nat) (row : String × String) : String :=
+  spaces indent ++ row.1 ++ rowTail width indent firstCol row
 
 /-- `write_dl` with `col_max=30`, `col_spacing=2`. -/
 def renderDl (width indent : Nat) (rows : List (String × String)) : String :=

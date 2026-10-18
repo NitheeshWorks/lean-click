@@ -58,10 +58,11 @@ def batch (n : Nat) (xs : List String) : List (List String) :=
 /-- The environment variable value of a parameter: the first non-empty of
 its `envvar` names, then (options only) the automatic
 `PREFIX_NAME` variable. -/
+def nonEmpty : Option String → Option String
+  | some x => if x.isEmpty then none else some x
+  | none => none
+
 def envString (get : String → Option String) (s : Settings) (p : Param) : Option String :=
-  let nonEmpty := fun (v : Option String) => match v with
-    | some x => if x.isEmpty then none else some x
-    | none => none
   match p.envvar.findSome? (fun n => nonEmpty (get n)) with
   | some v => some v
   | none =>
@@ -170,11 +171,13 @@ def convertShape (fs : String → Option FileInfo) (t : ParamType) :
 /-- The value an absent parameter takes: `False` for an optional boolean
 flag, `0` for a count, an empty collection for a multi-value parameter,
 otherwise nothing. -/
-def absentValue (p : Param) : {v : PValue p.type // v.Fits p.shape} :=
-  match hs : p.shape with
+def absentFor (t : ParamType) : (s : Shape) → {v : PValue t // v.Fits s}
   | .many _ => ⟨.many [], by simp [PValue.Fits]⟩
-  | .star => ⟨.tuple [], by simp [PValue.Fits]⟩
-  | _ => ⟨.none, by simp [PValue.Fits]⟩
+  | .star => ⟨.tuple [], trivial⟩
+  | .single => ⟨.none, trivial⟩
+  | .tuple _ => ⟨.none, trivial⟩
+
+def absentValue (p : Param) : {v : PValue p.type // v.Fits p.shape} := absentFor p.type p.shape
 
 /-- Is the value missing (`value_is_missing`)? -/
 def PValue.isMissing {t : ParamType} : PValue t → Bool
@@ -209,23 +212,22 @@ def implicitRaw (p : Param) : Option Raw :=
   | .option _ .count => some (.count 0)
   | _ => none
 
-/-- Process one parameter: pick the source, prompt if needed, convert,
-check required, stop on an active eager parameter. -/
-def resolveParam (fs : String → Option FileInfo) (answer : Option String)
-    (cmd : Option Raw) (env : Option String) (p : Param) : Except Stop Entry :=
-  let (raw, src) := consume cmd env p
-  let (raw, src) := if p.wantsPrompt raw src then
-      match answer with
-      | some a => (some (.tokens [a]), Source.prompt)
-      | none => (raw, src)
-    else (raw, src)
-  if p.wantsPrompt raw src && src != .prompt then
-    .error (.prompt p (match raw with | some (.tokens [d]) => some d | _ => none))
-  else
-  let raw := match raw with
-    | some r => some r
-    | none => implicitRaw p
-  let conv : Except String {v : PValue p.type // v.Fits p.shape} := match raw with
+/-- The raw value and its source, with a prompt answer replacing a missing
+or default value when the option prompts. -/
+def pickSource (p : Param) (answer : Option String) (cmd : Option Raw) (env : Option String) :
+    Option Raw × Source :=
+  let rs := consume cmd env p
+  if p.wantsPrompt rs.1 rs.2 then
+    match answer with
+    | some a => (some (.tokens [a]), Source.prompt)
+    | none => rs
+  else rs
+
+/-- Convert, check required, stop on an active eager parameter. -/
+def finishParam (fs : String → Option FileInfo) (p : Param) (raw : Option Raw) (src : Source) :
+    Except Stop Entry :=
+  let conv : Except String {v : PValue p.type // v.Fits p.shape} :=
+    match raw.or (implicitRaw p) with
     | none => .ok (absentValue p)
     | some r => convertShape fs p.type p.shape r
   match conv with
@@ -233,12 +235,29 @@ def resolveParam (fs : String → Option FileInfo) (answer : Option String)
   | .ok ⟨v, h⟩ =>
     if p.required && v.isMissing then .error (.error p.missingError)
     else
-      let entry : Entry := ⟨p, v, src, h⟩
-      match p.eager with
-      | some e =>
-        match p.type, v with
-        | .bool, .one true => .error (.eager e)
-        | _, _ => .ok entry
-      | none => .ok entry
+      match p.eager, p.type, v with
+      | some e, .bool, .one true => .error (.eager e)
+      | _, _, _ => .ok ⟨p, v, src, h⟩
+
+/-- Process one parameter: pick the source, prompt if needed, convert,
+check required, stop on an active eager parameter. -/
+def resolveParam (fs : String → Option FileInfo) (answer : Option String)
+    (cmd : Option Raw) (env : Option String) (p : Param) : Except Stop Entry :=
+  let rs := pickSource p answer cmd env
+  if p.wantsPrompt rs.1 rs.2 && rs.2 != .prompt then
+    .error (.prompt p (match rs.1 with | some (.tokens [d]) => some d | _ => none))
+  else finishParam fs p rs.1 rs.2
+
+/-- The value of an entry with its refinements erased. A `multiple`
+option with `nargs=1` gives a flat list, as click's tuple does. -/
+def Entry.toValue (e : Entry) : Value :=
+  let er := e.param.type.erase
+  match e.value with
+  | .none => .none
+  | .one x => er x
+  | .tuple xs => .list (xs.map er)
+  | .many xss =>
+    if e.param.shape == .many 1 then .list (xss.flatMap (fun xs => xs.map er))
+    else .list (xss.map fun xs => .list (xs.map er))
 
 end LeanClick
