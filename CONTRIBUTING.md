@@ -73,7 +73,11 @@ be a Hoare triple over a heap.
 `nargs_arity`, `choice_in_set`, `bool_flag_pairs`,
 `commandline_beats_envvar`, `envvar_beats_default`, `default_when_absent`,
 `group_dispatch_first_match`, `exit_code_range`, `framework_exit_codes`,
-with their lemmas in `Proofs/`. The parse-level proofs share one step,
+with their lemmas in `Proofs/` (`Proofs/Precedence.lean` holds the
+command line > envvar > default theorems for arbitrary argv: the scanner
+only emits an event for a parameter from a token that `Mentions` its
+spelling, `scanLoop_events`). `parse_val` links `LeanClick.parse` to
+`parseArgs`. The parse-level proofs share one step,
 `parseArgs_entry` (the entry for a parameter is what `resolveParam` makes of
 its scanned command line), and the help proofs one theory of string
 containment (`IsInfix`, `concatS_infix`, `renderSection_infix`). The axiom gate's theorem count also includes the compiler's
@@ -105,7 +109,9 @@ not hide input; path permission checks assumed true; `nargs=0` arguments
 (UP-009); unbounded ranges show no range text (UP-023); `--help`/`--version`
 never read automatic environment variables (UP-011); parameters sharing a
 name are not arbitrated; boolean flags have no explicit `None` default; an
-option-looking unknown subcommand is re-scanned rather than re-parsed.
+option-looking unknown subcommand is re-scanned rather than re-parsed;
+the help page has the `Positional arguments` section of the upstream source
+read as the spec (click main), which released click 8.5.0 does not print.
 Excluded: chained groups, `default_map`, `token_normalize_func`, shell
 completion, Windows console support, UUID/DateTime/Tuple/custom types,
 parameter callbacks, deprecation warnings, `prompt_required=False`.

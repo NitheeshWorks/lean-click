@@ -57,6 +57,25 @@ def parse (cmd : Command σ) (argv : List String) (env : Env := {}) (prog : Stri
   | .ok r => .ok r
   | .error st => .error (st.toHalt cmd s prog prog)
 
+/-- What `parse` returns is `Command.parseArgs` under the command's root
+settings: every theorem stated about `parseArgs` applies to `parse`. -/
+theorem parse_val (cmd : Command σ) (argv : List String) (env : Env) (prog : String)
+    (r : {r : ParsedArgs // ParsedFor cmd (cmd.settings (some { width := env.width }) prog) r})
+    (h : parse cmd argv env prog = .ok r) :
+    cmd.parseArgs (cmd.settings (some { width := env.width }) prog) prog argv env = .ok r.val := by
+  unfold parse Command.parseChecked at h
+  dsimp only at h
+  split at h
+  · rename_i r' hr
+    split at hr
+    · rename_i r'' hpa
+      cases hr; cases h; exact hpa
+    · cases hr
+  · rename_i st hr
+    split at hr
+    · cases hr
+    · cases h
+
 /-- The help page of a top-level command, as `--help` prints it. -/
 def helpPage (cmd : Command σ) (prog : String := cmd.name) (width : Nat := 80) : String :=
   cmd.getHelp (cmd.settings (some { width }) prog) prog

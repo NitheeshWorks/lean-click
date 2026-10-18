@@ -23,7 +23,10 @@ click_command run
 
 `click_command` generates `run.main` (the typed function) and `run :
 Terminal.App Unit` (the click command calling it). The doc comment is the
-help text, as a docstring is in click.
+help text, as a docstring is in click. It also checks, when the file is
+compiled, that no two parameters share a spelling (`Command.Unambiguous`,
+the hypothesis of `bool_flag_pairs` and `commandline_beats_envvar`); a
+clash is a compile error.
 -/
 
 namespace LeanClick
@@ -211,6 +214,9 @@ macro_rules
     let c2 ← `(command| def $name : LeanClick.Terminal.App Unit :=
         LeanClick.command $cliName [$params,*] (help := $helpLit)
           (callback := fun $ctxId => $cb))
-    return mkNullNode #[c1, c2]
+    -- no two parameters share a spelling (the `Unambiguous` hypothesis of
+    -- the flag and precedence theorems), checked when the command is compiled
+    let c3 ← `(command| #guard decide (LeanClick.Command.Unambiguous $name {}))
+    return mkNullNode #[c1, c2, c3]
 
 end LeanClick

@@ -82,11 +82,11 @@ test = ["tests/Conformance.lean::switch --off, unset", "tests/Props.lean::lastWi
 [[requirement]]
 id = "sources.precedence"
 upstream = "tests/test_options.py::test_multiple_envvar"
-title = "Command line beats environment variable beats default"
+title = "Command line (last occurrence, --o v or --o=v) beats environment variable beats default, for any argv; LeanClick.parse is parseArgs (parse_val)"
 status = "implemented"
 realises = ["LeanClick.consume", "LeanClick.envString"]
-theorem = ["LeanClick.commandline_beats_envvar", "LeanClick.envvar_beats_default", "LeanClick.default_when_absent", "LeanClick.consume_commandline", "LeanClick.consume_environment", "LeanClick.consume_default"]
-test = ["tests/Conformance.lean::command line beats PORT"]
+theorem = ["LeanClick.commandline_beats_envvar", "LeanClick.envvar_beats_default", "LeanClick.default_when_absent", "LeanClick.scanLoop_events", "LeanClick.scanLoop_values", "LeanClick.parse_val"]
+test = ["tests/Conformance.lean::last command-line occurrence beats PORT", "tests/Conformance.lean::command line beats PORT"]
 
 [[requirement]]
 id = "groups.dispatch"
@@ -302,3 +302,19 @@ title = "click's decorator vocabulary: command, group, option, argument, version
 status = "tested"
 realises = ["LeanClick.option", "LeanClick.argument", "LeanClick.command", "LeanClick.group", "LeanClick.Choice", "LeanClick.Path"]
 test = ["tests/Conformance.lean::string option default", "examples/Hello.lean"]
+
+[[requirement]]
+id = "dev.positional-arguments-section"
+upstream = "src/click/core.py:Command.format_arguments (upstream-spec HEAD 2247b35)"
+title = "Help prints a 'Positional arguments' section when an argument has help. This follows the upstream source read as the spec (click main, 8.6 dev); released click 8.5.0 prints no such section"
+status = "deviation"
+realises = ["LeanClick.Command.argumentRows"]
+test = ["tests/Conformance.lean::typed command help: option spellings from binder names"]
+
+[[requirement]]
+id = "usage.unambiguous-check"
+upstream = "src/click/core.py:Command.get_params (duplicate option warning)"
+title = "click_command checks at compile time that no two parameters share a spelling (Command.Unambiguous); click only warns at run time"
+status = "tested"
+realises = ["LeanClick.Command.Unambiguous"]
+test = ["tests/Conformance.lean::typed command values arrive typed"]

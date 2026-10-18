@@ -26,6 +26,9 @@ every well-formed click command (click warns on duplicates); decidable, so
 def Command.Unambiguous {σ : Type} (cmd : Command σ) (s : Settings) : Prop :=
   ((table (cmd.allParams s)).map (·.opt)).Nodup
 
+instance {σ : Type} (cmd : Command σ) (s : Settings) : Decidable (cmd.Unambiguous s) := by
+  unfold Command.Unambiguous; infer_instance
+
 namespace Spec
 
 variable {σ : Type}
@@ -94,33 +97,57 @@ def BoolFlagPairs : Prop :=
     ∃ e ∈ r.entries, e.param = p ∧ e.source = .commandline ∧
       e.toValue = .bool (decide (argv.getLast h ∈ opts))
 
-/-- The command line beats the environment variable: `--port 9000` is
-taken from the command line whatever `PORT` says. -/
+/-- The command-line tokens of `(spelling, value)` occurrences: `--o v`,
+or `--o=v` when the flag is set. -/
+def occTokens : List (String × String × Bool) → List String
+  | [] => []
+  | (o, v, false) :: rest => o :: v :: occTokens rest
+  | (o, v, true) :: rest => (o ++ "=" ++ v) :: occTokens rest
+
+/-- Token `t` may be read by the scanner as spelling `o`: as the long
+option before any `=`, or as one letter of a short-option cluster
+(`-xvf` mentions `-v`). -/
+def Mentions (t o : String) : Prop :=
+  (Text.splitEq t).1 = o ∨
+  ∃ pfx ch, o.toList = [pfx, ch] ∧ t.toList.head? = some pfx ∧ ch ∈ t.toList.tail
+
+/-- `p` (and any parameter sharing its name) is mentioned nowhere in `argv`. -/
+def Absent {σ : Type} (cmd : Command σ) (s : Settings) (p : Param) (argv : List String) : Prop :=
+  ∀ t ∈ argv, ∀ q ∈ cmd.allParams s, q.name = p.name → ∀ o ∈ q.allOpts, ¬ Mentions t o
+
+/-- The command line beats the environment variable: when an option is
+given, as `--o v` or `--o=v`, any number of times, its value is the last
+occurrence's, whatever its variable holds. -/
 def CommandlineBeatsEnvvar : Prop :=
   ∀ (cmd : Command σ) (s : Settings) (path : String) (env : Env) (p : Param)
-    (opts : List String) (o v : String) (r : ParsedArgs),
+    (opts : List String) (occs : List (String × String × Bool)) (r : ParsedArgs) (h : occs ≠ []),
     cmd.Unambiguous s → p ∈ cmd.allParams s → p.decl = .option opts (.value 1 false) →
-    o ∈ opts → IsBareLongOpt o →
-    cmd.parseArgs s path [o, v] env = .ok r →
-    ∃ e ∈ r.entries, e.param = p ∧ e.source = .commandline
+    p.eager = none → (∀ x ∈ occs, x.1 ∈ opts ∧ IsBareLongOpt x.1) →
+    cmd.parseArgs s path (occTokens occs) env = .ok r →
+    ∃ e ∈ r.entries, e.param = p ∧ e.source = .commandline ∧
+      ∃ x, convert env.fs p.type (occs.getLast h).2.1 = .ok x ∧ e.toValue = p.type.erase x
 
-/-- The environment variable beats the default: with nothing on the command
-line, a set variable supplies the option. -/
+/-- The environment variable beats the default: an option absent from the
+command line takes the converted value of its variable when that is set. -/
 def EnvvarBeatsDefault : Prop :=
-  ∀ (cmd : Command σ) (s : Settings) (path : String) (env : Env) (p : Param) (r : ParsedArgs),
-    p ∈ cmd.allParams s → p.isOption = true → p.prompt = none →
-    ((envString env.get s p).bind (envRaw p)).isSome = true →
-    cmd.parseArgs s path [] env = .ok r →
-    ∃ e ∈ r.entries, e.param = p ∧ e.source = .environment
+  ∀ (cmd : Command σ) (s : Settings) (path : String) (env : Env) (p : Param)
+    (opts argv : List String) (w : String) (r : ParsedArgs),
+    p ∈ cmd.allParams s → p.decl = .option opts (.value 1 false) → p.prompt = none →
+    Absent cmd s p argv → envString env.get s p = some w →
+    cmd.parseArgs s path argv env = .ok r →
+    ∃ e ∈ r.entries, e.param = p ∧ e.source = .environment ∧
+      ∃ x, convert env.fs p.type w = .ok x ∧ e.toValue = p.type.erase x
 
 /-- The default applies when neither the command line nor the environment
 gives a value. -/
 def DefaultWhenAbsent : Prop :=
-  ∀ (cmd : Command σ) (s : Settings) (path : String) (env : Env) (p : Param) (r : ParsedArgs),
-    p ∈ cmd.allParams s → p.isOption = true → p.prompt = none →
-    (envString env.get s p).bind (envRaw p) = none →
-    cmd.parseArgs s path [] env = .ok r →
-    ∃ e ∈ r.entries, e.param = p ∧ e.source = .default
+  ∀ (cmd : Command σ) (s : Settings) (path : String) (env : Env) (p : Param)
+    (opts argv : List String) (d : String) (r : ParsedArgs),
+    p ∈ cmd.allParams s → p.decl = .option opts (.value 1 false) → p.prompt = none →
+    Absent cmd s p argv → envString env.get s p = none → p.default = some [d] →
+    cmd.parseArgs s path argv env = .ok r →
+    ∃ e ∈ r.entries, e.param = p ∧ e.source = .default ∧
+      ∃ x, convert env.fs p.type d = .ok x ∧ e.toValue = p.type.erase x
 
 /-- A group runs the first subcommand registered under the name. -/
 def GroupDispatchFirstMatch : Prop :=

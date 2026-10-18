@@ -464,6 +464,15 @@ def fastapiCases : List Case := [
   pc "fastapi-cli tests/test_cli.py::test_dev_env_vars_and_args" "command line beats PORT"
     (let r := run fastapiCli ["dev", "single_file_app.py", "--port", "8080"] (envOf [("PORT", "8111")])
      r.val "port" == "8080" && r.src "port" == some .commandline),
+  pc "fastapi-cli tests/test_cli.py::test_dev_env_vars_and_args" "last command-line occurrence beats PORT"
+    (let r := run fastapiCli ["dev", "--port", "1", "app.py", "--port=2"] (envOf [("PORT", "8111")])
+     r.val "port" == "2" && r.src "port" == some .commandline),
+  pc "fastapi-cli tests/test_cli.py::test_dev_env_vars" "PORT used when --port is absent from a longer argv"
+    (let r := run fastapiCli ["dev", "app.py", "--host", "h", "--no-reload"] (envOf [("PORT", "8111")])
+     r.val "port" == "8111" && r.src "port" == some .environment),
+  pc "fastapi-cli tests/test_cli.py::test_dev" "default when neither is given"
+    (let r := run fastapiCli ["dev", "app.py", "--host", "h"]
+     r.val "port" == "8000" && r.src "port" == some .default),
   pc "fastapi-cli tests/test_cli.py::test_version" "--version"
     (let r := run fastapiCli ["--version"]; r.code == 0 && has r.out "FastAPI CLI version: 0.0.0"),
   pc "fastapi-cli tests/test_cli.py::test_dev_help" "dev -h lists the options"

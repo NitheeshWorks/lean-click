@@ -80,13 +80,17 @@ any axiom beyond `propext`, `Quot.sound`, `Classical.choice`.
 | A `nargs = n` value holds exactly `n` values | `nargs_arity : e.param.shape = .tuple n → e.value = .tuple xs → xs.length = n` |
 | A choice converts iff a declared choice matches, to the first match | `choice_in_set : (∃ c, convert fs (.choice cs cS) s = .ok c ∧ c.val = v) ↔ cs.find? (fun c => normChoice cS c == normChoice cS s) = some v` |
 | Over any sequence of a flag pair's spellings, the last one decides | `bool_flag_pairs : … → cmd.parseArgs s path argv env = .ok r → ∃ e ∈ r.entries, e.param = p ∧ e.source = .commandline ∧ e.toValue = .bool (decide (argv.getLast h ∈ opts))` |
-| The command line beats the environment variable | `commandline_beats_envvar : … → cmd.parseArgs s path [o, v] env = .ok r → ∃ e ∈ r.entries, e.param = p ∧ e.source = .commandline` |
-| The environment variable beats the default | `envvar_beats_default : … → cmd.parseArgs s path [] env = .ok r → ∃ e ∈ r.entries, e.param = p ∧ e.source = .environment` |
-| The default applies when neither is given | `default_when_absent : … → cmd.parseArgs s path [] env = .ok r → ∃ e ∈ r.entries, e.param = p ∧ e.source = .default` |
+| The command line beats the environment variable: an option given as `--o v` / `--o=v`, any number of times, holds the last occurrence's value | `commandline_beats_envvar : … → cmd.parseArgs s path (occTokens occs) env = .ok r → ∃ e ∈ r.entries, e.param = p ∧ e.source = .commandline ∧ ∃ x, convert env.fs p.type (occs.getLast h).2.1 = .ok x ∧ e.toValue = p.type.erase x` |
+| The environment variable beats the default: an option absent from any argv takes its variable's converted value | `envvar_beats_default : … → Absent cmd s p argv → envString env.get s p = some w → cmd.parseArgs s path argv env = .ok r → ∃ e ∈ r.entries, e.param = p ∧ e.source = .environment ∧ ∃ x, convert env.fs p.type w = .ok x ∧ e.toValue = p.type.erase x` |
+| The default applies when neither is given | `default_when_absent : … → Absent cmd s p argv → envString env.get s p = none → p.default = some [d] → cmd.parseArgs s path argv env = .ok r → ∃ e ∈ r.entries, e.param = p ∧ e.source = .default ∧ ∃ x, convert env.fs p.type d = .ok x ∧ e.toValue = p.type.erase x` |
+| `LeanClick.parse` is `parseArgs` under the root settings, so all of the above apply to it | `parse_val : parse cmd argv env prog = .ok r → cmd.parseArgs (cmd.settings _ prog) prog argv env = .ok r.val` |
 | A group runs the first subcommand with the name | `group_dispatch_first_match : cmd.parseLevel s path argv env = .ok lv → lv.sub = some (c, name, rest) → cmd.subcommands.find? (·.name == name) = some c` |
 | Exit codes are bytes; click's own are 0, 1, 2 | `exit_code_range : t.exitCode < 256`, `framework_exit_codes : t.isFramework → t.exitCode ≤ 2` |
 
-Choice values are `{c // c ∈ choices}` and range values carry their bounds
+`Absent cmd s p argv` says no token of `argv` names one of `p`'s
+spellings, as a long option or inside a short-option cluster.
+`Command.Unambiguous` (no two parameters share a spelling) is checked by
+`click_command` when the command is compiled. Choice values are `{c // c ∈ choices}` and range values carry their bounds
 proof, by type. What is tested rather than proved (text wrapping, close-match
 hints, number parsing, the `Terminal` module) is listed in
 [CONTRIBUTING.md](CONTRIBUTING.md#verification) and `docs/traceability.toml`.
