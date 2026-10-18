@@ -243,11 +243,15 @@ theorem envvar_beats_default : EnvvarBeatsDefault (σ := σ) := by
   have hopt : p.isOption = true := by simp [Param.isOption, hd]
   rw [rawOf_absent cmd s p argv sc araws hopt ha hsc, hw] at hrp
   have henv : (some w).bind (envRaw p) = some (.tokens [w]) := by simp [envRaw, hd]
-  unfold resolveParam at hrp
+  obtain ⟨e0, o, hcore, rfl⟩ := resolveParam_ok _ _ _ _ _ _ hrp
+  clear hrp
+  have hrp := hcore
+  clear hcore
+  unfold resolveCore at hrp
   simp only [pickSource_noPrompt p _ _ _ hpr, consume_environment _ _ p henv,
     wantsPrompt_none p _ _ hpr, Bool.false_and, Bool.false_eq_true, ite_false] at hrp
-  obtain ⟨_, hsrc, hval⟩ := finishParam_value _ p opts hd w _ e hrp
-  exact ⟨e, he, hep, hsrc, hval⟩
+  obtain ⟨_, hsrc, hval⟩ := finishParam_value _ p opts hd w _ e0 hrp
+  exact ⟨_, he, hep, hsrc, by simpa only [Entry.toValue_with_override] using hval⟩
 
 theorem default_when_absent : DefaultWhenAbsent (σ := σ) := by
   intro cmd s path env p opts argv d r hp hd hpr ha hw hdef hparse
@@ -256,11 +260,15 @@ theorem default_when_absent : DefaultWhenAbsent (σ := σ) := by
   rw [rawOf_absent cmd s p argv sc araws hopt ha hsc, hw] at hrp
   have hdr : defaultRaw p = some (.tokens [d]) := by
     simp [defaultRaw, hdef, Param.shape, hd]
-  unfold resolveParam at hrp
+  obtain ⟨e0, o, hcore, rfl⟩ := resolveParam_ok _ _ _ _ _ _ hrp
+  clear hrp
+  have hrp := hcore
+  clear hcore
+  unfold resolveCore at hrp
   simp only [pickSource_noPrompt p _ _ _ hpr, consume_default (none : Option String) p rfl, hdr,
     wantsPrompt_none p _ _ hpr, Bool.false_and, Bool.false_eq_true, ite_false] at hrp
-  obtain ⟨_, hsrc, hval⟩ := finishParam_value _ p opts hd d _ e hrp
-  exact ⟨e, he, hep, hsrc, hval⟩
+  obtain ⟨_, hsrc, hval⟩ := finishParam_value _ p opts hd d _ e0 hrp
+  exact ⟨_, he, hep, hsrc, by simpa only [Entry.toValue_with_override] using hval⟩
 
 /-! ## Given on the command line -/
 
@@ -376,10 +384,14 @@ theorem commandline_beats_envvar : CommandlineBeatsEnvvar (σ := σ) := by
     simp only [rawOf, hopt, ite_true, List.reverse_nil, List.nil_append]
     exact cmdRaw_values p opts hd occs hne
   rw [hraw] at hrp
-  unfold resolveParam at hrp
+  obtain ⟨e0, o, hcore, rfl⟩ := resolveParam_ok _ _ _ _ _ _ hrp
+  clear hrp
+  have hrp := hcore
+  clear hcore
+  unfold resolveCore at hrp
   simp only [pickSource_cmdline, wantsPrompt_cmdline, Bool.false_and, Bool.false_eq_true,
     ite_false] at hrp
-  obtain ⟨_, hsrc, hval⟩ := finishParam_value _ p opts hd _ _ e hrp
-  exact ⟨e, he, hep, hsrc, hval⟩
+  obtain ⟨_, hsrc, hval⟩ := finishParam_value _ p opts hd _ _ e0 hrp
+  exact ⟨_, he, hep, hsrc, by simpa only [Entry.toValue_with_override] using hval⟩
 
 end LeanClick

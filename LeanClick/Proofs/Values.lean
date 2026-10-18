@@ -67,16 +67,45 @@ theorem pickSource_noPrompt (p : Param) (ans : Option String) (cmd : Option Raw)
     (hp : p.prompt = none) : pickSource p ans cmd env = consume cmd env p := by
   simp [pickSource, wantsPrompt_none p _ _ hp]
 
+/-- A callback's replacement does not change the converted value. -/
+@[simp] theorem Entry.toValue_with_override (e : Entry) (o : Option Value) :
+    ({ e with override := o } : Entry).toValue = e.toValue := by
+  obtain ⟨p, v, s, h, o'⟩ := e
+  simp only [Entry.toValue]
+  cases v <;> rfl
+
+/-- A resolved parameter is what `resolveCore` made of it, with at most
+its callback's replacement value added. -/
+theorem resolveParam_ok (fs : String → Option FileInfo) (ans : Option String) (cmd : Option Raw)
+    (env : Option String) (p : Param) (e : Entry) (h : resolveParam fs ans cmd env p = .ok e) :
+    ∃ e0 o, resolveCore fs ans cmd env p = .ok e0 ∧ e = { e0 with override := o } := by
+  unfold resolveParam at h
+  cases hc : resolveCore fs ans cmd env p with
+  | error st => rw [hc] at h; cases h
+  | ok e0 =>
+    rw [hc] at h
+    dsimp only at h
+    unfold applyCallback at h
+    split at h
+    · simp only [Except.ok.injEq] at h; subst h; exact ⟨e0, e0.override, rfl, rfl⟩
+    · split at h
+      · cases h
+      · simp only [Except.ok.injEq] at h; subst h; exact ⟨e0, _, rfl, rfl⟩
+
 /-- The entry `resolveParam` builds answers `p`, with the source `consume`
 chose (when the option does not prompt). -/
 theorem resolveParam_source (fs : String → Option FileInfo) (ans : Option String) (cmd : Option Raw)
     (env : Option String) (p : Param) (e : Entry) (hp : p.prompt = none)
     (h : resolveParam fs ans cmd env p = .ok e) :
     e.param = p ∧ e.source = (consume cmd env p).2 := by
-  unfold resolveParam at h
+  obtain ⟨e0, o, hcore, rfl⟩ := resolveParam_ok _ _ _ _ _ _ h
+  clear h
+  have h := hcore
+  clear hcore
+  unfold resolveCore at h
   simp only [pickSource_noPrompt p ans cmd env hp, wantsPrompt_none p _ _ hp, Bool.false_and,
     Bool.false_eq_true, ite_false] at h
-  have := finishParam_ok fs p _ _ e h
+  have := finishParam_ok fs p _ _ e0 h
   exact ⟨this.1, this.2.1⟩
 
 /-! ## Shapes -/

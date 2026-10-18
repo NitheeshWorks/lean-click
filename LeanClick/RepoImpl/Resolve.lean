@@ -218,6 +218,18 @@ def implicitRaw (p : Param) : Option Raw :=
   | .option _ .count => some (.count 0)
   | _ => none
 
+/-- The value of an entry with its refinements erased. A `multiple`
+option with `nargs=1` gives a flat list, as click's tuple does. -/
+def Entry.toValue (e : Entry) : Value :=
+  let er := e.param.type.erase
+  match e.value with
+  | .none => .none
+  | .one x => er x
+  | .tuple xs => .list (xs.map er)
+  | .many xss =>
+    if e.param.shape == .many 1 then .list (xss.flatMap (fun xs => xs.map er))
+    else .list (xss.map fun xs => .list (xs.map er))
+
 /-- The raw value and its source, with a prompt answer replacing a missing
 or default value when the option prompts. -/
 def pickSource (p : Param) (answer : Option String) (cmd : Option Raw) (env : Option String) :
@@ -243,11 +255,11 @@ def finishParam (fs : String → Option FileInfo) (p : Param) (raw : Option Raw)
     else
       match p.eager, p.type, v with
       | some e, .bool, .one true => .error (.eager e)
-      | _, _, _ => .ok ⟨p, v, src, h⟩
+      | _, _, _ => .ok ⟨p, v, src, h, none⟩
 
-/-- Process one parameter: pick the source, prompt if needed, convert,
-check required, stop on an active eager parameter. -/
-def resolveParam (fs : String → Option FileInfo) (answer : Option String)
+/-- Pick the source, prompt if needed, convert, check required, stop on an
+active eager parameter (everything but the callback). -/
+def resolveCore (fs : String → Option FileInfo) (answer : Option String)
     (cmd : Option Raw) (env : Option String) (p : Param) : Except Stop Entry :=
   let rs := pickSource p answer cmd env
   if p.wantsPrompt rs.1 rs.2 && rs.2 != .prompt then
@@ -257,16 +269,22 @@ def resolveParam (fs : String → Option FileInfo) (answer : Option String)
       | _ => none))
   else finishParam fs p rs.1 rs.2
 
-/-- The value of an entry with its refinements erased. A `multiple`
-option with `nargs=1` gives a flat list, as click's tuple does. -/
-def Entry.toValue (e : Entry) : Value :=
-  let er := e.param.type.erase
-  match e.value with
-  | .none => .none
-  | .one x => er x
-  | .tuple xs => .list (xs.map er)
-  | .many xss =>
-    if e.param.shape == .many 1 then .list (xss.flatMap (fun xs => xs.map er))
-    else .list (xss.map fun xs => .list (xs.map er))
+/-- click's parameter `callback`, run right after the conversion: it may
+reject the value (`BadParameter`) or replace it. -/
+def applyCallback (p : Param) (e : Entry) : Except Stop Entry :=
+  match p.callback with
+  | none => .ok e
+  | some f =>
+    match f e.toValue with
+    | .error msg => .error (.error (p.badParameter msg))
+    | .ok v => .ok { e with override := some v }
+
+/-- Process one parameter (`handle_parse_result`): resolve and convert it,
+then run its callback. -/
+def resolveParam (fs : String → Option FileInfo) (answer : Option String)
+    (cmd : Option Raw) (env : Option String) (p : Param) : Except Stop Entry :=
+  match resolveCore fs answer cmd env p with
+  | .ok e => applyCallback p e
+  | .error st => .error st
 
 end LeanClick

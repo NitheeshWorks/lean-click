@@ -163,6 +163,8 @@ structure Entry where
   value : PValue param.type
   source : Source
   h_fits : value.Fits param.shape
+  /-- The value a parameter callback replaced the converted one with. -/
+  override : Option Value
 
 /-- The parser's result for one command: an entry per parameter in
 declaration order, and the arguments left over (for a group, the subcommand
@@ -170,8 +172,6 @@ and its arguments). -/
 structure ParsedArgs where
   entries : List Entry
   extra : List String
-  /-- Values replaced by parameter callbacks, by parameter name. -/
-  overrides : List (String × Value) := []
   deriving Inhabited
 
 /-- What a usage error knows about the command it happened in, for

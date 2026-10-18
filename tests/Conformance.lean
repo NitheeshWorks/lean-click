@@ -313,6 +313,12 @@ def optionCases : List Case := [
      let c : Cmd := command "cmd" [option ["--foo"] (default := 1) (callback := some pos)]
      has (run c ["--foo", "-1"]).out "Invalid value for '--foo': Value needs to be positive" &&
      (run c ["--foo", "42"]).val "foo" == "42"),
+  pc "tests/test_basic.py::test_evaluation_order" "callbacks run in processing order, interleaved with conversion"
+    (let rej : Value → Except String Value := fun _ => .error "no"
+     let c : Cmd := command "c" [option ["--a"] (callback := some rej), option ["--b"] (type := INT)]
+     has (run c ["--a", "1", "--b", "x"]).out "Error: Invalid value for '--a': no" &&
+     has (run c ["--b", "x", "--a", "1"]).out "Error: Invalid value for '--b': 'x' is not a valid integer." &&
+     has (run c []).out "Error: Invalid value for '--a': no"),
   pc "tests/test_basic.py::test_evaluation_order" "parameter callback can replace the value"
     (let up : Value → Except String Value := fun v => match v with | .str s => .ok (.str s.toUpper) | v => .ok v
      (run (command "cmd" [option ["--name"] (callback := some up)] : Cmd) ["--name", "ann"]).val "name" == "ANN"),

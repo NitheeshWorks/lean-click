@@ -95,24 +95,26 @@ theorem parseWith_ok_entries (cmd : Command σ) (s : Settings) (path : String) (
         · rename_i entries hpa
           split at h
           · cases h
-          · split at h
-            · cases h
-            · cases h
-              refine ⟨sc, araws, hsc, ?_⟩
-              unfold processAll at hpa
-              split at hpa
-              · cases hpa
-              · exact hpa
+          · cases h
+            refine ⟨sc, araws, hsc, ?_⟩
+            unfold processAll at hpa
+            split at hpa
+            · cases hpa
+            · exact hpa
 
 theorem resolveParam_ok_entry (fs : String → Option FileInfo) (ans : Option String)
     (cmd : Option Raw) (env : Option String) (p : Param) (e : Entry)
     (h : resolveParam fs ans cmd env p = .ok e) :
     e.param = p ∧ (e.param.required = true → e.value.isMissing = false) := by
-  unfold resolveParam at h
+  obtain ⟨e0, o, hcore, rfl⟩ := resolveParam_ok _ _ _ _ _ _ h
+  clear h
+  have h := hcore
+  clear hcore
+  unfold resolveCore at h
   dsimp only at h
   split at h
   · cases h
-  · have := finishParam_ok fs p _ _ e h
+  · have := finishParam_ok fs p _ _ e0 h
     exact ⟨this.1, this.2.2⟩
 
 theorem resolveWith_ok_entry (fs : String → Option FileInfo) (answers : List ((String × String) × String))
@@ -153,7 +155,9 @@ theorem required_missing_error (fs : String → Option FileInfo) (ans : Option S
     · simp_all [Decl.isCount]
     · rfl
   have hdef : defaultRaw p = none := by simp [defaultRaw, hd]
-  unfold resolveParam
+  suffices hcore : resolveCore fs ans none env p = .error (.error p.missingError) by
+    unfold resolveParam; rw [hcore]
+  unfold resolveCore
   simp only [pickSource_noPrompt p ans none env hpr, consume_default env p he, hdef,
     wantsPrompt_none p _ _ hpr, Bool.false_and, ite_false, Bool.false_eq_true]
   unfold finishParam
@@ -389,13 +393,17 @@ theorem resolveParam_boolFlag (fs : String → Option FileInfo) (ans : Option St
     (p : Param) (opts sec : List String) (hd : p.decl = .option opts (.boolFlag sec)) (hea : p.eager = none)
     (b : Bool) (e : Entry) (h : resolveParam fs ans (some (.bool b)) env p = .ok e) :
     e.param = p ∧ e.source = .commandline ∧ e.toValue = .bool b := by
+  obtain ⟨e0, o, hcore, rfl⟩ := resolveParam_ok _ _ _ _ _ _ h
+  clear h
+  have h := hcore
+  clear hcore
   obtain ⟨name, decl, type, required, default, envvar, help, metavar, hidden, showDefault,
     showEnvvar, showChoices, prompt, eager, exposeValue, allowFromAutoenv, callback, shellComplete, fromDefaultMap, h_bool, h_count⟩ := p
   simp only at hd hea
   subst hd hea
   have ht : type = .bool := h_bool rfl
   subst ht
-  unfold resolveParam at h
+  unfold resolveCore at h
   simp only [pickSource_cmdline, wantsPrompt_cmdline, Bool.false_and, Bool.false_eq_true,
     ite_false] at h
   unfold finishParam at h

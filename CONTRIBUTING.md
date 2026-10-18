@@ -111,8 +111,7 @@ not hide input; path permission checks assumed true; `nargs=0` arguments
 never read automatic environment variables (UP-011); parameters sharing a
 name are not arbitrated; boolean flags have no explicit `None` default; an
 option-looking unknown subcommand is re-scanned rather than re-parsed.
-Parameter callbacks run after every parameter has been converted (click
-interleaves them), and the shell completion scripts are this port's own.
+The shell completion scripts are this port's own.
 Excluded, with reasons in `docs/traceability.toml`: `click.Tuple`
 (heterogeneous composites), `token_normalize_func`, group result
 callbacks, Windows console support, custom `ParamType` classes,

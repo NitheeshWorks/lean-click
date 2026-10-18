@@ -331,17 +331,10 @@ test = ["tests/Conformance.lean::DateTime option, default formats", "tests/Confo
 [[requirement]]
 id = "params.callback"
 upstream = "tests/test_options.py::test_custom_validation"
-title = "Parameter callbacks validate or replace converted values; a rejection is BadParameter"
+title = "Parameter callbacks run right after their parameter is converted, in click's processing order; they validate or replace the value, and a rejection is BadParameter"
 status = "tested"
-realises = ["LeanClick.runCallbacks"]
+realises = ["LeanClick.applyCallback", "LeanClick.resolveParam"]
 test = ["tests/Conformance.lean::parameter callback validates", "tests/Conformance.lean::parameter callback can replace the value"]
-
-[[requirement]]
-id = "dev.callback-order"
-upstream = "tests/test_basic.py::test_evaluation_order"
-title = "Parameter callbacks run after every parameter is converted (in processing order), so a conversion error of a later parameter is reported before a callback's rejection of an earlier one; callbacks receive the value, not (ctx, param, value)"
-status = "deviation"
-realises = ["LeanClick.runCallbacks"]
 
 [[requirement]]
 id = "completion.shell"

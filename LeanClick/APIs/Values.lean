@@ -17,12 +17,9 @@ def entry? (a : ParsedArgs) (name : String) : Option Entry :=
 
 /-- The value for a parameter name (`.none` when absent or unknown). -/
 def get (a : ParsedArgs) (name : String) : Value :=
-  match a.overrides.lookup name with
-  | some v => v
-  | none =>
-    match a.entry? name with
-    | some e => e.toValue
-    | none => .none
+  match a.entry? name with
+  | some e => e.override.getD e.toValue
+  | none => .none
 
 /-- Where the value for a parameter came from. -/
 def source? (a : ParsedArgs) (name : String) : Option Source :=
