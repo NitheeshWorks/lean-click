@@ -31,6 +31,15 @@ def ofInt (n : Int) : Dec := ⟨n, 0⟩
 
 end Dec
 
+/-- `42` is a `Dec`. -/
+instance (n : Nat) : OfNat Dec n := ⟨Dec.ofInt n⟩
+
+/-- Decimal literals are exact: `42.0` is `⟨420, 1⟩` and `1.5e-3` is `⟨15, 4⟩`. -/
+instance : OfScientific Dec where
+  ofScientific m neg e := if neg then ⟨m, e⟩ else ⟨m * 10 ^ e, 0⟩
+
+instance : Neg Dec := ⟨fun d => ⟨-d.mant, d.exp⟩⟩
+
 /-- Bounds of click's `IntRange`. `none` means unbounded on that side. -/
 structure IntBounds where
   min : Option Int := none

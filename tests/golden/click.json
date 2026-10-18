@@ -1679,6 +1679,30 @@
   "stderr": ""
  },
  {
+  "process": "prompts",
+  "upstream": "tests/test_context.py::test_with_resource",
+  "argv": [
+   "cleanup",
+   "ok"
+  ],
+  "input": "",
+  "code": 0,
+  "stdout": "enter\nsub\nclosed\nexit\n",
+  "stderr": ""
+ },
+ {
+  "process": "prompts",
+  "upstream": "tests/test_context.py::test_with_resource_exception",
+  "argv": [
+   "cleanup",
+   "fail"
+  ],
+  "input": "",
+  "code": 1,
+  "stdout": "enter\nclosed\nexit\n",
+  "stderr": "Error: boom\n"
+ },
+ {
   "process": "colors",
   "upstream": "examples/colors/colors.py",
   "argv": [],
@@ -3650,6 +3674,2857 @@
   "cwd": "tests/golden/work",
   "code": 0,
   "stdout": "Usage: termui menu [OPTIONS]\n\n  Shows a simple menu.\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-readme",
+  "upstream": "README.md#block-1",
+  "argv": [
+   "hello@1",
+   "hello",
+   "--count",
+   "2",
+   "--name",
+   "Ada"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello, Ada!\nHello, Ada!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-readme",
+  "upstream": "README.md#block-1",
+  "argv": [
+   "hello@1",
+   "hello"
+  ],
+  "input": "Ada\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Your name: Hello, Ada!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-readme",
+  "upstream": "README.md#block-1",
+  "argv": [
+   "hello@1",
+   "hello",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: hello [OPTIONS]\n\n  Simple program that greets NAME for a total of COUNT times.\n\nOptions:\n  --count INTEGER  Number of greetings.\n  --name TEXT      The person to greet.\n  --help           Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-quickstart",
+  "upstream": "docs/quickstart.md#block-3",
+  "argv": [
+   "hello@1",
+   "hello.py"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello World!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-quickstart",
+  "upstream": "docs/quickstart.md#block-4",
+  "argv": [
+   "hello@1",
+   "hello.py",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: hello.py [OPTIONS]\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-quickstart",
+  "upstream": "docs/quickstart.md#block-11",
+  "argv": [
+   "hello@10",
+   "hello.py",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: hello.py [OPTIONS] NAME\n\nOptions:\n  --count INTEGER  number of greetings\n  --help           Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-2",
+  "argv": [
+   "echo@1",
+   "echo",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: echo [OPTIONS]\n\nOptions:\n  --string-to-echo TEXT\n  --help                 Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-4",
+  "argv": [
+   "echo@3",
+   "echo",
+   "--string-to-echo",
+   "Hi!"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hi!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-6",
+  "argv": [
+   "print_this@5",
+   "print-this",
+   "--text=this"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "this\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-6",
+  "argv": [
+   "print_this@5",
+   "print-this"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-7",
+  "argv": [
+   "print_this@5",
+   "print-this",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: print-this [OPTIONS]\n\nOptions:\n  --text TEXT\n  --help       Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-9",
+  "argv": [
+   "dots@8",
+   "dots",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: dots [OPTIONS]\n\nOptions:\n  --n INTEGER\n  --help       Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-11",
+  "argv": [
+   "findme@10",
+   "findme",
+   "--pos",
+   "2.0",
+   "3.0"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "2.0 / 3.0\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-13",
+  "argv": [
+   "putitem@12",
+   "putitem",
+   "--item",
+   "peter",
+   "1338"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "name=peter id=1338\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-16",
+  "argv": [
+   "commit@15",
+   "commit",
+   "-m",
+   "foo",
+   "-m",
+   "bar",
+   "-m",
+   "here"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "('foo', 'bar', 'here')\nfoo\nbar\nhere\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-18",
+  "argv": [
+   "cli@17",
+   "cli",
+   "-a",
+   "-b",
+   "-c"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "a=True b=True c=True\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-18",
+  "argv": [
+   "cli@17",
+   "cli",
+   "-abc"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "a=True b=True c=True\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-20",
+  "argv": [
+   "cli@19",
+   "cli",
+   "-v",
+   "-n",
+   "5"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "v=True n=5\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-20",
+  "argv": [
+   "cli@19",
+   "cli",
+   "-vn",
+   "5"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "v=True n=5\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-20",
+  "argv": [
+   "cli@19",
+   "cli",
+   "-vn5"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "v=True n=5\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-22",
+  "argv": [
+   "log@21",
+   "log"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Verbosity: 0\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-22",
+  "argv": [
+   "log@21",
+   "log",
+   "-vvv"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Verbosity: 3\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-24",
+  "argv": [
+   "info@23",
+   "info"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "linux\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-24",
+  "argv": [
+   "info@23",
+   "info",
+   "--shout"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "LINUX!!!!111\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-26",
+  "argv": [
+   "info@25",
+   "info"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "linux\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-26",
+  "argv": [
+   "info@25",
+   "info",
+   "--shout"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "LINUX!!!!111\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-26",
+  "argv": [
+   "info@25",
+   "info",
+   "--no-shout"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "linux\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-29",
+  "argv": [
+   "info@28",
+   "info",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: info [OPTIONS]\n\nOptions:\n  --shout / -N, --no-shout\n  --help                    Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-31",
+  "argv": [
+   "info@30",
+   "info",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: info [OPTIONS]\n\nOptions:\n  --upper\n  --lower\n  --help   Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-31",
+  "argv": [
+   "info@30",
+   "info",
+   "--upper"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "LINUX\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-31",
+  "argv": [
+   "info@30",
+   "info",
+   "--lower"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "linux\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-31",
+  "argv": [
+   "info@30",
+   "info"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "LINUX\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-37",
+  "argv": [
+   "greet@36",
+   "greet"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "USERNAME": "john"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello john!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-39",
+  "argv": [
+   "greet@38",
+   "greet"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "ALT_USERNAME": "Bill",
+   "USERNAME": "john"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello Bill!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-41",
+  "argv": [
+   "perform@40",
+   "perform"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "PATHS": "./foo/bar:./test"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "./foo/bar\n./test\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-43",
+  "argv": [
+   "chmod@42",
+   "chmod",
+   "+w"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "writable=True\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-43",
+  "argv": [
+   "chmod@42",
+   "chmod",
+   "-w"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "writable=False\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-45",
+  "argv": [
+   "hello@44",
+   "hello"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello, Default!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-45",
+  "argv": [
+   "hello@44",
+   "hello",
+   "--name",
+   "Value"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello, Value!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-options",
+  "upstream": "docs/options.md#block-45",
+  "argv": [
+   "hello@44",
+   "hello",
+   "--name"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello, Flag!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-advanced",
+  "upstream": "docs/advanced.md#block-2",
+  "argv": [
+   "hello@1",
+   "hello"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello World!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-advanced",
+  "upstream": "docs/advanced.md#block-2",
+  "argv": [
+   "hello@1",
+   "hello",
+   "--version"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Version 1.0\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-advanced",
+  "upstream": "docs/advanced.md#block-4",
+  "argv": [
+   "roll@3",
+   "roll",
+   "--rolls=42"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: roll [OPTIONS]\nTry 'roll --help' for help.\n\nError: Invalid value for '--rolls': format must be 'NdM'\n"
+ },
+ {
+  "process": "docs-advanced",
+  "upstream": "docs/advanced.md#block-4",
+  "argv": [
+   "roll@3",
+   "roll",
+   "--rolls=2d12"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Rolling a 12-sided dice 2 time(s)\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-advanced",
+  "upstream": "docs/advanced.md#block-4",
+  "argv": [
+   "roll@3",
+   "roll"
+  ],
+  "input": "42\n2d12\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Rolls [1d6]: Error: format must be 'NdM'\nRolls [1d6]: Rolling a 12-sided dice 2 time(s)\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-advanced",
+  "upstream": "docs/advanced.md#block-10",
+  "argv": [
+   "cli@9",
+   "cli",
+   "dist"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Count: 1\nCount: 42\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-advanced",
+  "upstream": "docs/advanced.md#block-12",
+  "argv": [
+   "cli@11",
+   "cli",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS] [TIMEIT_ARGS]...\n\n  A fake wrapper around Python's timeit.\n\nOptions:\n  -v, --verbose  Enables verbose mode\n  --help         Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-advanced",
+  "upstream": "docs/advanced.md#block-12",
+  "argv": [
+   "cli@11",
+   "cli",
+   "-n",
+   "100",
+   "a = 1; b = 2; a * b"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "python -mtimeit -n 100 a = 1; b = 2; a * b\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-advanced",
+  "upstream": "docs/advanced.md#block-12",
+  "argv": [
+   "cli@11",
+   "cli",
+   "-v",
+   "a = 1; b = 2; a * b"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Invoking: echo python -mtimeit a = 1; b = 2; a * b\npython -mtimeit a = 1; b = 2; a * b\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-arguments",
+  "upstream": "docs/arguments.md#block-2",
+  "argv": [
+   "touch@1",
+   "touch",
+   "foo.txt"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "foo.txt\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-arguments",
+  "upstream": "docs/arguments.md#block-4",
+  "argv": [
+   "copy@3",
+   "copy",
+   "foo.txt",
+   "usr/david/foo.txt",
+   "usr/mitsuko/foo.txt"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Copy foo.txt to folder usr/david/foo.txt\nCopy foo.txt to folder usr/mitsuko/foo.txt\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-arguments",
+  "upstream": "docs/arguments.md#block-6",
+  "argv": [
+   "touch@5",
+   "touch",
+   "--",
+   "-foo.txt",
+   "bar.txt"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "-foo.txt\nbar.txt\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-arguments",
+  "upstream": "docs/arguments.md#block-8",
+  "argv": [
+   "touch@7",
+   "touch",
+   "-foo.txt",
+   "bar.txt"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "-foo.txt\nbar.txt\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-arguments",
+  "upstream": "docs/arguments.md#block-10",
+  "argv": [
+   "echo@9",
+   "echo"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "SRC": "hello.txt"
+  },
+  "files": {
+   "hello.txt": "Hello World!"
+  },
+  "code": 0,
+  "stdout": "Hello World!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-arguments",
+  "upstream": "docs/arguments.md#block-12",
+  "argv": [
+   "echo@11",
+   "echo"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "SRC_2": "hello.txt"
+  },
+  "files": {
+   "hello.txt": "Hello World from second variable!"
+  },
+  "code": 0,
+  "stdout": "Hello World from second variable!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-2",
+  "argv": [
+   "hello@1",
+   "hello",
+   "--count",
+   "2"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello!\nHello!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-4",
+  "argv": [
+   "hello@3",
+   "say-hello",
+   "--count",
+   "2"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello!\nHello!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-6",
+  "argv": [
+   "hello@5",
+   "say-hello",
+   "--count",
+   "2"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello!\nHello!\n",
+  "stderr": "DeprecationWarning: The command 'say-hello' is deprecated.\n"
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-8",
+  "argv": [
+   "greeting@7",
+   "greeting"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: greeting [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  say-hello\n"
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-9",
+  "argv": [
+   "greeting@7",
+   "greeting",
+   "say-hello"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Starting greeting ...\nHello!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-9",
+  "argv": [
+   "greeting@7",
+   "greeting",
+   "say-hello",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Starting greeting ...\nUsage: greeting say-hello [OPTIONS]\n\nOptions:\n  --count INTEGER\n  --help           Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-11",
+  "argv": [
+   "greeting@10",
+   "greet-someone",
+   "say-hello"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Starting greeting ...\nHello!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-13",
+  "argv": [
+   "cli@12",
+   "tool"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "I was invoked without subcommand\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-13",
+  "argv": [
+   "cli@12",
+   "tool",
+   "sync"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "I am about to invoke sync\nThe subcommand\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-15",
+  "argv": [
+   "greeting@14",
+   "greeting",
+   "hello",
+   "--count",
+   "2"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello!\nHello!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-15",
+  "argv": [
+   "greeting@14",
+   "greeting",
+   "goodbye",
+   "--count",
+   "2"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Goodbye!\nGoodbye!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-15",
+  "argv": [
+   "greeting@14",
+   "greeting"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: greeting [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  goodbye\n  hello\n"
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-17",
+  "argv": [
+   "cli@16",
+   "cli",
+   "session",
+   "initdb"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Starting session\nInitialized the database\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-19",
+  "argv": [
+   "cli@18",
+   "cli",
+   "initdb"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Initialized the database\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-19",
+  "argv": [
+   "cli@18",
+   "cli",
+   "dropdb"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Dropped the database\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-21",
+  "argv": [
+   "greet@20+{\"auto_envvar_prefix\": \"GREETER\"}",
+   "greet"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "GREETER_USERNAME": "john"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello john!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-23",
+  "argv": [
+   "cli@22+{\"auto_envvar_prefix\": \"GREETER\"}",
+   "cli",
+   "greet"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "GREETER_GREET_USERNAME": "John",
+   "GREETER_DEBUG": "false"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Debug mode is off\nHello John!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-28",
+  "argv": [
+   "cli@27",
+   "cli",
+   "8080"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Port came from COMMANDLINE\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-28",
+  "argv": [
+   "cli@27",
+   "cli"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "PORT": "8080"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Port came from ENVIRONMENT\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands-and-groups",
+  "upstream": "docs/commands-and-groups.md#block-28",
+  "argv": [
+   "cli@27",
+   "cli"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Port came from DEFAULT\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands",
+  "upstream": "docs/commands.md#block-2",
+  "argv": [
+   "cli@1",
+   "tool.py"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: tool.py [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --debug / --no-debug\n  --help                Show this message and exit.\n\nCommands:\n  sync\n"
+ },
+ {
+  "process": "docs-commands",
+  "upstream": "docs/commands.md#block-2",
+  "argv": [
+   "cli@1",
+   "tool.py",
+   "--debug",
+   "sync"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Debug mode is on\nSyncing\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands",
+  "upstream": "docs/commands.md#block-6",
+  "argv": [
+   "cli@5",
+   "my-app",
+   "validate",
+   "build"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "validate\nbuild\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands",
+  "upstream": "docs/commands.md#block-8",
+  "argv": [
+   "cli@7",
+   "process",
+   "Click",
+   "show",
+   "lower",
+   "show"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Click\nclick\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands",
+  "upstream": "docs/commands.md#block-12",
+  "argv": [
+   "cli@11+{\"default_map\": {\"runserver\": {\"port\": 5000}}}",
+   "cli",
+   "runserver"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Serving on http://127.0.0.1:5000/\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands",
+  "upstream": "docs/commands.md#block-16",
+  "argv": [
+   "cli@15",
+   "cli",
+   "runserver"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Serving on http://127.0.0.1:5000/\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands",
+  "upstream": "docs/commands.md#block-9",
+  "argv": [
+   "cli@9",
+   "cli",
+   "-",
+   "upper",
+   "strip"
+  ],
+  "input": " Hello \nWorld\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "HELLO\nWORLD\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands",
+  "upstream": "docs/commands.md#block-9",
+  "argv": [
+   "cli@9",
+   "cli",
+   "-",
+   "lower"
+  ],
+  "input": "Hello\nWorld\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "hello\nworld\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands",
+  "upstream": "docs/commands.md#block-9",
+  "argv": [
+   "cli@9",
+   "cli",
+   "-"
+  ],
+  "input": "as is\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "as is\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-commands",
+  "upstream": "docs/commands.md#block-9",
+  "argv": [
+   "cli@9",
+   "cli",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS] FIN [COMMAND1] [ARGS]... [COMMAND2 [ARGS]...]...\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  lower\n  strip\n  upper\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-documentation",
+  "upstream": "docs/documentation.md#block-2",
+  "argv": [
+   "hello@1",
+   "hello",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: hello [OPTIONS] NAME\n\n  This script prints hello and a name one or more times.\n\nPositional arguments:\n  NAME  The name to print.\n\nOptions:\n  --count INTEGER  number of greetings\n  --help           Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-documentation",
+  "upstream": "docs/documentation.md#block-4",
+  "argv": [
+   "cli@3",
+   "cli",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS] COMMAND [ARGS]...\n\n  A simple command line tool.\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  init  init the repo\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-documentation",
+  "upstream": "docs/documentation.md#block-6",
+  "argv": [
+   "cli@5",
+   "cli",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS] COMMAND [ARGS]...\n\n  Example Click app with subcommands, options, and positional arguments.\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  greet  Greet NAME one or more times.\n\n  Examples:\n\n    python hello.py greet Alice --count 2\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-documentation",
+  "upstream": "docs/documentation.md#block-8",
+  "argv": [
+   "init@7",
+   "init",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: init [OPTIONS]\n\n  Initializes the repository.\n\nOptions:\n  --help  Show this message and exit.\n\n  See https://example.com for more details\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-documentation",
+  "upstream": "docs/documentation.md#block-10",
+  "argv": [
+   "touch@9",
+   "touch",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: touch [OPTIONS] FILENAME\n\n  Print FILENAME.\n\nPositional arguments:\n  FILENAME  The file to print.\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-documentation",
+  "upstream": "docs/documentation.md#block-12",
+  "argv": [
+   "touch@11",
+   "touch",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: touch [OPTIONS] FILENAME\n\n  Print FILENAME.\n\n  FILENAME is the name of the file to check.\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-documentation",
+  "upstream": "docs/documentation.md#block-14",
+  "argv": [
+   "dots@13",
+   "dots",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: dots [OPTIONS]\n\nOptions:\n  --n INTEGER  number of dots\n  --help       Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-documentation",
+  "upstream": "docs/documentation.md#block-16",
+  "argv": [
+   "dots@15",
+   "dots",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: dots [OPTIONS]\n\nOptions:\n  --n INTEGER  [default: 1]\n  --gr         Greet the world.\n  --br         Add a thematic break  [default: True]\n  --help       Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-documentation",
+  "upstream": "docs/documentation.md#block-18",
+  "argv": [
+   "greet@17",
+   "greet",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: greet [OPTIONS]\n\nOptions:\n  --username TEXT  [env var: USERNAME]\n  --help           Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-documentation",
+  "upstream": "docs/documentation.md#block-20",
+  "argv": [
+   "cli@19",
+   "cli",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\n  This is a very long paragraph and as you can see wrapped very early in the\n  source text but will be rewrapped to the terminal width in the final output.\n\n  This is a paragraph that is compacted.\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-documentation",
+  "upstream": "docs/documentation.md#block-22",
+  "argv": [
+   "cli@21",
+   "cli",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\n  First paragraph.\n\n  This is\n  a paragraph\n  without rewrapping.\n\n  And this is a paragraph that will be rewrapped again.\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-documentation",
+  "upstream": "docs/documentation.md#block-24",
+  "argv": [
+   "cli@23",
+   "cli",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\n  First paragraph.\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-documentation",
+  "upstream": "docs/documentation.md#block-26",
+  "argv": [
+   "hello@25",
+   "hello",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: hello [[options]] <name>\n\n  This script prints 'hello <name>' a total of <count> times.\n\nOptions:\n  --count <int>  number of greetings\n  --help         Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-documentation",
+  "upstream": "docs/documentation.md#block-28",
+  "argv": [
+   "cli@27",
+   "cli",
+   "-h"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS]\n\nOptions:\n  -h, --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-exceptions",
+  "upstream": "docs/exceptions.md#block-5",
+  "argv": [
+   "printer_group@4",
+   "printer_group",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: printer_group [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  printer\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-exceptions",
+  "upstream": "docs/exceptions.md#block-6",
+  "argv": [
+   "printer_group@4",
+   "printer_group"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: printer_group [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  printer\n"
+ },
+ {
+  "process": "docs-exceptions",
+  "upstream": "docs/exceptions.md#block-8",
+  "argv": [
+   "printer_group@7",
+   "printer_group"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: printer_group [OPTIONS] COMMAND [ARGS]...\nTry 'printer_group --help' for help.\n\nError: Missing command.\n"
+ },
+ {
+  "process": "docs-faqs",
+  "upstream": "docs/faqs.md#block-5",
+  "argv": [
+   "convert@5",
+   "convert"
+  ],
+  "input": "missing.txt\nhello.txt\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {
+   "hello.txt": "Hello World!"
+  },
+  "code": 0,
+  "stdout": "File to convert: Error: Path 'missing.txt' does not exist.\nFile to convert: Converting hello.txt\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-faqs",
+  "upstream": "docs/faqs.md#block-7",
+  "argv": [
+   "convert@7",
+   "convert",
+   "hello.txt"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {
+   "hello.txt": "Hello World!"
+  },
+  "code": 0,
+  "stdout": "Converting hello.txt\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-faqs",
+  "upstream": "docs/faqs.md#block-7",
+  "argv": [
+   "convert@7",
+   "convert",
+   "missing.txt"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: convert [OPTIONS] SOURCE\nTry 'convert --help' for help.\n\nError: Invalid value for 'SOURCE': Path 'missing.txt' does not exist.\n"
+ },
+ {
+  "process": "docs-faqs",
+  "upstream": "docs/faqs.md#block-8",
+  "argv": [
+   "copy@8",
+   "copy",
+   "--src",
+   "a",
+   "--dest",
+   "b"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Copy from a to b\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-faqs",
+  "upstream": "docs/faqs.md#block-8",
+  "argv": [
+   "copy@8",
+   "copy",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: copy [OPTIONS]\n\nOptions:\n  --src PATH\n  --dest TEXT\n  --help       Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-handling-files",
+  "upstream": "docs/handling-files.md#block-2",
+  "argv": [
+   "inout@1",
+   "inout",
+   "-",
+   "hello.txt"
+  ],
+  "input": "hello\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "process": "docs-handling-files",
+  "upstream": "docs/handling-files.md#block-2",
+  "argv": [
+   "inout@1",
+   "inout",
+   "hello.txt",
+   "-"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: inout [OPTIONS] INPUT OUTPUT\nTry 'inout --help' for help.\n\nError: Invalid value for 'INPUT': 'hello.txt': No such file or directory\n"
+ },
+ {
+  "process": "docs-handling-files",
+  "upstream": "docs/handling-files.md#block-4",
+  "argv": [
+   "touch@3",
+   "touch",
+   "hello.txt"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {
+   "hello.txt": "Hello World!\n"
+  },
+  "code": 0,
+  "stdout": "hello.txt\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-handling-files",
+  "upstream": "docs/handling-files.md#block-4",
+  "argv": [
+   "touch@3",
+   "touch",
+   "missing.txt"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {
+   "hello.txt": "Hello World!\n"
+  },
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: touch [OPTIONS] FILENAME\nTry 'touch --help' for help.\n\nError: Invalid value for 'FILENAME': Path 'missing.txt' does not exist.\n"
+ },
+ {
+  "process": "docs-index",
+  "upstream": "docs/index.md#block-2",
+  "argv": [
+   "hello@1",
+   "hello.py",
+   "--count=3"
+  ],
+  "input": "John\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Your name: Hello John!\nHello John!\nHello John!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-index",
+  "upstream": "docs/index.md#block-3",
+  "argv": [
+   "hello@1",
+   "hello.py",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: hello.py [OPTIONS]\n\n  Simple program that greets NAME for a total of COUNT times.\n\nOptions:\n  --count INTEGER  Number of greetings.\n  --name TEXT      The person to greet.\n  --help           Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-option-decorators",
+  "upstream": "docs/option-decorators.md#block-5",
+  "argv": [
+   "dropdb@4",
+   "dropdb"
+  ],
+  "input": "n\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 1,
+  "stdout": "Are you sure you want to drop the db? [y/N]: ",
+  "stderr": "Aborted!\n"
+ },
+ {
+  "process": "docs-option-decorators",
+  "upstream": "docs/option-decorators.md#block-5",
+  "argv": [
+   "dropdb@4",
+   "dropdb",
+   "--yes"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Dropped all tables!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-parameters",
+  "upstream": "docs/parameters.md#block-2",
+  "argv": [
+   "bake@1",
+   "bake",
+   "--gluten-free",
+   "brioche"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "brioche: no gluten\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-parameters",
+  "upstream": "docs/parameters.md#block-3",
+  "argv": [
+   "bake@1",
+   "bake",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: bake [OPTIONS] RECIPE\n\n  Bake the RECIPE, with or without gluten.\n\nOptions:\n  -g, --gluten-free / --no-gluten-free\n  --help                          Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-parameter-types",
+  "upstream": "docs/parameter-types.md#block-2",
+  "argv": [
+   "digest@1",
+   "digest",
+   "--hash-type=MD5"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "HashType.MD5\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-parameter-types",
+  "upstream": "docs/parameter-types.md#block-2",
+  "argv": [
+   "digest@1",
+   "digest",
+   "--hash-type=md5"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "HashType.MD5\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-parameter-types",
+  "upstream": "docs/parameter-types.md#block-2",
+  "argv": [
+   "digest@1",
+   "digest",
+   "--hash-type=foo"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: digest [OPTIONS]\nTry 'digest --help' for help.\n\nError: Invalid value for '--hash-type': 'foo' is not one of 'md5', 'sha1'.\n"
+ },
+ {
+  "process": "docs-parameter-types",
+  "upstream": "docs/parameter-types.md#block-2",
+  "argv": [
+   "digest@1",
+   "digest",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: digest [OPTIONS]\n\nOptions:\n  --hash-type [md5|sha1]\n  --help                  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-parameter-types",
+  "upstream": "docs/parameter-types.md#block-4",
+  "argv": [
+   "repeat@3",
+   "repeat",
+   "--count=100",
+   "--digit=5"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "55555555555555555555\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-parameter-types",
+  "upstream": "docs/parameter-types.md#block-4",
+  "argv": [
+   "repeat@3",
+   "repeat",
+   "--count=6",
+   "--digit=12"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 2,
+  "stdout": "",
+  "stderr": "Usage: repeat [OPTIONS]\nTry 'repeat --help' for help.\n\nError: Invalid value for '--digit': 12 is not in the range 0<=x<=9.\n"
+ },
+ {
+  "process": "docs-parameter-types",
+  "upstream": "docs/parameter-types.md#block-6",
+  "argv": [
+   "show@5",
+   "show"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "count is int, tag is str\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-prompts",
+  "upstream": "docs/prompts.md#block-2",
+  "argv": [
+   "hello@1",
+   "hello",
+   "--name=John"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello John!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-prompts",
+  "upstream": "docs/prompts.md#block-2",
+  "argv": [
+   "hello@1",
+   "hello"
+  ],
+  "input": "John\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Name: Hello John!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-prompts",
+  "upstream": "docs/prompts.md#block-4",
+  "argv": [
+   "hello@3",
+   "hello"
+  ],
+  "input": "John\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Your name please: Hello John!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-prompts",
+  "upstream": "docs/prompts.md#block-8",
+  "argv": [
+   "hello@7",
+   "hello"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello Default!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-prompts",
+  "upstream": "docs/prompts.md#block-8",
+  "argv": [
+   "hello@7",
+   "hello",
+   "--name",
+   "Value"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello Value!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-prompts",
+  "upstream": "docs/prompts.md#block-8",
+  "argv": [
+   "hello@7",
+   "hello",
+   "--name"
+  ],
+  "input": "Prompt",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Name [Default]: Hello Prompt!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-prompts",
+  "upstream": "docs/prompts.md#block-13",
+  "argv": [
+   "hello@12",
+   "hello",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: hello [OPTIONS]\n\nOptions:\n  --username TEXT  [default: (current user)]\n  --help           Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-testing",
+  "upstream": "docs/testing.md#block-2",
+  "argv": [
+   "hello@1",
+   "hello",
+   "Peter"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello Peter!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-testing",
+  "upstream": "docs/testing.md#block-4",
+  "argv": [
+   "cli@3",
+   "cli",
+   "--debug",
+   "sync"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Debug mode is on\nSyncing\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-testing",
+  "upstream": "docs/testing.md#block-6",
+  "argv": [
+   "cli@5",
+   "cli",
+   "sync"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Syncing\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-testing",
+  "upstream": "docs/testing.md#block-8",
+  "argv": [
+   "cat@7",
+   "cat",
+   "hello.txt"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {
+   "hello.txt": "Hello World!"
+  },
+  "code": 0,
+  "stdout": "Hello World!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-testing",
+  "upstream": "docs/testing.md#block-10",
+  "argv": [
+   "prompt@9",
+   "prompt"
+  ],
+  "input": "wau wau\n",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Foo: foo=wau wau\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-complex",
+  "upstream": "docs/complex.md#block-1",
+  "argv": [
+   "cli@1",
+   "cli",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --repo-home TEXT\n  --debug / --no-debug\n  --help                Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-complex",
+  "upstream": "docs/complex.md#block-5",
+  "argv": [
+   "cli@5",
+   "cli",
+   "--repo-home",
+   "/srv/r",
+   "clone",
+   "src"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "process": "docs-complex",
+  "upstream": "docs/complex.md#block-5",
+  "argv": [
+   "cli@5",
+   "cli",
+   "clone",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: cli clone [OPTIONS] SRC [DEST]\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-complex",
+  "upstream": "docs/complex.md#block-7",
+  "argv": [
+   "cp@7",
+   "cp"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "True\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-complex",
+  "upstream": "docs/complex.md#block-9",
+  "argv": [
+   "cli@9",
+   "cli",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {
+   "lazy_group.py": "# in lazy_group.py\nimport importlib\nimport click\n\nclass LazyGroup(click.Group):\n    def __init__(self, *args, lazy_subcommands=None, **kwargs):\n        super().__init__(*args, **kwargs)\n        # lazy_subcommands is a map of the form:\n        #\n        #   {command-name} -> {module-name}.{command-object-name}\n        #\n        self.lazy_subcommands = lazy_subcommands or {}\n\n    def list_commands(self, ctx):\n        base = super().list_commands(ctx)\n        lazy = sorted(self.lazy_subcommands.keys())\n        return base + lazy\n\n    def get_command(self, ctx, cmd_name):\n        if cmd_name in self.lazy_subcommands:\n            return self._lazy_load(cmd_name)\n        return super().get_command(ctx, cmd_name)\n\n    def _lazy_load(self, cmd_name):\n        # lazily loading a command, first get the module name and attribute name\n        import_path = self.lazy_subcommands[cmd_name]\n        modname, cmd_object_name = import_path.rsplit(\".\", 1)\n        # do the import\n        mod = importlib.import_module(modname)\n        # get the Command object from that module\n        cmd_object = getattr(mod, cmd_object_name)\n        # check the result to make debugging easier\n        if not isinstance(cmd_object, click.Command):\n            raise ValueError(\n                f\"Lazy loading of {import_path} failed by returning \"\n                \"a non-command object\"\n            )\n        return cmd_object\n",
+   "foo.py": "# in foo.py\nimport click\n\n@click.group(help=\"foo command for lazy example\")\ndef cli():\n    pass\n",
+   "bar.py": "# in bar.py\nimport click\nfrom lazy_group import LazyGroup\n\n@click.group(\n    cls=LazyGroup,\n    lazy_subcommands={\"baz\": \"baz.cli\"},\n    help=\"bar command for lazy example\",\n)\ndef cli():\n    pass\n",
+   "baz.py": "# in baz.py\nimport click\n\n@click.group(help=\"baz command for lazy example\")\ndef cli():\n    pass\n"
+  },
+  "code": 0,
+  "stdout": "Usage: cli [OPTIONS] COMMAND [ARGS]...\n\n  main CLI command for lazy example\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  bar  bar command for lazy example\n  foo  foo command for lazy example\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-complex",
+  "upstream": "docs/complex.md#block-9",
+  "argv": [
+   "cli@9",
+   "cli",
+   "foo",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {
+   "lazy_group.py": "# in lazy_group.py\nimport importlib\nimport click\n\nclass LazyGroup(click.Group):\n    def __init__(self, *args, lazy_subcommands=None, **kwargs):\n        super().__init__(*args, **kwargs)\n        # lazy_subcommands is a map of the form:\n        #\n        #   {command-name} -> {module-name}.{command-object-name}\n        #\n        self.lazy_subcommands = lazy_subcommands or {}\n\n    def list_commands(self, ctx):\n        base = super().list_commands(ctx)\n        lazy = sorted(self.lazy_subcommands.keys())\n        return base + lazy\n\n    def get_command(self, ctx, cmd_name):\n        if cmd_name in self.lazy_subcommands:\n            return self._lazy_load(cmd_name)\n        return super().get_command(ctx, cmd_name)\n\n    def _lazy_load(self, cmd_name):\n        # lazily loading a command, first get the module name and attribute name\n        import_path = self.lazy_subcommands[cmd_name]\n        modname, cmd_object_name = import_path.rsplit(\".\", 1)\n        # do the import\n        mod = importlib.import_module(modname)\n        # get the Command object from that module\n        cmd_object = getattr(mod, cmd_object_name)\n        # check the result to make debugging easier\n        if not isinstance(cmd_object, click.Command):\n            raise ValueError(\n                f\"Lazy loading of {import_path} failed by returning \"\n                \"a non-command object\"\n            )\n        return cmd_object\n",
+   "foo.py": "# in foo.py\nimport click\n\n@click.group(help=\"foo command for lazy example\")\ndef cli():\n    pass\n",
+   "bar.py": "# in bar.py\nimport click\nfrom lazy_group import LazyGroup\n\n@click.group(\n    cls=LazyGroup,\n    lazy_subcommands={\"baz\": \"baz.cli\"},\n    help=\"bar command for lazy example\",\n)\ndef cli():\n    pass\n",
+   "baz.py": "# in baz.py\nimport click\n\n@click.group(help=\"baz command for lazy example\")\ndef cli():\n    pass\n"
+  },
+  "code": 0,
+  "stdout": "Usage: cli foo [OPTIONS] COMMAND [ARGS]...\n\n  foo command for lazy example\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-complex",
+  "upstream": "docs/complex.md#block-9",
+  "argv": [
+   "cli@9",
+   "cli",
+   "bar",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {
+   "lazy_group.py": "# in lazy_group.py\nimport importlib\nimport click\n\nclass LazyGroup(click.Group):\n    def __init__(self, *args, lazy_subcommands=None, **kwargs):\n        super().__init__(*args, **kwargs)\n        # lazy_subcommands is a map of the form:\n        #\n        #   {command-name} -> {module-name}.{command-object-name}\n        #\n        self.lazy_subcommands = lazy_subcommands or {}\n\n    def list_commands(self, ctx):\n        base = super().list_commands(ctx)\n        lazy = sorted(self.lazy_subcommands.keys())\n        return base + lazy\n\n    def get_command(self, ctx, cmd_name):\n        if cmd_name in self.lazy_subcommands:\n            return self._lazy_load(cmd_name)\n        return super().get_command(ctx, cmd_name)\n\n    def _lazy_load(self, cmd_name):\n        # lazily loading a command, first get the module name and attribute name\n        import_path = self.lazy_subcommands[cmd_name]\n        modname, cmd_object_name = import_path.rsplit(\".\", 1)\n        # do the import\n        mod = importlib.import_module(modname)\n        # get the Command object from that module\n        cmd_object = getattr(mod, cmd_object_name)\n        # check the result to make debugging easier\n        if not isinstance(cmd_object, click.Command):\n            raise ValueError(\n                f\"Lazy loading of {import_path} failed by returning \"\n                \"a non-command object\"\n            )\n        return cmd_object\n",
+   "foo.py": "# in foo.py\nimport click\n\n@click.group(help=\"foo command for lazy example\")\ndef cli():\n    pass\n",
+   "bar.py": "# in bar.py\nimport click\nfrom lazy_group import LazyGroup\n\n@click.group(\n    cls=LazyGroup,\n    lazy_subcommands={\"baz\": \"baz.cli\"},\n    help=\"bar command for lazy example\",\n)\ndef cli():\n    pass\n",
+   "baz.py": "# in baz.py\nimport click\n\n@click.group(help=\"baz command for lazy example\")\ndef cli():\n    pass\n"
+  },
+  "code": 0,
+  "stdout": "Usage: cli bar [OPTIONS] COMMAND [ARGS]...\n\n  bar command for lazy example\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  baz  baz command for lazy example\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-complex",
+  "upstream": "docs/complex.md#block-9",
+  "argv": [
+   "cli@9",
+   "cli",
+   "bar",
+   "baz",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {
+   "lazy_group.py": "# in lazy_group.py\nimport importlib\nimport click\n\nclass LazyGroup(click.Group):\n    def __init__(self, *args, lazy_subcommands=None, **kwargs):\n        super().__init__(*args, **kwargs)\n        # lazy_subcommands is a map of the form:\n        #\n        #   {command-name} -> {module-name}.{command-object-name}\n        #\n        self.lazy_subcommands = lazy_subcommands or {}\n\n    def list_commands(self, ctx):\n        base = super().list_commands(ctx)\n        lazy = sorted(self.lazy_subcommands.keys())\n        return base + lazy\n\n    def get_command(self, ctx, cmd_name):\n        if cmd_name in self.lazy_subcommands:\n            return self._lazy_load(cmd_name)\n        return super().get_command(ctx, cmd_name)\n\n    def _lazy_load(self, cmd_name):\n        # lazily loading a command, first get the module name and attribute name\n        import_path = self.lazy_subcommands[cmd_name]\n        modname, cmd_object_name = import_path.rsplit(\".\", 1)\n        # do the import\n        mod = importlib.import_module(modname)\n        # get the Command object from that module\n        cmd_object = getattr(mod, cmd_object_name)\n        # check the result to make debugging easier\n        if not isinstance(cmd_object, click.Command):\n            raise ValueError(\n                f\"Lazy loading of {import_path} failed by returning \"\n                \"a non-command object\"\n            )\n        return cmd_object\n",
+   "foo.py": "# in foo.py\nimport click\n\n@click.group(help=\"foo command for lazy example\")\ndef cli():\n    pass\n",
+   "bar.py": "# in bar.py\nimport click\nfrom lazy_group import LazyGroup\n\n@click.group(\n    cls=LazyGroup,\n    lazy_subcommands={\"baz\": \"baz.cli\"},\n    help=\"bar command for lazy example\",\n)\ndef cli():\n    pass\n",
+   "baz.py": "# in baz.py\nimport click\n\n@click.group(help=\"baz command for lazy example\")\ndef cli():\n    pass\n"
+  },
+  "code": 0,
+  "stdout": "Usage: cli bar baz [OPTIONS] COMMAND [ARGS]...\n\n  baz command for lazy example\n\nOptions:\n  --help  Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-complex",
+  "upstream": "docs/complex.md#block-13",
+  "argv": [
+   "foo@13",
+   "foo",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: foo [OPTIONS]\n\nOptions:\n  -n INTEGER\n  -w TEXT\n  --help      Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-shell-completion",
+  "upstream": "docs/shell-completion.md#block-1",
+  "argv": [
+   "cli@1",
+   "cli",
+   "--ev",
+   "PATH"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "/usr/bin:/bin\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-shell-completion",
+  "upstream": "docs/shell-completion.md#block-1",
+  "argv": [
+   "cli@1",
+   "cli"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "_CLI_COMPLETE": "bash_complete",
+   "COMP_WORDS": "cli --ev PA",
+   "COMP_CWORD": "2"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "plain,PATH\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-shell-completion",
+  "upstream": "docs/shell-completion.md#block-2",
+  "argv": [
+   "cli@2",
+   "cli",
+   "PATH"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Name: PATH\nValue: /usr/bin:/bin\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-shell-completion",
+  "upstream": "docs/shell-completion.md#block-2",
+  "argv": [
+   "cli@2",
+   "cli"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "_CLI_COMPLETE": "zsh_complete",
+   "COMP_WORDS": "cli COL",
+   "COMP_CWORD": "1"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "plain\nCOLUMNS\n_\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-shell-completion",
+  "upstream": "docs/shell-completion.md#block-3",
+  "argv": [
+   "cli@2",
+   "cli"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin",
+   "_CLI_COMPLETE": "mysh_source"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "_cli_completion {\n    response=$(_CLI_COMPLETE=mysh_complete cli)\n    # parse response and set completions somehow\n}\ncall-on-complete cli _cli_completion\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-standalone-apps",
+  "upstream": "docs/standalone-apps.md#block-1",
+  "argv": [
+   "main@1",
+   "main"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello, World!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-standalone-apps",
+  "upstream": "docs/standalone-apps.md#block-1",
+  "argv": [
+   "main@1",
+   "main",
+   "Ada",
+   "--count",
+   "2"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Hello, Ada!\nHello, Ada!\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-standalone-apps",
+  "upstream": "docs/standalone-apps.md#block-1",
+  "argv": [
+   "main@1",
+   "main",
+   "--help"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Usage: main [OPTIONS] [NAME]\n\n  Greet someone by NAME (default: World).\n\nOptions:\n  --count INTEGER  Number of times to greet.\n  --help           Show this message and exit.\n",
+  "stderr": ""
+ },
+ {
+  "process": "docs-utils",
+  "upstream": "docs/utils.md#block-6",
+  "argv": [
+   "less@6",
+   "less"
+  ],
+  "input": "",
+  "env": {
+   "COLUMNS": "80",
+   "PATH": "/usr/bin:/bin"
+  },
+  "files": {},
+  "code": 0,
+  "stdout": "Line 0\nLine 1\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6\nLine 7\nLine 8\nLine 9\nLine 10\nLine 11\nLine 12\nLine 13\nLine 14\nLine 15\nLine 16\nLine 17\nLine 18\nLine 19\nLine 20\nLine 21\nLine 22\nLine 23\nLine 24\nLine 25\nLine 26\nLine 27\nLine 28\nLine 29\nLine 30\nLine 31\nLine 32\nLine 33\nLine 34\nLine 35\nLine 36\nLine 37\nLine 38\nLine 39\nLine 40\nLine 41\nLine 42\nLine 43\nLine 44\nLine 45\nLine 46\nLine 47\nLine 48\nLine 49\nLine 50\nLine 51\nLine 52\nLine 53\nLine 54\nLine 55\nLine 56\nLine 57\nLine 58\nLine 59\nLine 60\nLine 61\nLine 62\nLine 63\nLine 64\nLine 65\nLine 66\nLine 67\nLine 68\nLine 69\nLine 70\nLine 71\nLine 72\nLine 73\nLine 74\nLine 75\nLine 76\nLine 77\nLine 78\nLine 79\nLine 80\nLine 81\nLine 82\nLine 83\nLine 84\nLine 85\nLine 86\nLine 87\nLine 88\nLine 89\nLine 90\nLine 91\nLine 92\nLine 93\nLine 94\nLine 95\nLine 96\nLine 97\nLine 98\nLine 99\nLine 100\nLine 101\nLine 102\nLine 103\nLine 104\nLine 105\nLine 106\nLine 107\nLine 108\nLine 109\nLine 110\nLine 111\nLine 112\nLine 113\nLine 114\nLine 115\nLine 116\nLine 117\nLine 118\nLine 119\nLine 120\nLine 121\nLine 122\nLine 123\nLine 124\nLine 125\nLine 126\nLine 127\nLine 128\nLine 129\nLine 130\nLine 131\nLine 132\nLine 133\nLine 134\nLine 135\nLine 136\nLine 137\nLine 138\nLine 139\nLine 140\nLine 141\nLine 142\nLine 143\nLine 144\nLine 145\nLine 146\nLine 147\nLine 148\nLine 149\nLine 150\nLine 151\nLine 152\nLine 153\nLine 154\nLine 155\nLine 156\nLine 157\nLine 158\nLine 159\nLine 160\nLine 161\nLine 162\nLine 163\nLine 164\nLine 165\nLine 166\nLine 167\nLine 168\nLine 169\nLine 170\nLine 171\nLine 172\nLine 173\nLine 174\nLine 175\nLine 176\nLine 177\nLine 178\nLine 179\nLine 180\nLine 181\nLine 182\nLine 183\nLine 184\nLine 185\nLine 186\nLine 187\nLine 188\nLine 189\nLine 190\nLine 191\nLine 192\nLine 193\nLine 194\nLine 195\nLine 196\nLine 197\nLine 198\nLine 199\n",
   "stderr": ""
  }
 ]

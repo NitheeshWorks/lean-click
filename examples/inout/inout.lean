@@ -26,9 +26,9 @@ click_command cli
     (input : List FileArg) [type := some (File "rb")]
     (output : FileArg) [type := some (File "wb")]
     : ClickM Unit := do
-  let output ← openFile output
+  let output ← output.stream
   for f in input do
-    let f ← openFile f
+    let f ← f.stream
     repeat
       let chunk ← f.read 1024
       if chunk.isEmpty then break

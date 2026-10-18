@@ -153,7 +153,7 @@ id = "terminal.prompts"
 upstream = "tests/test_options.py::test_callback_validates_prompt"
 title = "Prompts as a process: the answer goes through the type and the callbacks (value_proc) and is asked again on BadParameter; a typed prompt re-asks after an invalid answer; confirmation prompts with their own text re-ask on mismatch and while empty; boolean flags confirm with [y/N] and re-ask on invalid input; hidden answers are masked in error messages; Aborted! on end of input"
 status = "tested"
-realises = ["LeanClick.Terminal.promptParam", "LeanClick.Terminal.confirm", "LeanClick.Terminal.parseInteractive", "LeanClick.Terminal.maskHiddenInput", "LeanClick.PromptText.spec"]
+realises = ["LeanClick.Terminal.promptParam", "LeanClick.Terminal.confirm", "LeanClick.Terminal.askYesNo", "LeanClick.Terminal.prompt", "LeanClick.Terminal.parseInteractive", "LeanClick.Terminal.maskHiddenInput", "LeanClick.PromptText.spec"]
 test = ["tests/apps/Prompts.lean", "tests/apps/Hello.lean", "tests/golden/click.json"]
 
 [[requirement]]
@@ -361,13 +361,14 @@ status = "excluded"
 [[requirement]]
 id = "excluded.result-callback"
 upstream = "tests/test_chain.py::test_no_command_result_callback"
-title = "Group result callbacks (result_callback) and callbacks' return values"
-status = "excluded"
+title = "Group result callbacks (result_callback) are not a separate hook: a command's result is handed on as the context object (to the next command of a chain or a group's subcommands), and a group consumes what its chain built in a cleanup it registers with callOnClose (docs/commands.md block 9)"
+status = "deviation"
+test = ["examples/docs/commands.lean", "tests/golden/click.json"]
 
 [[requirement]]
 id = "excluded.misc"
 upstream = "tests/test_types"
-title = "Custom ParamType classes, deprecated parameters and commands, prompt_required=False optional values, lazy loading of subcommands"
+title = "Deprecated parameters (Option/Argument deprecated=...); lazy loading of subcommands by import path (a Lean program links every command, so a LazyGroup's subcommands are listed in its commands: examples/docs/complex.lean)"
 status = "excluded"
 
 [[requirement]]
@@ -515,3 +516,64 @@ title = "version_option() needs the version: click looks the installed distribut
 status = "deviation"
 realises = ["LeanClick.versionOption"]
 test = ["examples/naval/naval.lean", "examples/validation/validation.lean"]
+
+[[requirement]]
+id = "examples.docs"
+upstream = "README.md and docs/*.md (Python code blocks)"
+title = "The Python code blocks of click's README and docs pages, ported one Lean file per page (examples/docs/), each block cited as docs/<page>.md#block-<n>; every click:run block, and runs of the pages' programs where the page has none, compared with click 8.5.0 running the page's code as a process"
+status = "tested"
+test = ["examples/MANIFEST.toml", "tests/golden/docblocks.py", "tests/golden/generate.py", "tests/golden/click.json"]
+
+[[requirement]]
+id = "terminal.cleanup"
+upstream = "tests/test_context.py::test_with_resource"
+title = "ctx.call_on_close and ctx.with_resource: cleanups run when the command's context is torn down, after its subcommands and also when they fail, newest first"
+status = "tested"
+realises = ["LeanClick.Terminal.callOnClose", "LeanClick.Terminal.withResource", "LeanClick.Terminal.runAux"]
+test = ["tests/apps/Prompts.lean", "tests/golden/click.json"]
+
+[[requirement]]
+id = "terminal.standalone-mode"
+upstream = "docs/exceptions.md (standalone_mode=False)"
+title = "Command.invoke is main(standalone_mode=False): usage errors, Abort and ClickException reach the caller; ClickError.show and exitCode print and exit as main does"
+status = "implemented"
+realises = ["LeanClick.Command.invoke", "LeanClick.ClickError.show", "LeanClick.ClickError.exitCode"]
+
+[[requirement]]
+id = "completion.custom-shells"
+upstream = "docs/shell-completion.md (Adding Support for Other Shells)"
+title = "Other shells (a ShellComplete subclass registered with add_completion_class): a ShellComplete value passed to run/main in shells, with its source template over SourceVars, completion args and item format; types complete their values (ClickType.complete, a ParamType's shell_complete)"
+status = "tested"
+realises = ["LeanClick.Terminal.ShellComplete", "LeanClick.Terminal.SourceVars", "LeanClick.Terminal.shellComplete", "LeanClick.ClickType.complete"]
+test = ["examples/docs/shell_completion.lean", "tests/golden/click.json"]
+
+[[requirement]]
+id = "dev.custom-shell-template"
+upstream = "UP-050"
+title = "A custom shell's source template is a function of SourceVars (completeFunc, completeVar, progName), so the docs example's %(foo_bar)s, which click does not provide, has no counterpart; the port uses the program name"
+status = "deviation"
+test = ["examples/docs/shell_completion.lean"]
+
+[[requirement]]
+id = "types.enum-choice"
+upstream = "docs/parameter-types.md (Choice of an Enum)"
+title = "click.Choice(SomeEnum, case_sensitive=...): ClickType.enum, whose choices are the members' names and whose values are the members"
+status = "tested"
+realises = ["LeanClick.ClickType.enum"]
+test = ["examples/docs/parameter_types.lean", "tests/golden/click.json"]
+
+[[requirement]]
+id = "terminal.utils"
+upstream = "docs/utils.md"
+title = "echo of bytes, secho with every style attribute, get_pager_file and echo_via_pager of a generator's chunks (styles stripped off a terminal), edit(filename=...), open_file(filename, mode), get_app_dir on POSIX, progressbar(iterable, length=...)"
+status = "implemented"
+realises = ["LeanClick.Terminal.echoBytes", "LeanClick.Terminal.secho", "LeanClick.Terminal.withPagerFile", "LeanClick.Terminal.echoViaPager", "LeanClick.Terminal.edit", "LeanClick.Terminal.openFile", "LeanClick.FileArg.stream", "LeanClick.Terminal.getAppDir", "LeanClick.Terminal.progressbar"]
+test = ["examples/docs/utils.lean", "examples/termui/termui.lean", "tests/golden/click.json"]
+
+[[requirement]]
+id = "usage.literal-defaults"
+upstream = "examples/termui/termui.py (default=8000 on an IntRange option)"
+title = "A typed binder's default is written as the value even for a refined type (count : IntIn 1 100000 := 8000) and for decimals (42.0 : Dec); an out-of-range default is a compile error"
+status = "implemented"
+realises = ["LeanClick.IntIn", "LeanClick.ClickType.option"]
+test = ["examples/termui/termui.lean", "examples/docs/prompts.lean"]

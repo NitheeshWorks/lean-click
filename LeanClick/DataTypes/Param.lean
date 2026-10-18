@@ -33,6 +33,11 @@ inductive OptKind where
   | constFlag (const : String) (multiple : Bool := false)
   /-- Counts its occurrences (`-vvv`). -/
   | count
+  /-- Takes one value, which may be left out: then it is `fallback`
+  (click's `flag_value` on an option with `is_flag=False`), or, without a
+  fallback, the option prompts (`prompt_required=False`). A following
+  option-looking token is not taken as the value. -/
+  | optValue (fallback : Option String)
   deriving DecidableEq, Repr, Inhabited
 
 /-- A parameter is an option (with its spellings) or a positional argument. -/
@@ -64,6 +69,10 @@ inductive ShowDefault where
   | no
   | text (s : String)
   deriving DecidableEq, Repr, Inhabited
+
+/-- `show_default=True`/`False`, or a text shown in its place. -/
+instance : Coe Bool ShowDefault := ⟨fun b => if b then .yes else .no⟩
+instance : Coe String ShowDefault := ⟨.text⟩
 
 /-- Interactive prompting for an option whose value is missing. -/
 structure PromptSpec where
@@ -191,6 +200,9 @@ structure Param where
   `convert`), run on the value the parser's own type produced and before
   `callback`; `.bad msg` is the type's `self.fail(msg)`. -/
   typeCheck : Option (Value → Except CallbackError Value) := none
+  /-- A default computed when the command runs (click's callable
+  `default=`); `Terminal` evaluates it before parsing. -/
+  dynamicDefault : Option (IO (List String)) := none
   /-- click's `shell_complete=`: completions for the incomplete word. -/
   shellComplete : Option (Env → String → List CompletionItem) := none
   /-- The default came from the context's `default_map`. -/
@@ -253,6 +265,7 @@ def Param.shape (p : Param) : Shape :=
   | .option _ (.constFlag _ false) => .single
   | .option _ (.constFlag _ true) => .many 1
   | .option _ .count => .single
+  | .option _ (.optValue _) => .single
   | .argument (.exactly n) => if n = 1 ∨ p.type.isComposite then .single else .tuple n
   | .argument .star => .star
 
@@ -372,6 +385,10 @@ structure CommandSpec where
   chain : Bool := false
   /-- Group only. -/
   subcommandMetavar : Option String := none
+  /-- `deprecated=True` (or a reason): a warning on invocation and a
+  `(DEPRECATED)` label in help. -/
+  deprecated : Bool := false
+  deprecatedReason : Option String := none
 
 /-- A command or a group. `κ` is the type of its callback: the parser never
 looks at it, so the pure layers are generic in `κ`, and only

@@ -72,3 +72,27 @@ decreasing_by
     | (rename_i h; have := List.sizeOf_lt_of_mem h; simp_wf; simp at this ⊢; omega)
 
 end LeanClick
+
+/-- `ParameterSource.name`: `COMMANDLINE`, `ENVIRONMENT`, `DEFAULT_MAP`,
+`PROMPT` or `DEFAULT`. -/
+def LeanClick.Source.name : LeanClick.Source → String
+  | .commandline => "COMMANDLINE"
+  | .environment => "ENVIRONMENT"
+  | .defaultMap => "DEFAULT_MAP"
+  | .prompt => "PROMPT"
+  | .default => "DEFAULT"
+
+/-- The order of click's `ParameterSource` enum: `PROMPT`, `COMMANDLINE`,
+`ENVIRONMENT`, `DEFAULT_MAP`, `DEFAULT` (so `source < .defaultMap` means
+"set explicitly"). -/
+def LeanClick.Source.rank : LeanClick.Source → Nat
+  | .prompt => 0
+  | .commandline => 1
+  | .environment => 2
+  | .defaultMap => 3
+  | .default => 4
+
+instance : LT LeanClick.Source := ⟨fun a b => a.rank < b.rank⟩
+instance : LE LeanClick.Source := ⟨fun a b => a.rank ≤ b.rank⟩
+instance (a b : LeanClick.Source) : Decidable (a < b) := inferInstanceAs (Decidable (a.rank < b.rank))
+instance (a b : LeanClick.Source) : Decidable (a ≤ b) := inferInstanceAs (Decidable (a.rank ≤ b.rank))

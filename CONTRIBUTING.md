@@ -115,6 +115,16 @@ Listed here with the reason, and in `docs/traceability.toml` with
 runs happen in `tests/golden/work` with exactly the listed environment.
 If a port needs something the Python does not, fix the library instead.
 
+`examples/docs/<page>.lean` ports the Python code blocks of click's
+`README.md` and every docs page, one file and one program
+(`docs-<page>`) per page, each block under its number
+(`docs/<page>.md#block-<n>`, counted by `tests/golden/docblocks.py`);
+the manifest has one row per block, ported or excluded with its reason.
+`tests/golden/generate.py` runs every `click:run` block of a page, plus
+the runs in `DOC_EXTRA_RUNS` for pages without them, against click 8.5.0
+executing the page's own code. `DOC_PATCHES` fixes page code that does not
+run as written (UP-050, UP-053); the Lean port makes the same fix.
+
 ### Deviations from upstream
 
 Recorded as `status = "deviation"` rows in `docs/traceability.toml`:
@@ -128,14 +138,15 @@ option-looking unknown subcommand is re-scanned rather than re-parsed;
 `version_option()` needs its version (no installed-distribution lookup);
 parameter callbacks are pure, so side effects on `ctx.obj` move to the
 command (aliases); complex's plugins are listed statically; aliases writes
-its config as text (UP-042).
+its config as text (UP-042); a custom shell's source template is a
+function of its variables (UP-050); a group consumes what its chain built
+in a `callOnClose` cleanup instead of a `result_callback`.
 The shell completion scripts are this port's own.
 A group nested in a chained group is refused (at compile time by the
 builders, at parse time for raw constructors), where click 8.5.0's
 constructor path would run it. Excluded, with reasons in
-`docs/traceability.toml`: `token_normalize_func`, group result
-callbacks, Windows console support,
-deprecation warnings, `prompt_required=False`, lazy subcommand loading.
+`docs/traceability.toml`: `token_normalize_func`, Windows console
+support, deprecated parameters, lazy subcommand loading by import path.
 
 Implemented beyond the first slice: chained groups (`group ... (chain :=
 true)`), `default_map` (`ContextSettings.defaultMap`, source

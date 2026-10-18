@@ -33,6 +33,19 @@ def pyRepr (s : String) : String :=
     else [c]
   String.ofList (q :: cs.flatMap esc ++ [q])
 
+/-- Python's `repr` of a tuple of strings (what `click.echo` prints for a
+`multiple` or `nargs=-1` value). -/
+def pyTuple : List String → String
+  | [x] => "(" ++ pyRepr x ++ ",)"
+  | xs => "(" ++ ", ".intercalate (xs.map pyRepr) ++ ")"
+
+/-- Python's `str(b)` of a bool. -/
+def pyBool (b : Bool) : String := if b then "True" else "False"
+
+/-- Python's `sys.platform`. -/
+def sysPlatform : String :=
+  if System.Platform.isWindows then "win32" else if System.Platform.isOSX then "darwin" else "linux"
+
 /-- click's `_split_opt`: the prefix (`-`, `--`, or another doubled
 non-alphanumeric character) and the rest. -/
 def splitOptList : List Char → List Char × List Char

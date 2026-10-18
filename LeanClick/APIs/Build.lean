@@ -147,7 +147,7 @@ def command [Inhabited κ] (spec : CommandSpec) (callback : κ := default) : Com
 def group [Inhabited κ] (spec : CommandSpec) (subcommands : List (Command κ))
     (callback : κ := default)
     (_noNestedChain : spec.chain = false ∨ subcommands.all (fun c => !c.isGroup) = true := by
-      first | exact Or.inl rfl | decide | fail "It is not possible to add a group to another group that is in chain mode.") :
+      first | exact Or.inl rfl | exact Or.inr rfl | decide | fail "It is not possible to add a group to another group that is in chain mode.") :
     Command κ :=
   .mk spec true callback subcommands
 

@@ -647,15 +647,27 @@ def processCase (prog : String) (j : Lean.Json) : Case :=
     | .ok (.obj kvs) => kvs.toArray.filterMap fun (k, v) => match v with | .str s => some (k, some s) | _ => none
     | _ => #[("COLUMNS", some "80")]
   let cwd := match j.getObjVal? "cwd" with | .ok (.str d) => some d | _ => none
+  -- files the scenario's directory held when it ran (a fresh directory)
+  let files : List (String × String) := match j.getObjVal? "files" with
+    | .ok (.obj kvs) => kvs.toList.filterMap fun (k, v) => match v with | .str s => some (k, s) | _ => none
+    | _ => []
+  let fresh := (j.getObjVal? "files").toOption.isSome
   ⟨jsonStr j "upstream", s!"process {prog} {argv} (tests/golden/click.json)", do
     let root ← IO.currentDir
+    let tmp ← if fresh then do
+        let dir := root / ".lake" / "golden-run" / s!"{prog}-{(← IO.monoNanosNow)}"
+        IO.FS.createDirAll dir
+        for (name, text) in files do IO.FS.writeFile (dir / name) text
+        pure (some dir)
+      else pure none
+    let cwd := (tmp.map (·.toString)).orElse fun _ => cwd.map fun d => (root / d).toString
     let bin := root / ".lake" / "build" / "bin" / prog
     unless ← bin.pathExists do
       IO.println s!"      no program {bin} (lake build {prog})"
       return false
     let child ← IO.Process.spawn {
       cmd := (root / ".lake" / "build" / "bin" / prog).toString, args := argv.toArray,
-      cwd := cwd.map (root / ·), stdin := .piped, stdout := .piped, stderr := .piped,
+      cwd := cwd.map System.FilePath.mk, stdin := .piped, stdout := .piped, stderr := .piped,
       env, inheritEnv := (j.getObjVal? "env").toOption.isNone }
     let (stdin, child) ← child.takeStdin
     stdin.putStr input
@@ -663,6 +675,7 @@ def processCase (prog : String) (j : Lean.Json) : Case :=
     let outTask ← IO.asTask child.stdout.readToEnd
     let errTask ← IO.asTask child.stderr.readToEnd
     let rc ← child.wait
+    if let some d := tmp then IO.FS.removeDirAll d
     -- the repository root is written as <ROOT> in the recording
     let fix := fun (t : String) => t.replace root.toString "<ROOT>"
     let out := fix (← IO.ofExcept outTask.get)

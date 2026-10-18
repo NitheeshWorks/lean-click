@@ -28,9 +28,9 @@ def sleep (seconds : Float) : IO Unit := IO.sleep (seconds * 1000).toUInt32
 
 /-- Demonstrates the progress bar. -/
 click_command progress
-    (count : IntIn 1 100000 := ⟨8000, by decide⟩) "The number of items to process."
+    (count : IntIn 1 100000 := 8000) "The number of items to process."
     : IO Unit := do
-  let items := List.range count.val.toNat
+  let items := List.range count.toNat
   let processSlowly := fun (_ : Nat) => do sleep (0.002 * (← random))
   let filter := fun (items : List Nat) => items.filterM fun _ => do return (← random) > 0.3
   withProgressbar (progressbar items (label := "Processing accounts") (fillChar := style "#" (fg := "green")))
@@ -41,12 +41,12 @@ click_command progress
       (fillChar := style "#" (fg := "yellow")) (itemShowFunc := some showItem))
     fun bar => do
       for item in bar do processSlowly item
-  withProgressbar (progressbarLength count.val.toNat (label := "Counting")
+  withProgressbar (progressbarLength count.toNat (label := "Counting")
       (barTemplate := "%(label)s  %(bar)s | %(info)s") (fillChar := style "█" (fg := "cyan"))
       (emptyChar := " "))
     fun bar => do
       for item in bar do processSlowly item
-  withProgressbar (progressbarLength count.val.toNat (width := 0) (showPercent := some false)
+  withProgressbar (progressbarLength count.toNat (width := 0) (showPercent := some false)
       (showEta := false) (fillChar := style "#" (fg := "magenta")))
     fun bar => do
       for item in bar do processSlowly item

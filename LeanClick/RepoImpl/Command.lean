@@ -126,6 +126,7 @@ def Param.primaryOpts (p : Param) : List String :=
 def Param.isFlagLike (p : Param) : Bool :=
   match p.decl with
   | .option _ (.value _ _) => false
+  | .option _ (.optValue _) => false
   | .option _ _ => true
   | .argument _ => false
 

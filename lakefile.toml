@@ -1,6 +1,6 @@
 name = "LeanClick"
 version = "0.1.0"
-defaultTargets = ["LeanClick", "props", "conformance", "example", "hello", "colors", "naval", "inout", "validation", "repo", "complex", "completion", "termui", "aliases", "prompts"]
+defaultTargets = ["LeanClick", "props", "conformance", "example", "hello", "colors", "naval", "inout", "validation", "repo", "complex", "completion", "termui", "aliases", "prompts", "docs-quickstart", "docs-options", "docs-advanced", "docs-arguments", "docs-commands-and-groups", "docs-commands", "docs-documentation", "docs-exceptions", "docs-entry-points", "docs-extending-click", "docs-faqs", "docs-handling-files", "docs-index", "docs-option-decorators", "docs-parameters", "docs-parameter-types", "docs-prompts", "docs-readme", "docs-testing", "docs-complex", "docs-shell-completion", "docs-standalone-apps", "docs-utils"]
 
 # The verified library. Everything under LeanClick/ except Transport.lean is a
 # total function and the proof surface; see CONTRIBUTING.md.
@@ -54,11 +54,11 @@ root = "examples.repo.repo"
 name = "complex"
 root = "examples.complex.complex.cli"
 
-# complex's plugin modules, imported by its program
+# modules the example programs import: complex's plugins, the docs runner
 [[lean_lib]]
-name = "ComplexPlugins"
+name = "ExampleModules"
 roots = ["examples.complex.complex.environment", "examples.complex.complex.commands.cmd_init",
-         "examples.complex.complex.commands.cmd_status"]
+         "examples.complex.complex.commands.cmd_status", "examples.docs.runner"]
 
 [[lean_exe]]
 name = "completion"
@@ -76,3 +76,96 @@ root = "examples.aliases.aliases"
 [[lean_exe]]
 name = "prompts"
 root = "tests.apps.Prompts"
+
+# click's docs pages, one program per page (examples/docs/)
+[[lean_exe]]
+name = "docs-quickstart"
+root = "examples.docs.quickstart"
+
+[[lean_exe]]
+name = "docs-options"
+root = "examples.docs.options"
+
+[[lean_exe]]
+name = "docs-advanced"
+root = "examples.docs.advanced"
+
+[[lean_exe]]
+name = "docs-arguments"
+root = "examples.docs.arguments"
+
+[[lean_exe]]
+name = "docs-commands-and-groups"
+root = "examples.docs.commands_and_groups"
+
+[[lean_exe]]
+name = "docs-commands"
+root = "examples.docs.commands"
+
+[[lean_exe]]
+name = "docs-documentation"
+root = "examples.docs.documentation"
+
+[[lean_exe]]
+name = "docs-exceptions"
+root = "examples.docs.exceptions"
+
+[[lean_exe]]
+name = "docs-entry-points"
+root = "examples.docs.entry_points"
+
+[[lean_exe]]
+name = "docs-extending-click"
+root = "examples.docs.extending_click"
+
+[[lean_exe]]
+name = "docs-faqs"
+root = "examples.docs.faqs"
+
+[[lean_exe]]
+name = "docs-handling-files"
+root = "examples.docs.handling_files"
+
+[[lean_exe]]
+name = "docs-index"
+root = "examples.docs.index"
+
+[[lean_exe]]
+name = "docs-option-decorators"
+root = "examples.docs.option_decorators"
+
+[[lean_exe]]
+name = "docs-parameters"
+root = "examples.docs.parameters"
+
+[[lean_exe]]
+name = "docs-parameter-types"
+root = "examples.docs.parameter_types"
+
+[[lean_exe]]
+name = "docs-prompts"
+root = "examples.docs.prompts"
+
+[[lean_exe]]
+name = "docs-readme"
+root = "examples.docs.readme"
+
+[[lean_exe]]
+name = "docs-testing"
+root = "examples.docs.testing"
+
+[[lean_exe]]
+name = "docs-complex"
+root = "examples.docs.complex"
+
+[[lean_exe]]
+name = "docs-shell-completion"
+root = "examples.docs.shell_completion"
+
+[[lean_exe]]
+name = "docs-standalone-apps"
+root = "examples.docs.standalone_apps"
+
+[[lean_exe]]
+name = "docs-utils"
+root = "examples.docs.utils"

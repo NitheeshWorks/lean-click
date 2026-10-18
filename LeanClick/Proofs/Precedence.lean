@@ -71,6 +71,14 @@ theorem matchShort_events (cfg : ScanCfg) (pfx : Char) :
           rcases hev with hev | rfl
           · exact Or.inl hev
           · exact Or.inr here
+      | takesOr c =>
+        rw [ha] at h
+        dsimp only at h
+        cases h
+        simp only [List.mem_append, List.mem_singleton] at hev
+        rcases hev with hev | rfl
+        · exact Or.inl hev
+        · exact Or.inr here
       | flag b | const c | count =>
         rw [ha] at h
         dsimp only at h
@@ -103,6 +111,10 @@ theorem processOpt_events (cfg : ScanCfg) (tok : String) (rest : List String)
       split at h
       · cases h
       · cases h; simp at hev; subst hev; exact ⟨sp, hsp, rfl, hm⟩
+    | takesOr c =>
+      rw [ha] at h
+      dsimp only at h
+      cases h; simp at hev; subst hev; exact ⟨sp, hsp, rfl, hm⟩
     | flag b | const c | count =>
       rw [ha] at h
       dsimp only at h
@@ -389,8 +401,8 @@ theorem commandline_beats_envvar : CommandlineBeatsEnvvar (σ := σ) := by
   have hrp := hcore
   clear hcore
   unfold resolveCore at hrp
-  simp only [pickSource_cmdline, wantsPrompt_cmdline, Bool.false_and, Bool.false_eq_true,
-    ite_false] at hrp
+  simp only [pickSource_cmdline _ _ (.tokens [(occs.getLast hne).2.1]) _ (by simp),
+    wantsPrompt_cmdline _ (.tokens [(occs.getLast hne).2.1]) (by simp), Bool.false_and, Bool.false_eq_true, ite_false] at hrp
   obtain ⟨_, hsrc, hval⟩ := finishParam_value _ p opts hd _ _ e0 hrp
   exact ⟨_, he, hep, hsrc, by simpa only [Entry.toValue_with_override] using hval⟩
 

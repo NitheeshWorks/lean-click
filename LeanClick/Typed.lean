@@ -49,6 +49,9 @@ class ClickType (α : Type) where
   options' metavar, and its `convert` of the value `type` produced, failing
   with the type's message (`self.fail`). -/
   custom : Option (String × (Value → Except String Value)) := none
+  /-- The type's `shell_complete`: completions for an incomplete value, used
+  by parameters of this type that give no `shellComplete` of their own. -/
+  complete : Option (Env → String → List CompletionItem) := none
   /-- `Bool`: a flag. -/
   isFlag : Bool := false
   /-- `List α`: repeatable. -/
@@ -56,11 +59,24 @@ class ClickType (α : Type) where
   /-- `Option α`: may be absent. -/
   optional : Bool := false
 
+/-- `click.Choice(SomeEnum, case_sensitive=...)`: a type whose values are
+named members. The choices are the names; a parsed name gives its member.
+`instance : ClickType HashType := .enum [.MD5, .SHA1] HashType.name`. -/
+@[instance_reducible] def ClickType.enum {α : Type} (members : List α) (name : α → String) (caseSensitive : Bool := true) :
+    ClickType α where
+  type := .choice (members.map name) caseSensitive
+  ofValue | .str s => members.find? (name · == s) | _ => none
+  toTokens a := [name a]
+  toValue a := .str (name a)
+
 /-- Mark a binder with a default as a positional argument. -/
 abbrev Argument (α : Type) := α
 
 /-- An integer in `[lo, hi]`, carrying its bounds proof: `IntRange(lo, hi)`. -/
 abbrev IntIn (lo hi : Int) := {n : Int // lo ≤ n ∧ n ≤ hi}
+
+/-- The value as a natural number (`range(count)`). -/
+def IntIn.toNat {lo hi : Int} (n : IntIn lo hi) : Nat := n.val.toNat
 
 instance : ToString Dec := ⟨showDec⟩
 
@@ -147,6 +163,7 @@ instance {α : Type} [ClickType α] : ClickType (Option α) where
   toTokens | some a => ClickType.toTokens a | none => []
   toValue | some a => ClickType.toValue a | none => .none
   custom := ClickType.custom α
+  complete := ClickType.complete α
   isFlag := ClickType.isFlag α
   optional := true
 
@@ -156,6 +173,7 @@ instance {α : Type} [ClickType α] : ClickType (List α) where
   toTokens as := as.flatMap ClickType.toTokens
   toValue as := .list (as.map ClickType.toValue)
   custom := ClickType.custom α
+  complete := ClickType.complete α
   multiple := true
 
 namespace ClickType
@@ -183,9 +201,14 @@ def spellingsOf (isFlag : Bool) (name : String) (decls : List String) : List Str
   if decls.isEmpty then
     if isFlag then ([spelling name], ["--no-" ++ dashed name]) else ([spelling name], [])
   else if isFlag then
+    -- each side trimmed, an empty side left out (`" /-N"` declares only a
+    -- secondary spelling), as `Option._parse_decls` does
+    let trim := fun (s : String) =>
+      String.ofList ((s.toList.dropWhile Char.isWhitespace).reverse.dropWhile Char.isWhitespace).reverse
     decls.foldr (fun d acc =>
       let (a, b) := flagSplit d
-      (a :: acc.1, if b.isEmpty then acc.2 else b :: acc.2)) ([], [])
+      let (a, b) := (trim a, trim b)
+      (if a.isEmpty then acc.1 else a :: acc.1, if b.isEmpty then acc.2 else b :: acc.2)) ([], [])
   else (decls, [])
 
 /-- A custom type's conversion as a parameter's `typeCheck`: absent values
@@ -211,11 +234,13 @@ def typedCallback (α : Type) [ClickType α] (f : α → Except CallbackError α
 /-- The parameter a typed option binder declares. -/
 def option (α : Type) [ClickType α] (name : String) (default : Option α := none) (help : String := "")
     (envvar : List String := []) (decls : List String := []) (hidden : Bool := false)
-    (showDefault : Bool := false) (prompt : PromptText := .off) (confirmationPrompt : PromptText := .off)
+    (showDefault : ShowDefault := .auto) (prompt : PromptText := .off) (confirmationPrompt : PromptText := .off)
     (hideInput : Bool := false) (metavar : Option String := none)
     (type : Option ParamType := none) (callback : Option (α → Except CallbackError α) := none)
     (exposeValue : Bool := true) (password : Bool := false)
-    (shellComplete : Option (Env → String → List CompletionItem) := none) :
+    (shellComplete : Option (Env → String → List CompletionItem) := none)
+    (count : Bool := false) (flagValue : Option α := none) (showEnvvar : Bool := false)
+    (promptRequired : Bool := true) (dynamicDefault : Option (IO α) := none) :
     Param :=
   -- `click.password_option()`: prompted for, hidden, asked twice
   let (prompt, confirmationPrompt, hideInput) :=
@@ -224,18 +249,29 @@ def option (α : Type) [ClickType α] (name : String) (default : Option α := no
   let (prim, sec) := spellingsOf (ClickType.isFlag α) name decls
   let base : Param :=
     if ClickType.isFlag α then { name, decl := .option prim (.boolFlag sec), type := .bool }
+    else if count then { name, decl := .option prim .count, type := .intRange countBounds }
+    else if !promptRequired && prompt != .off then
+      -- `prompt_required=False`: prompts only when given without a value
+      { name, decl := .option prim (.optValue none), type := type.getD (ClickType.type α) }
+    else if let some fv := flagValue then
+      -- `is_flag=False, flag_value=...`: the value may be left out
+      { name, decl := .option prim (.optValue (ClickType.toTokens fv).head?),
+        type := type.getD (ClickType.type α) }
     else
       let t := type.getD (ClickType.type α)
       { name, decl := .option prim (.value (if t.isComposite then t.arity else 1) (ClickType.multiple α)), type := t }
   { base with
     default := (default.map ClickType.toTokens).filter (!·.isEmpty),
     help := if help.isEmpty then none else some help,
-    required := default.isNone && prompt == .off && !ClickType.optional α && !ClickType.multiple α &&
-      !ClickType.isFlag α,
-    envvar, hidden, showDefault := if showDefault then .yes else .auto,
+    required := default.isNone && dynamicDefault.isNone && prompt == .off && !ClickType.optional α &&
+      !ClickType.multiple α && !ClickType.isFlag α && !count,
+    dynamicDefault := dynamicDefault.map fun act => do return ClickType.toTokens (← act),
+    envvar, hidden, showDefault, showEnvvar,
     metavar := metavar.orElse fun _ => (ClickType.custom α).map fun (n, _) => upper n,
-    prompt := PromptText.spec name prompt confirmationPrompt hideInput, exposeValue,
-    typeCheck := customCheck α, callback := callback.map (typedCallback α), shellComplete }
+    prompt := (PromptText.spec name prompt confirmationPrompt hideInput).map ({ · with required := promptRequired }),
+    exposeValue,
+    typeCheck := customCheck α, callback := callback.map (typedCallback α),
+    shellComplete := shellComplete.orElse fun _ => ClickType.complete α }
 
 /-- The parameter a typed argument binder declares. -/
 def argument (α : Type) [ClickType α] (name : String) (default : Option α := none) (help : String := "")
@@ -250,7 +286,8 @@ def argument (α : Type) [ClickType α] (name : String) (default : Option α := 
     default := (default.map ClickType.toTokens).filter (!·.isEmpty),
     help := if help.isEmpty then none else some help,
     required := default.isNone && !ClickType.optional α && !ClickType.multiple α,
-    envvar, metavar, typeCheck := customCheck α, callback := callback.map (typedCallback α), shellComplete }
+    envvar, metavar, typeCheck := customCheck α, callback := callback.map (typedCallback α),
+    shellComplete := shellComplete.orElse fun _ => ClickType.complete α }
 
 /-- The typed value of a parameter. A value the parser produced always
 converts (the declared type is `ClickType.type α`); the error is the
@@ -261,6 +298,27 @@ def fetch (α : Type) [ClickType α] (a : ParsedArgs) (name : String) : ClickM �
   | none => throw (.failure s!"parameter {name} does not have the declared type")
 
 end ClickType
+
+/-- `click.prompt(text, default=..., type=...)`: ask until the answer
+converts to the type (re-asking with `Error: ...`), and return it. A
+missing answer (end of input) is an `Abort`. -/
+def Terminal.prompt (α : Type) [ClickType α] (text : String) (default : Option α := none)
+    (type : Option ParamType := none) (hideInput : Bool := false)
+    (confirmationPrompt : PromptText := .off) (showDefault : Bool := true) : Terminal.ClickM α := do
+  let t := type.getD (ClickType.type α)
+  let p : Param := {
+    name := "value", decl := .option [] (.value 1 false), type := t,
+    prompt := PromptText.spec "value" (.text text) confirmationPrompt hideInput,
+    showDefault := if showDefault then .auto else .no }
+  let dflt := default.map fun d => " ".intercalate (ClickType.toTokens d)
+  let some answer ← Terminal.promptParam (fun _ => none) p dflt | throw .abort
+  let resolve := match t with | .path sp => sp.resolvePath | _ => false
+  let info ← Terminal.statPath answer resolve
+  match convert (fun q => if q == answer then info else none) t answer with
+  | .error msg => throw (.failure msg)
+  | .ok c => match ClickType.ofValue (ParamType.erase t c) with
+    | some x => return x
+    | none => throw (.failure "the answer does not have the declared type")
 
 /-- Options that share a name and store constants (click's feature
 switches, `flag_value`): one flag per `(spelling, value, help)`; the last
@@ -320,7 +378,9 @@ def expandClick (isGroup : Bool) (doc? : Option (TSyntax `Lean.Parser.Command.do
   -- Python docstring's `\b` escape is
   let help : String := match doc? with
     | some d => "\n".intercalate (((d.getDocString).trimAscii.copy.splitOn "\n").map fun l =>
-        if l.trimAscii.copy == "\\b" then "\x08" else l)
+        if l.trimAscii.copy == "\\b" then "\x08"
+        -- `\f` ends the help text, a Python docstring's form feed
+        else if l.trimAscii.copy == "\\f" then "\x0c" else l)
     | none => ""
   let ckw ← clickKwPairs ckws
   let cliName : Term := match ckw.find? (·.1.getId == `name) with
@@ -377,8 +437,10 @@ def expandClick (isGroup : Bool) (doc? : Option (TSyntax `Lean.Parser.Command.do
           let (isArg, τ) ← match t with
             | `(Argument $τ:term) => pure (true, τ)
             | _ => pure (d?.isNone && !optionKw, t)
+          -- a default of a refined type (`IntIn 1 100000 := 8000`) is its
+          -- value; the refinement is checked when the command compiles
           let dflt : Term ← match d? with
-            | some d => `((some ($d : $τ)))
+            | some d => `((some (by first | exact ($d : $τ) | exact ⟨$d, by decide⟩)))
             | none => `(none)
           let builder : Ident := mkIdent (if isArg then ``LeanClick.ClickType.argument else ``LeanClick.ClickType.option)
           let call ← `($builder $τ $pname (default := $dflt) (help := $helpLit))
@@ -393,12 +455,17 @@ def expandClick (isGroup : Bool) (doc? : Option (TSyntax `Lean.Parser.Command.do
   let returnsUnit' := match ret with
     | `(IO Unit) | `(Terminal.ClickM Unit) | `(LeanClick.Terminal.ClickM Unit) | `(ClickM Unit) => true
     | _ => false
-  let generic := objTy.isNone && (!isGroup || returnsUnit')
+  let generic := objTy.isNone && returnsUnit'
   -- not hygienic, so callers can write `cmd (σ := τ)`
   let σId := mkIdent `σ
+  -- otherwise the object type is the one the body returns: a group whose
+  -- body builds the object (`ctx.obj = Repo(...)`) is an `App Repo`
+  let retObj : Term ← match ret with
+    | `(IO $τ) | `(Terminal.ClickM $τ) | `(LeanClick.Terminal.ClickM $τ) | `(ClickM $τ) => pure τ
+    | _ => `(Unit)
   let σ : Term ← match objTy with
     | some τ => pure τ
-    | none => if generic then pure σId else `(Unit)
+    | none => if generic then pure σId else pure retObj
   let helpLit : Term := helpKw?.getD (Syntax.mkStrLit help)
   -- a binder is a declared parameter even when the body ignores it (its
   -- name is the option's spelling, so it cannot be renamed to `_x`)
@@ -408,7 +475,9 @@ def expandClick (isGroup : Bool) (doc? : Option (TSyntax `Lean.Parser.Command.do
   let returnsUnit := match ret with
     | `(IO Unit) | `(Terminal.ClickM Unit) | `(LeanClick.Terminal.ClickM Unit) | `(ClickM Unit) => true
     | _ => false
-  let mut cb ← if !isGroup || returnsUnit then `(do let _ ← ($mainName $args* : $ret); pure $(ctxId).obj)
+  -- a body returning the object type hands its result on (to the next
+  -- command of a chain, or a group's subcommands)
+  let mut cb ← if returnsUnit then `(do let _ ← ($mainName $args* : $ret); pure $(ctxId).obj)
     else `(do let r ← ($mainName $args* : $ret); pure r)
   for (x, fetch) in fetches.reverse do
     cb ← `($fetch >>= fun $x:ident => $cb)

@@ -75,6 +75,8 @@ def DefaultArg.impliedType : DefaultArg → ParamType
 /-! ## click's type constants and constructors -/
 
 def STRING : ParamType := .string
+/-- `click.UNPROCESSED`: the token as given (a string). -/
+def UNPROCESSED : ParamType := .string
 def INT : ParamType := .int
 def FLOAT : ParamType := .float
 def BOOL : ParamType := .bool
@@ -115,9 +117,9 @@ def FloatRange (min : Option Dec := none) (max : Option Dec := none) (minOpen : 
 /-- `click.option(*param_decls, ...)`. -/
 def option (decls : List String) (type : Option ParamType := none) (default : DefaultArg := .unset)
     (help : String := "") (required : Bool := false) (envvar : List String := [])
-    (multiple : Bool := false) (nargs : Nat := 1) (isFlag : Bool := false)
+    (multiple : Bool := false) (nargs : Nat := 1) (isFlag : Option Bool := none)
     (flagValue : Option String := none) (count : Bool := false) (prompt : PromptText := .off)
-    (confirmationPrompt : PromptText := .off) (hideInput : Bool := false) (exposeValue : Bool := true) (showDefault : Bool := false)
+    (confirmationPrompt : PromptText := .off) (hideInput : Bool := false) (exposeValue : Bool := true) (showDefault : ShowDefault := .auto)
     (showEnvvar : Bool := false) (showChoices : Bool := true) (hidden : Bool := false)
     (metavar : Option String := none) (isEager : Bool := false)
     (callback : Option (Value → Except CallbackError Value) := none)
@@ -129,9 +131,14 @@ def option (decls : List String) (type : Option ParamType := none) (default : De
       | some (.intRange b) => Param.count decls b
       | _ => Param.count decls
     else match flagValue with
-      | some c => Param.flagValue decls c (type.getD .string) multiple
+      | some c =>
+        -- `is_flag=False` with a `flag_value`: a value that may be left out
+        if isFlag == some false then
+          let (name, opts, _) := parseDecls decls
+          { name, decl := .option opts (.optValue (some c)), type := type.getD .string }
+        else Param.flagValue decls c (type.getD .string) multiple
       | none =>
-        if isFlag || !sec.isEmpty || (type.isNone && match default with | .bool _ => true | _ => false)
+        if isFlag == some true || !sec.isEmpty || (type.isNone && match default with | .bool _ => true | _ => false)
         then Param.flag decls
         else
           let t := type.getD default.impliedType
@@ -143,7 +150,7 @@ def option (decls : List String) (type : Option ParamType := none) (default : De
   { base with
     default := dtoks, help := if help.isEmpty then none else some help, required,
     envvar, hidden, metavar, showEnvvar, showChoices,
-    showDefault := if showDefault then .yes else .auto,
+    showDefault,
     prompt := PromptText.spec base.name prompt confirmationPrompt hideInput, exposeValue,
     eager := if isEager then some .help else none, callback, shellComplete }
 
@@ -190,9 +197,11 @@ bottom), then the callback. -/
 def command {κ : Type} [Inhabited κ] (name : String) (params : List Param := [])
     (callback : κ := default) (help : String := "") (shortHelp : Option String := none) (epilog : Option String := none)
     (contextSettings : ContextSettings := {}) (addHelpOption : Bool := true)
-    (noArgsIsHelp : Bool := false) (hidden : Bool := false) : Command κ :=
+    (noArgsIsHelp : Bool := false) (hidden : Bool := false) (optionsMetavar : String := "[OPTIONS]")
+    (deprecated : Bool := false) (deprecatedReason : Option String := none) : Command κ :=
   .mk { name, params, help := if help.isEmpty then none else some help, shortHelp, epilog,
-        addHelpOption, hidden, noArgsIsHelp := some noArgsIsHelp,
+        addHelpOption, hidden, noArgsIsHelp := some noArgsIsHelp, optionsMetavar,
+        deprecated := deprecated || deprecatedReason.isSome, deprecatedReason,
         helpOptionNames := contextSettings.helpOptionNames,
         autoEnvvarPrefix := contextSettings.autoEnvvarPrefix,
         showDefault := contextSettings.showDefault,
@@ -207,14 +216,16 @@ def group {κ : Type} [Inhabited κ] (name : String) (params : List Param := [])
     (commands : List (Command κ) := []) (callback : κ := default) (help : String := "") (shortHelp : Option String := none)
     (epilog : Option String := none) (contextSettings : ContextSettings := {})
     (invokeWithoutCommand : Bool := false) (noArgsIsHelp : Option Bool := none)
-    (hidden : Bool := false) (chain : Bool := false)
+    (hidden : Bool := false) (chain : Bool := false) (optionsMetavar : String := "[OPTIONS]")
+    (deprecated : Bool := false) (deprecatedReason : Option String := none)
     (_noNestedChain : chain = false ∨ commands.all (fun c => !c.isGroup) = true := by
-      first | exact Or.inl rfl | decide | fail "It is not possible to add a group to another group that is in chain mode.")
+      first | exact Or.inl rfl | exact Or.inr rfl | decide | fail "It is not possible to add a group to another group that is in chain mode.")
     (_chainArgsRequired : chain = false ∨ params.all (fun p => !p.isArgument || p.required) = true := by
-      first | exact Or.inl rfl | decide | fail "A group in chain mode cannot have optional arguments.") :
+      first | exact Or.inl rfl | exact Or.inr rfl | decide | fail "A group in chain mode cannot have optional arguments.") :
     Command κ :=
   .mk { name, params, help := if help.isEmpty then none else some help, shortHelp, epilog, hidden,
-        invokeWithoutCommand, noArgsIsHelp, chain,
+        invokeWithoutCommand, noArgsIsHelp, chain, optionsMetavar,
+        deprecated := deprecated || deprecatedReason.isSome, deprecatedReason,
         helpOptionNames := contextSettings.helpOptionNames,
         autoEnvvarPrefix := contextSettings.autoEnvvarPrefix,
         showDefault := contextSettings.showDefault,

@@ -160,13 +160,20 @@ def Command.argumentRows (cmd : Command σ) (s : Settings) : List (String × Str
   if args.any (fun p => p.help.isSome) then args.map fun p => (p.helpSpec, p.help.getD "")
   else []
 
+/-- `_format_deprecated_label`. -/
+def Command.deprecatedLabel (cmd : Command σ) : String :=
+  match cmd.spec.deprecatedReason with
+  | some r => s!"(DEPRECATED: {r})"
+  | none => "(DEPRECATED)"
+
 /-- `get_short_help_str`. -/
 def Command.shortHelpStr (cmd : Command σ) (limit : Nat) : String :=
-  match cmd.spec.shortHelp with
-  | some t => strip (cleandoc t)
-  | none => match cmd.spec.help with
-    | some h => strip (shortHelp h limit)
-    | none => ""
+  let text := match cmd.spec.shortHelp with
+    | some t => cleandoc t
+    | none => match cmd.spec.help with
+      | some h => shortHelp h limit
+      | none => ""
+  strip (if cmd.spec.deprecated then text ++ " " ++ cmd.deprecatedLabel else text)
 
 /-- The rows of the Commands section of a group. -/
 def Command.commandRows (cmd : Command σ) (s : Settings) : List (String × String) :=
@@ -181,6 +188,8 @@ def Command.helpTextPart (cmd : Command σ) (s : Settings) : String :=
   let text := match cmd.spec.help with
     | some h => ((cleandoc h).splitOn "\x0c").headD ""
     | none => ""
+  let text := if !cmd.spec.deprecated then text
+    else if text.isEmpty then cmd.deprecatedLabel else text ++ " " ++ cmd.deprecatedLabel
   if text.isEmpty then "" else "\n" ++ wrapParagraphs s.width "  " "  " text ++ "\n"
 
 def Command.epilogPart (cmd : Command σ) (s : Settings) : String :=

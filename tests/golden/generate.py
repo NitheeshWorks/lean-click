@@ -11,6 +11,7 @@ exit code, stdout and stderr byte for byte.
 import json
 import click
 from click.testing import CliRunner
+import click.shell_completion
 
 
 def nop(*a, **k):
@@ -322,6 +323,28 @@ def password(password):
 def flag(flag):
     click.echo(repr(flag))
 
+class Resource:
+    def __enter__(self):
+        click.echo("enter")
+        return self
+
+    def __exit__(self, *exc):
+        click.echo("exit")
+
+@prompts.group()
+@click.pass_context
+def cleanup(ctx):
+    ctx.with_resource(Resource())
+    ctx.call_on_close(lambda: click.echo("closed"))
+
+@cleanup.command()
+def ok():
+    click.echo("sub")
+
+@cleanup.command()
+def fail():
+    raise click.ClickException("boom")
+
 prompts(prog_name="prompts")
 """
 PROMPT_RUNS = [
@@ -333,6 +356,8 @@ PROMPT_RUNS = [
     (["flag"], "maybe\ny\n", "tests/test_termui.py::test_flag_value_prompt"),
     (["flag"], "\n", "tests/test_termui.py::test_flag_value_prompt"),
     (["flag", "--no-flag"], "", "tests/test_termui.py::test_flag_value_prompt"),
+    (["cleanup", "ok"], "", "tests/test_context.py::test_with_resource"),
+    (["cleanup", "fail"], "", "tests/test_context.py::test_with_resource_exception"),
 ]
 for argv, inp, up in PROMPT_RUNS:
     res = subprocess.run([sys.executable, "-I", "-c", PROMPTS, *argv], input=inp, capture_output=True, text=True,
@@ -452,4 +477,196 @@ for ex, argv, inp, env in EXAMPLES:
     fix = lambda t: t.replace(str(ROOT), "<ROOT>")
     out.append({"process": prog, "upstream": f"examples/{path}", "argv": argv, "input": inp, "env": full_env,
                 "cwd": "tests/golden/work", "code": res.returncode, "stdout": fix(res.stdout), "stderr": fix(res.stderr)})
+
+# click's docs pages: every `click:run` block, run as a real process against
+# its Lean port (`.lake/build/bin/docs-<page>`, examples/docs/<page>.lean).
+# The page's `click:example` blocks up to the run are executed in order; each
+# `invoke(cmd, ...)` the run makes becomes one scenario: the command is
+# named `<variable>@<block that defined it>`, the files the run wrote first
+# (`isolated_filesystem`) are recorded and recreated, and the extra keyword
+# arguments (`default_map=`, `auto_envvar_prefix=`) go to `main`.
+import contextlib
+import os
+import shutil
+import tempfile
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import docblocks
+
+DOCS = ROOT.parent / "upstream-spec" / "click" / "docs"
+
+
+def page_path(page):
+    """docs/<page>.md, or the project README for page "README"."""
+    return DOCS.parent / "README.md" if page == "README" else DOCS / f"{page}.md"
+
+
+def page_cite(page):
+    return "README.md" if page == "README" else f"docs/{page}.md"
+
+
+# Names the page's fragments use without importing them
+DOC_PRELUDE = "import os\nimport click\nfrom click import ParamType\nfrom click.shell_completion import CompletionItem, ShellComplete\n"
+RUN_DOC = r"""
+import os, sys, json
+sys.path.insert(0, sys.argv[1])
+sys.path.insert(0, os.getcwd())  # the page's modules (option "modules")
+import docblocks
+page, upto, also, var, prog, extra, patches, *argv = sys.argv[2:]
+also = {int(x) for x in also.split(",") if x}
+patches = {int(k): v for k, v in json.loads(patches).items()}
+ns = {"__name__": "docs"}
+exec(""" + repr(DOC_PRELUDE) + r""", ns)
+for n, (kind, code, _) in enumerate(docblocks.blocks(open(page).read()), 1):
+    if n > int(upto):
+        break
+    for a, b in patches.get(n, []):
+        code = code.replace(a, b)
+    if kind == "click:example" or n in also:
+        exec(code, ns)
+ns[var].main(argv, prog_name=prog, **json.loads(extra))
+"""
+# Runs the pages do not have, as (cited block, block defining the command,
+# variable, args, input, options): testing.md's tests of its example apps,
+# and the apps of pages without click:run blocks. Options: "also" (more
+# blocks to run first, comma separated), "env", "files", and "modules"
+# (blocks written as the Python modules the run imports).
+LAZY = {"also": "9", "modules": {8: "lazy_group.py", 10: "foo.py", 11: "bar.py", 12: "baz.py"}}
+HELLO = {"hello.txt": "Hello World!"}
+DOC_EXTRA_RUNS = {
+    "testing": [(2, 1, "hello", ["Peter"], "", {}), (4, 3, "cli", ["--debug", "sync"], "", {}),
+                (6, 5, "cli", ["sync"], "", {}), (8, 7, "cat", ["hello.txt"], "", {"files": HELLO}),
+                (10, 9, "prompt", [], "wau wau\n", {})],
+    "faqs": [(5, 5, "convert", [], "missing.txt\nhello.txt\n", {"files": HELLO}),
+             (7, 7, "convert", ["hello.txt"], "", {"files": HELLO}),
+             (7, 7, "convert", ["missing.txt"], "", {}), (8, 8, "copy", ["--src", "a", "--dest", "b"], "", {}),
+             (8, 8, "copy", ["--help"], "", {})],
+    "README": [(1, 1, "hello", ["--count", "2", "--name", "Ada"], "", {}), (1, 1, "hello", [], "Ada\n", {}),
+               (1, 1, "hello", ["--help"], "", {})],
+    "utils": [(6, 6, "less", [], "", {})],
+    "commands": [(9, 9, "cli", ["-", "upper", "strip"], " Hello \nWorld\n", {}),
+                 (9, 9, "cli", ["-", "lower"], "Hello\nWorld\n", {}), (9, 9, "cli", ["-"], "as is\n", {}),
+                 (9, 9, "cli", ["--help"], "", {})],
+    "standalone-apps": [(1, 1, "main", [], "", {}), (1, 1, "main", ["Ada", "--count", "2"], "", {}),
+                        (1, 1, "main", ["--help"], "", {})],
+    "complex": [(1, 1, "cli", ["--help"], "", {}),
+                (5, 5, "cli", ["--repo-home", "/srv/r", "clone", "src"], "", {"also": "4,5"}),
+                (5, 5, "cli", ["clone", "--help"], "", {"also": "4,5"}),
+                (7, 7, "cp", [], "", {"also": "6,7"}),
+                (9, 9, "cli", ["--help"], "", LAZY), (9, 9, "cli", ["foo", "--help"], "", LAZY),
+                (9, 9, "cli", ["bar", "--help"], "", LAZY), (9, 9, "cli", ["bar", "baz", "--help"], "", LAZY),
+                (13, 13, "foo", ["--help"], "", {})],
+    "shell-completion": [
+        (1, 1, "cli", ["--ev", "PATH"], "", {}),
+        (1, 1, "cli", [], "", {"env": {"_CLI_COMPLETE": "bash_complete", "COMP_WORDS": "cli --ev PA",
+                                       "COMP_CWORD": "2"}}),
+        (2, 2, "cli", ["PATH"], "", {}),
+        (2, 2, "cli", [], "", {"env": {"_CLI_COMPLETE": "zsh_complete", "COMP_WORDS": "cli COL",
+                                       "COMP_CWORD": "1"}}),
+        (3, 2, "cli", [], "", {"also": "2,3", "env": {"_CLI_COMPLETE": "mysh_source"}})],
+}
+# Fixes to a page's code before it runs, with the reason; the Lean port
+# makes the same change and says so
+DOC_PATCHES = {
+    # UP-050: the template names %(foo_bar)s; source_vars provides prog_name
+    ("shell-completion", 3): [("%(foo_bar)s", "%(prog_name)s")],
+    # UP-053: the result callback iterates the builtin input; it means fin
+    ("commands", 9): [("for x in input", "for x in fin")],
+}
+# runs that are not replayed, with the reason (examples/MANIFEST.toml says
+# the same for the block)
+DOC_SKIP_RUNS = {
+    ("advanced", 8): "token_normalize_func is excluded (docs/traceability.toml excluded.token-normalize)",
+    ("option-decorators", 2): "hide_input reads the terminal through getpass, not the pipe",
+}
+
+
+def doc_scenarios(page):
+    bs = docblocks.blocks(page_path(page).read_text())
+    ns = {"__name__": "docs"}
+    exec(DOC_PRELUDE, ns)
+    defined = {}
+    found = []
+    for n, (kind, code, _) in enumerate(bs, 1):
+        if kind == "click:example":
+            before = dict(ns)
+            exec(code, ns)
+            for k, v in ns.items():
+                if k not in before or before[k] is not v:
+                    defined[k] = n
+        elif kind == "click:run":
+            def invoke(cmd, args=None, prog_name=None, input=None, terminate_input=False, env=None, **extra):
+                var = next(k for k, v in ns.items() if v is cmd and k in defined)
+                files = {}
+                if Path.cwd() != WORK:
+                    files = {f.name: f.read_text() for f in Path.cwd().iterdir() if f.is_file()}
+                if isinstance(input, (list, tuple)):
+                    input = "\n".join(input) + "\n"
+                prog = (prog_name or cmd.name).rsplit(" ", 1)[-1]
+                found.append((n, var, defined[var], prog, list(args or []), input or "", env or {}, extra, files, ""))
+            @contextlib.contextmanager
+            def isolated_filesystem():
+                d = tempfile.mkdtemp()
+                old = os.getcwd()
+                os.chdir(d)
+                try:
+                    yield d
+                finally:
+                    os.chdir(old)
+                    shutil.rmtree(d)
+            run_ns = {**ns, "invoke": invoke, "println": lambda: None, "isolated_filesystem": isolated_filesystem}
+            os.chdir(WORK)
+            exec(code, run_ns)
+    for (cite, app, var, args, inp, opts) in DOC_EXTRA_RUNS.get(page, []):
+        also = opts.get("also", str(app))
+        app_ns = {"__name__": "docs"}
+        exec(DOC_PRELUDE, app_ns)
+        files = {**opts.get("files", {}), **{f: bs[k - 1][1] + "\n" for k, f in opts.get("modules", {}).items()}}
+        ks = {int(x) for x in also.split(",")}
+        mods = Path(tempfile.mkdtemp())
+        for name, text in files.items():
+            (mods / name).write_text(text)
+        sys.path.insert(0, str(mods))
+        for k, (kind, code, _) in enumerate(bs[:max([cite, app, *ks])], 1):
+            if kind == "click:example" or k in ks:
+                for a, b in DOC_PATCHES.get((page, k), []):
+                    code = code.replace(a, b)
+                exec(code, app_ns)
+        sys.path.remove(str(mods))
+        shutil.rmtree(mods)
+        found.append((cite, var, app, app_ns[var].name, args, inp, opts.get("env", {}), {}, files, also))
+    return bs, found
+
+
+def run_doc_page(page):
+    bs, found = doc_scenarios(page)
+    patches = {str(k): v for (p, k), v in DOC_PATCHES.items() if p == page}
+    for (n, var, defblock, prog, args, inp, env, extra, files, also) in found:
+        if (page, n) in DOC_SKIP_RUNS:
+            continue
+        d = Path(tempfile.mkdtemp())
+        for name, text in files.items():
+            (d / name).write_text(text)
+        full_env = {"COLUMNS": "80", "PATH": "/usr/bin:/bin", **env}
+        key = f"{var}@{defblock}" + (f"+{json.dumps(extra, sort_keys=True)}" if extra else "")
+        upto = max([n, defblock] + [int(x) for x in also.split(",") if x])
+        res = subprocess.run([sys.executable, "-I", "-B", "-c", RUN_DOC, str(Path(__file__).resolve().parent),
+                              str(page_path(page)), str(upto), also, var, prog, json.dumps(extra),
+                              json.dumps(patches), *args],
+                             input=inp, capture_output=True, text=True, env=full_env, cwd=d)
+        shutil.rmtree(d)
+        out.append({"process": f"docs-{page.lower()}", "upstream": f"{page_cite(page)}#block-{n}",
+                    "argv": [key, prog, *args], "input": inp, "env": full_env, "files": files,
+                    "code": res.returncode, "stdout": res.stdout, "stderr": res.stderr})
+
+
+# Every page with Python code blocks (examples/MANIFEST.toml doc_pages)
+DOC_PAGES = ["README", "quickstart", "options", "advanced", "arguments", "commands-and-groups", "commands",
+             "documentation", "exceptions", "entry-points", "extending-click", "faqs", "handling-files", "index",
+             "option-decorators", "parameters", "parameter-types", "prompts", "testing", "complex",
+             "shell-completion", "standalone-apps", "utils"]
+if os.environ.get("DOC_PAGES"):
+    DOC_PAGES = os.environ["DOC_PAGES"].split(",")
+for page in DOC_PAGES:
+    run_doc_page(page)
 print(json.dumps(out, indent=1, ensure_ascii=False))

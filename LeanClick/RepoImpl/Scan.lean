@@ -32,6 +32,8 @@ inductive Action where
   /-- A `flag_value` option: stores its constant. -/
   | const (value : String)
   | count
+  /-- One value that may be left out (`OptKind.optValue`). -/
+  | takesOr (fallback : Option String)
   deriving DecidableEq, Repr, Inhabited
 
 /-- One row of the parser table: a spelling, the parameter it belongs to,
@@ -50,6 +52,7 @@ def Param.spellings (p : Param) : List Spelling :=
     opts.map (fun o => ⟨o, p.name, .flag true⟩) ++ sec.map (fun o => ⟨o, p.name, .flag false⟩)
   | .option opts (.constFlag c _) => opts.map fun o => ⟨o, p.name, .const c⟩
   | .option opts .count => opts.map fun o => ⟨o, p.name, .count⟩
+  | .option opts (.optValue c) => opts.map fun o => ⟨o, p.name, .takesOr c⟩
   | .argument _ => []
 
 /-- Every spelling an option answers to (primary and secondary). -/
@@ -153,6 +156,18 @@ def Action.occ : Action → Occ
   | .flag b => .flag b
   | .const c => .const c
   | .count => .count
+  | .takesOr c => .values c.toList
+
+/-- The value of an option whose value may be left out: the attached one,
+else the next token unless it is missing or looks like an option
+(`FLAG_NEEDS_VALUE`), else the fallback. Returns the tokens of `rest`
+used. -/
+def takeOptional (cfg : ScanCfg) (fallback : Option String) (attached : Option String)
+    (rest : List String) : List String × Nat :=
+  match attached, rest with
+  | some v, _ => ([v], 0)
+  | none, [] => (fallback.toList, 0)
+  | none, next :: _ => if cfg.isOptTok next then (fallback.toList, 0) else ([next], 1)
 
 /-- `_match_short_opt` over the characters after the prefix. Returns the
 events, the tokens of `rest` consumed, and the unknown characters (only with
@@ -173,6 +188,9 @@ def matchShort (cfg : ScanCfg) (pfx : Char) :
         let attached := if cs.isEmpty then none else some (String.ofList cs)
         let (vals, k) ← takeValues opt n attached rest
         return (evs ++ [⟨sp.dest, .values vals⟩], k, unk)
+      | .takesOr c =>
+        let (v, k) := takeOptional cfg c (if cs.isEmpty then none else some (String.ofList cs)) rest
+        .ok (evs ++ [⟨sp.dest, .values v⟩], k, unk)
       | a => matchShort cfg pfx cs rest (evs ++ [⟨sp.dest, a.occ⟩]) unk
 
 /-- The long spellings, for "Did you mean" hints. -/
@@ -190,6 +208,9 @@ def processOpt (cfg : ScanCfg) (tok : String) (rest : List String) :
     | .takes n => do
       let (vals, k) ← takeValues longOpt n explicit rest
       return ([⟨sp.dest, .values vals⟩], k, [])
+    | .takesOr c =>
+      let (v, k) := takeOptional cfg c explicit rest
+      .ok ([⟨sp.dest, .values v⟩], k, [])
     | a =>
       if explicit.isSome then
         .error ⟨.badOptionUsage longOpt s!"Option {pyRepr longOpt} does not take a value.", none⟩

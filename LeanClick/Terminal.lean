@@ -57,7 +57,7 @@ def App.group {σ : Type} (spec : CommandSpec) (subcommands : List (App σ))
     (callback : Callback σ := fun c => pure c.obj)
     (resolve : Option (Context σ → String → ClickM (Option String)) := none)
     (_noNestedChain : spec.chain = false ∨ subcommands.all (fun c => !c.isGroup) = true := by
-      first | exact Or.inl rfl | decide | fail "It is not possible to add a group to another group that is in chain mode.") :
+      first | exact Or.inl rfl | exact Or.inr rfl | decide | fail "It is not possible to add a group to another group that is in chain mode.") :
     App σ :=
   .mk spec true { run := callback, resolve } subcommands
 
@@ -79,11 +79,20 @@ def echo (msg : String) (err : Bool := false) (nl : Bool := true) (color : Optio
   h.putStr (if nl then msg ++ "\n" else msg)
   h.flush
 
-/-- `click.secho`: `echo (style ...)`. -/
+/-- `click.echo(bytes)`: write raw bytes, then a newline unless `nl := false`. -/
+def echoBytes (msg : ByteArray) (err : Bool := false) (nl : Bool := true) : IO Unit := do
+  let h ← if err then IO.getStderr else IO.getStdout
+  h.write msg
+  if nl then h.putStr "\n"
+  h.flush
+
+/-- `click.secho`: `echo (style ...)`, with every `style` attribute. -/
 def secho (msg : String) (fg : Option Color := none) (bg : Option Color := none)
-    (bold : Option Bool := none) (underline : Option Bool := none) (err : Bool := false)
-    (nl : Bool := true) : IO Unit :=
-  echo (style msg fg bg bold (underline := underline)) err nl
+    (bold : Option Bool := none) (dim : Option Bool := none) (underline : Option Bool := none)
+    (overline : Option Bool := none) (italic : Option Bool := none) (blink : Option Bool := none)
+    (reverse : Option Bool := none) (strikethrough : Option Bool := none) (reset : Bool := true)
+    (err : Bool := false) (nl : Bool := true) (color : Option Bool := none) : IO Unit :=
+  echo (style msg fg bg bold dim underline overline italic blink reverse strikethrough reset) err nl color
 
 /-- `click.format_filename`: how a file name is shown. -/
 def formatFilename (name : String) : String := name
@@ -114,18 +123,50 @@ def pause (info : String := "Press any key to continue...") : IO Unit := do
     let _ ← getchar
     echo ""
 
-/-- `click.echo_via_pager`: through `$PAGER` (else `less`) on a terminal,
-straight to stdout otherwise. -/
-def echoViaPager (text : String) : IO Unit := do
+/-- `with click.get_pager_file() as pager:`: the body writes to `$PAGER`
+(else `less`) on a terminal, straight to stdout otherwise; the pager is
+waited for when the body returns. -/
+def withPagerFile {β : Type} (body : IO.FS.Stream → IO β) (color : Option Bool := none) : IO β := do
   if !(← isTty) then
-    echo text
-    return
+    -- straight to stdout, without styles unless `color` keeps them
+    let out ← IO.getStdout
+    let out := if color == some true then out else { out with putStr := fun s => out.putStr (unstyle s) }
+    let r ← body out
+    out.flush
+    return r
   let pager := (← IO.getEnv "PAGER").getD "less"
   let child ← IO.Process.spawn { cmd := "sh", args := #["-c", pager], stdin := .piped }
   let (stdin, child) ← child.takeStdin
-  stdin.putStr (text ++ "\n")
+  let r ← body (IO.FS.Stream.ofHandle stdin)
   stdin.flush
   let _ ← child.wait
+  return r
+
+/-- What `echo_via_pager` takes: a text, or the chunks a generator yields. -/
+class PagerText (α : Type) where
+  chunks : α → List String
+
+instance : PagerText String := ⟨fun s => [s]⟩
+instance : PagerText (List String) := ⟨id⟩
+
+/-- `click.echo_via_pager`: write the text (or each chunk) and a final
+newline through `withPagerFile`. -/
+def echoViaPager {α : Type} [PagerText α] (text : α) (color : Option Bool := none) : IO Unit :=
+  withPagerFile (color := color) fun pager => do
+    for chunk in PagerText.chunks text ++ ["\n"] do
+      pager.putStr chunk
+      pager.flush
+
+/-- `click.get_app_dir`: the configuration folder for an application on a
+POSIX system (`$XDG_CONFIG_HOME/<app-name>`, or `~/Library/Application
+Support/<App Name>` on macOS, or `~/.<app-name>` with `forcePosix`). -/
+def getAppDir (appName : String) (forcePosix : Bool := false) : IO String := do
+  let home := (← IO.getEnv "HOME").getD "~"
+  let posixify := "-".intercalate (splitWs appName) |>.toLower
+  if forcePosix then return s!"{home}/.{posixify}"
+  if System.Platform.isOSX then return s!"{home}/Library/Application Support/{appName}"
+  let base := (← IO.getEnv "XDG_CONFIG_HOME").getD s!"{home}/.config"
+  return s!"{base}/{posixify}"
 
 /-- `click.launch`: open a URL or file with the desktop's handler
 (`xdg-open`, or `open` on macOS); `locate` opens the containing folder. -/
@@ -156,8 +197,17 @@ when the editor did not save (`require_save`). The editor command is split
 the way a POSIX shell splits words, without a shell (`shlex.split`); a
 failing editor is `ClickException("<editor>: Editing failed")`. -/
 def edit (text : String := "") (editor : Option String := none) (requireSave : Bool := true)
-    (extension : String := ".txt") : IO (Option String) := do
+    (extension : String := ".txt") (filename : Option String := none) : IO (Option String) := do
   let editor ← getEditor editor
+  if let some file := filename then
+    -- `click.edit(filename=...)`: edit the file in place; nothing is returned
+    let argv := splitArgString editor ++ [file]
+    let code ← try
+        let child ← IO.Process.spawn { cmd := argv.headD editor, args := (argv.drop 1).toArray }
+        child.wait
+      catch e => throw (IO.userError s!"{editor}: Editing failed: {e}")
+    if code != 0 then throw (IO.userError s!"{editor}: Editing failed")
+    return none
   let text := if !text.isEmpty && !text.endsWith "\n" then text ++ "\n" else text
   let (h, tmp) ← IO.FS.createTempFile
   h.putStr text
@@ -216,13 +266,14 @@ structure Bar (α : Type) where
   tty : Bool
 
 /-- `click.progressbar(iterable, ...)`. -/
-def progressbar {α : Type} (items : List α) (label : String := "") (hidden : Bool := false)
+def progressbar {α : Type} (items : List α) (length : Option Nat := none) (label : String := "")
+    (hidden : Bool := false)
     (showEta : Bool := true) (showPercent : Option Bool := none) (showPos : Bool := false)
     (itemShowFunc : Option (Option α → Option String) := none) (fillChar : String := "#")
     (emptyChar : String := "-") (barTemplate : String := "%(label)s  [%(bar)s]  %(info)s")
     (infoSep : String := "  ") (width : Nat := 36) (updateMinSteps : Nat := 1) : ProgressBar α :=
-  { items, label, hidden, showEta, showPercent, showPos, itemShowFunc, fillChar, emptyChar,
-    barTemplate, infoSep, width, updateMinSteps }
+  { items, length := length <|> some items.length, label, hidden, showEta, showPercent, showPos,
+    itemShowFunc, fillChar, emptyChar, barTemplate, infoSep, width, updateMinSteps }
 
 /-- `click.progressbar(length=n, ...)`: the items are `0, ..., n - 1`. -/
 def progressbarLength (length : Nat) (label : String := "") (hidden : Bool := false)
@@ -404,8 +455,8 @@ def readLine : IO (Option String) := do
   if line.isEmpty then return none
   return some (rstripNewlines (String.ofList (line.toList.filter (· != '\r'))))
 
-/-- `click.confirm(text, default)`; `none` means abort (end of input). -/
-def confirm (text : String) (default : Option Bool := some false) (fuel : Nat := 100) :
+/-- The yes/no question of `click.confirm`; `none` means the input ended. -/
+def askYesNo (text : String) (default : Option Bool := some false) (fuel : Nat := 100) :
     IO (Option Bool) := do
   let suffix := match default with
     | some true => "[Y/n]"
@@ -424,6 +475,29 @@ def confirm (text : String) (default : Option Bool := some false) (fuel : Nat :=
         else if a.isEmpty && default.isSome then pure default
         else do echo "Error: invalid input"; loop f
   loop fuel
+
+/-- `os.path.normpath` of an absolute path: drop `.` and empty segments,
+fold `..`. -/
+def normalizePath (p : String) : String :=
+  let segs := (p.splitOn "/").filter (fun x => !x.isEmpty && x != ".")
+  let folded := segs.foldl (fun acc x => if x == ".." then acc.dropLast else acc ++ [x]) []
+  "/" ++ "/".intercalate folded
+
+/-- What the filesystem says about a path. Permission bits are not
+available through Lean core, so readability, writability and
+executability are assumed. -/
+def statPath (s : String) (resolve : Bool := false) : IO (Option FileInfo) := do
+  try
+    let md ← System.FilePath.metadata s
+    let real ← if resolve then (do return some (← IO.FS.realPath s).toString) else pure none
+    return some { isFile := md.type == .file, isDir := md.type == .dir, realPath := real }
+  catch _ =>
+    if resolve then
+      -- `os.path.realpath` of a missing path: made absolute and normalised
+      let cwd ← IO.currentDir
+      return some { isFile := false, isDir := false, exists_ := false,
+                    realPath := some (normalizePath (if s.startsWith "/" then s else cwd.toString ++ "/" ++ s)) }
+    else return none
 
 /-- click's `_mask_hidden_input`: a hidden answer is not echoed in an
 error message, neither quoted (`repr`) nor bare between non-word
@@ -454,7 +528,7 @@ def promptParam (fs : String → Option FileInfo) (p : Param) (dflt : Option Str
   let ps := p.prompt.getD { text := p.name }
   if p.decl.isBoolFlag then
     let d := dflt.bind strToBool
-    match ← confirm ps.text d with
+    match ← askYesNo ps.text d with
     | some b => return some (if b then "y" else "n")
     | none => return none
   let choices := match p.type with
@@ -468,7 +542,7 @@ def promptParam (fs : String → Option FileInfo) (p : Param) (dflt : Option Str
   -- click's `value_proc`, the parameter's `process_value`: the type's
   -- conversion, then a custom type's and the callback's checks; a
   -- `BadParameter` re-asks, an abort ends the prompt
-  let valueProc := fun (v : String) => (match convert fs p.type v with
+  let valueProc := fun (fs : String → Option FileInfo) (v : String) => (match convert fs p.type v with
     | .error msg => .error (some msg)
     | .ok c => match p.checks with
       | none => .ok ()
@@ -507,7 +581,11 @@ def promptParam (fs : String → Option FileInfo) (p : Param) (dflt : Option Str
       match ← ask fuel with
       | none => pure none
       | some v =>
-        match valueProc v with
+        -- the filesystem view of the answer, for `Path`/`File` types
+        let resolve := match p.type with | .path sp => sp.resolvePath | _ => false
+        let info ← statPath v resolve
+        let fs' := fun q => if q == v then info else fs q
+        match valueProc fs' v with
         | .error none => pure none
         | .error (some msg) => do
           echo s!"Error: {if ps.hideInput then maskHiddenInput msg v else msg}"
@@ -521,28 +599,14 @@ def promptParam (fs : String → Option FileInfo) (p : Param) (dflt : Option Str
               else do echo "Error: The two entered values do not match."; loop f
   loop fuel
 
-/-- `os.path.normpath` of an absolute path: drop `.` and empty segments,
-fold `..`. -/
-def normalizePath (p : String) : String :=
-  let segs := (p.splitOn "/").filter (fun x => !x.isEmpty && x != ".")
-  let folded := segs.foldl (fun acc x => if x == ".." then acc.dropLast else acc ++ [x]) []
-  "/" ++ "/".intercalate folded
+/-- `click.confirm(text, default=False, abort=False)`: ask a yes/no
+question; `abort` makes a no an `Abort`, as does the end of input. -/
+def confirm (text : String) (default : Option Bool := some false) (abort : Bool := false) : ClickM Bool := do
+  match ← askYesNo text default with
+  | none => throw .abort
+  | some b => if abort && !b then throw .abort else return b
 
-/-- What the filesystem says about a path. Permission bits are not
-available through Lean core, so readability, writability and
-executability are assumed. -/
-def statPath (s : String) (resolve : Bool := false) : IO (Option FileInfo) := do
-  try
-    let md ← System.FilePath.metadata s
-    let real ← if resolve then (do return some (← IO.FS.realPath s).toString) else pure none
-    return some { isFile := md.type == .file, isDir := md.type == .dir, realPath := real }
-  catch _ =>
-    if resolve then
-      -- `os.path.realpath` of a missing path: made absolute and normalised
-      let cwd ← IO.currentDir
-      return some { isFile := false, isDir := false, exists_ := false,
-                    realPath := some (normalizePath (if s.startsWith "/" then s else cwd.toString ++ "/" ++ s)) }
-    else return none
+
 
 /-- Every string the parser could hand to a `Path`/`File` conversion at
 this level: tokens, values after `=`, attached short-option values,
@@ -588,7 +652,7 @@ def levelEnv (cmd : App σ) (s : Settings) (argv : List String)
   let resolve := ps.any fun p => match p.type with | .path sp => sp.resolvePath | _ => false
   let mut table : Std.HashMap String FileInfo := {}
   if needsFs then
-    for c in pathCandidates ps argv (vars.map (·.2)) do
+    for c in pathCandidates ps argv (vars.map (·.2) ++ answers.map (·.2)) do
       if let some info ← statPath c resolve then table := table.insert c info
   let tbl := table
   return { vars, fs := fun p => tbl.get? p, answers, width := s.width }
@@ -632,12 +696,53 @@ def parseResolving (cmd : App σ) (s : Settings) (path infoName : String) (argv 
         | .ok (some real) => parseResolving cmd s path infoName argv parentCtx obj budget f (aliases ++ [(name, real)])
     | _, _ => pure (.ok r)
 
+/-- Evaluate the callable defaults (`dynamicDefault`) of a command's
+parameters and of its direct subcommands' (parsed in the same step when
+chained). -/
+def withDynamicDefaults (cmd : App σ) : IO (App σ) := do
+  let eval := fun (ps : List Param) => ps.mapM fun p => do
+    match p.dynamicDefault with
+    | some act => return { p with default := some (← act) }
+    | none => return p
+  match cmd with
+  | .mk spec g cb subs =>
+    let subs ← subs.mapM fun c => match c with
+      | .mk sp g' cb' subs' => do return .mk { sp with params := ← eval sp.params } g' cb' subs'
+    return .mk { spec with params := ← eval spec.params } g cb subs
+
+/-- `DeprecationWarning: The command 'name' is deprecated.`, in red, on
+standard error, when a deprecated command runs. -/
+def warnDeprecated (cmd : App σ) : IO Unit := do
+  if cmd.spec.deprecated then
+    let extra := match cmd.spec.deprecatedReason with | some r => " " ++ r | none => ""
+    echo (style s!"DeprecationWarning: The command {pyRepr cmd.name} is deprecated.{extra}" (fg := "red")) (err := true)
+
+/-- The cleanups registered by the contexts being run, innermost first;
+each context's own are newest first. -/
+initialize closeFrames : IO.Ref (List (List (IO Unit))) ← IO.mkRef []
+
+/-- `ctx.call_on_close(f)`: run `act` when the current command's context is
+torn down, after its subcommands have run (also when they fail); the
+newest cleanup runs first. -/
+def callOnClose (act : IO Unit) : ClickM Unit :=
+  closeFrames.modify fun
+    | f :: fs => (act :: f) :: fs
+    | [] => [[act]]
+
+/-- `ctx.with_resource(cm)`: acquire a resource now and release it when the
+current command's context is torn down (`callOnClose`). -/
+def withResource {α : Type} (acquire : IO α) (release : α → IO Unit) : ClickM α := do
+  let a ← acquire
+  callOnClose (release a)
+  return a
+
 /-- Run an invocation level by level: parse, run the callback, descend. -/
 def runAux (prog : String) :
     Nat → App σ → Option Settings → String → String → List String →
     Option (Context σ) → σ → IO Termination
   | 0, _, _, _, _, _, _, _ => pure (.halted (.error ⟨.usage "Command nesting exceeds the argument count.", none⟩))
   | fuel + 1, cmd, parent, infoName, path, argv, parentCtx, obj => do
+    let cmd ← withDynamicDefaults cmd
     let s := cmd.settings parent infoName
     let budget := (cmd.allParams s).length + 1 +
       (if cmd.spec.chain then argv.length * (cmd.subcommands.foldl (fun m c => max m c.spec.params.length) 0 + 1) else 0)
@@ -649,30 +754,41 @@ def runAux (prog : String) :
       | .prompt _ _ _ => pure (.raised .abort)
       | h => pure (.halted h)
     | .ok (some (.ok lv)) =>
-      let ctx : Context σ :=
-        { infoName, commandPath := path, params := lv.args, parent := parentCtx, obj,
-          invokedSubcommand := match lv.sub with
-            | some (_, name, _) => some name
-            | none => if lv.chained.isEmpty then none else some "*",
-          help := cmd.getHelp s path, usage := cmd.getUsage s path }
-      match ← (cmd.callback.run ctx).run with
-      | .error e => pure (.raised (e.inContext (cmd.ctxInfo s path)))
-      | .ok obj' =>
-        match lv.sub with
-        | none =>
-          -- a chained group: every subcommand, in order, under the group's context
-          let rec runChain : List (App σ × String × Settings × String × ParsedArgs) → IO Termination
-            | [] => pure .ok
-            | (c, name, cs, cpath, pa) :: more => do
-              let cctx : Context σ :=
-                { infoName := name, commandPath := cpath, params := pa, parent := some ctx, obj := obj',
-                  help := c.getHelp cs cpath, usage := c.getUsage cs cpath }
-              match ← (c.callback.run cctx).run with
-              | .error e => pure (.raised (e.inContext (c.ctxInfo cs cpath)))
-              | .ok _ => runChain more
-          runChain lv.chained
-        | some (c, name, rest) =>
-          runAux prog fuel c (some s) name (cmd.childPath s path name) rest (some ctx) obj'
+      -- the context's cleanups (`call_on_close`, `with_resource`) run when
+      -- it is torn down: after its subcommands, also when they fail
+      closeFrames.modify ([] :: ·)
+      try
+        let ctx : Context σ :=
+          { infoName, commandPath := path, params := lv.args, parent := parentCtx, obj,
+            invokedSubcommand := match lv.sub with
+              | some (_, name, _) => some name
+              | none => if lv.chained.isEmpty then none else some "*",
+            help := cmd.getHelp s path, usage := cmd.getUsage s path }
+        warnDeprecated cmd
+        match ← (cmd.callback.run ctx).run with
+        | .error e => pure (.raised (e.inContext (cmd.ctxInfo s path)))
+        | .ok obj' =>
+          match lv.sub with
+          | none =>
+            -- a chained group: every subcommand, in order, under the group's context
+            -- the object each one returns is the next one's (click's `ctx.obj`
+            -- is shared and mutable)
+            let rec runChain : σ → List (App σ × String × Settings × String × ParsedArgs) → IO Termination
+              | _, [] => pure .ok
+              | o, (c, name, cs, cpath, pa) :: more => do
+                let cctx : Context σ :=
+                  { infoName := name, commandPath := cpath, params := pa, parent := some ctx, obj := o,
+                    help := c.getHelp cs cpath, usage := c.getUsage cs cpath }
+                warnDeprecated c
+                match ← (c.callback.run cctx).run with
+                | .error e => pure (.raised (e.inContext (c.ctxInfo cs cpath)))
+                | .ok o' => runChain o' more
+            runChain obj' lv.chained
+          | some (c, name, rest) =>
+            runAux prog fuel c (some s) name (cmd.childPath s path name) rest (some ctx) obj'
+      finally
+        let frame ← closeFrames.modifyGet fun | f :: fs => (f, fs) | [] => ([], [])
+        for act in frame do act
 
 /-- Print how an invocation ended. -/
 def report : Termination → IO Unit
@@ -698,15 +814,57 @@ def environ : IO (List (String × String)) := do
     | k :: rest => if k.isEmpty then none else some (k, "=".intercalate rest)
     | [] => none
 
+/-- What a completion script is formatted with (click's
+`ShellComplete.source_vars`). -/
+structure SourceVars where
+  /-- A safe name for the completion function the script defines. -/
+  completeFunc : String
+  /-- The environment variable that passes the `{shell}_complete` instruction. -/
+  completeVar : String
+  /-- The name of the program being completed. -/
+  progName : String
+
+/-- Support for a shell (a `click.shell_completion.ShellComplete` subclass,
+registered with `add_completion_class`): pass it to `run` or `main` in
+`shells`. The built-in bash, zsh and fish need none. -/
+structure ShellComplete where
+  /-- The shell's name: `_PROG_COMPLETE={name}_source` and `{name}_complete`. -/
+  name : String
+  /-- The completion script (`source_template`, formatted with `source_vars`). -/
+  sourceTemplate : SourceVars → String
+  /-- The words before the cursor and the incomplete word, read from what
+  the script passes (`get_completion_args`). -/
+  completionArgs : IO (List String × String) :=
+    throw (IO.userError "ShellComplete.completionArgs is not implemented")
+  /-- One completion as the script reads it (`format_completion`); the
+  default is the bash format, `type,value`. -/
+  formatCompletion : CompletionItem → String := fun i => s!"{i.type},{i.value}"
+
 /-- Shell completion (`_PROG_COMPLETE=bash_source|bash_complete|...`):
 `some code` when the variable asked for it. -/
-def shellComplete (cmd : App σ) (prog : String) : IO (Option UInt32) := do
+def shellComplete (cmd : App σ) (prog : String) (shells : List ShellComplete := []) :
+    IO (Option UInt32) := do
   match ← IO.getEnv (completeVar prog) with
   | none => return none
   | some instr =>
     let (shell, what) := match instr.splitOn "_" with
       | sh :: rest => (sh, "_".intercalate rest)
       | [] => ("", "")
+    let env : IO Env := do
+      return { vars := ← environ, cwd := (← IO.currentDir).toString, width := ← terminalWidth }
+    if let some sh := shells.find? (·.name == shell) then
+      if what == "source" then
+        let safe := String.ofList ((prog.replace "-" "_").toList.filter fun c => c.isAlphanum || c == '_')
+        let vars : SourceVars :=
+          { completeFunc := "_" ++ safe ++ "_completion", completeVar := completeVar prog, progName := prog }
+        echo (sh.sourceTemplate vars) (nl := false)
+        return some 0
+      else if what == "complete" then
+        let (args, incomplete) ← sh.completionArgs
+        let items := cmd.complete prog args incomplete (← env)
+        echo ("\n".intercalate (items.map sh.formatCompletion))
+        return some 0
+      else return some 1
     if what == "source" then
       match completionScript shell prog with
       | some script => echo script (nl := false); return some 0
@@ -723,16 +881,20 @@ def shellComplete (cmd : App σ) (prog : String) : IO (Option UInt32) := do
         else
           let cword := cwordVar.toNat?.getD 0
           ((words.drop 1).take (cword - 1), words.getD cword "")
-      let items := cmd.complete prog args incomplete
-        { vars := ← environ, cwd := (← IO.currentDir).toString, width := ← terminalWidth }
+      let items := cmd.complete prog args incomplete (← env)
       echo ("\n".intercalate (items.map (CompletionItem.format shell)))
       return some 0
     else return some 1
 
 /-- `Command.main`: run with `argv`, report, and return the exit code. -/
 def main (cmd : App σ) (init : σ) (argv : List String) (prog : String := cmd.name)
-    (defaultMap : Option DefaultMap := none) : IO UInt32 := do
-  if let some code ← shellComplete cmd prog then return code
+    (defaultMap : Option DefaultMap := none) (autoEnvvarPrefix : Option String := none)
+    (shells : List ShellComplete := []) : IO UInt32 := do
+  -- `main(auto_envvar_prefix=...)` sets the root context's prefix
+  let cmd := match cmd, autoEnvvarPrefix with
+    | .mk spec g cb subs, some p => .mk { spec with autoEnvvarPrefix := some p } g cb subs
+    | c, none => c
+  if let some code ← shellComplete cmd prog shells then return code
   let width ← terminalWidth
   let t ← try
       runAux prog (argv.length + 1) cmd (some (rootParent prog width defaultMap)) prog prog argv none init
@@ -742,25 +904,54 @@ def main (cmd : App σ) (init : σ) (argv : List String) (prog : String := cmd.n
 
 /-- `hello()` in click: run the command with the process arguments. -/
 def _root_.LeanClick.Command.run {σ : Type} (cmd : App σ) (init : σ) (argv : List String)
-    (prog : String := cmd.name) : IO UInt32 :=
-  Terminal.main cmd init argv prog
+    (prog : String := cmd.name) (defaultMap : Option DefaultMap := none)
+    (autoEnvvarPrefix : Option String := none) (shells : List ShellComplete := []) : IO UInt32 :=
+  Terminal.main cmd init argv prog defaultMap autoEnvvarPrefix shells
 
-/-- Open a `File` value as a stream (`-` is standard input, or standard
-output for a writing mode), as click's `File.convert` does; the handle
-reads and writes bytes (`h.read 1024`, `h.write chunk`). -/
-def openFile (f : FileArg) : ClickM IO.FS.Stream := do
-  let writing := f.mode.toList.any (fun c => c == 'w' || c == 'a' || c == 'x')
-  if f.name == "-" then
+/-- `cmd.main(argv, standalone_mode=False)`: run the command and leave its
+errors to the caller. A usage error, `Abort` (also end of input at a
+prompt) and `ClickException` are thrown; help and version output print as
+usual. -/
+def _root_.LeanClick.Command.invoke {σ : Type} (cmd : App σ) (init : σ) (argv : List String)
+    (prog : String := cmd.name) (defaultMap : Option DefaultMap := none) : ClickM Unit := do
+  let width ← terminalWidth
+  let run : IO Termination :=
+    runAux prog (argv.length + 1) cmd (some (rootParent prog width defaultMap)) prog prog argv none init
+  let t := match ← run.toBaseIO with
+    | .ok t => t
+    | .error e => .raised (.failure (toString e))
+  match t with
+  | .ok => pure ()
+  | .halted (.error e) => throw (.usage e)
+  | .halted (.prompt _ _ _) | .halted .abort => throw .abort
+  | .halted h => report (.halted h)
+  | .raised e => throw e
+
+/-- `e.show()`: print the error as `main` does. -/
+def _root_.LeanClick.ClickError.show (e : ClickError) : IO Unit := report (.raised e)
+
+/-- `e.exit_code`. -/
+def _root_.LeanClick.ClickError.exitCode (e : ClickError) : Nat := (Termination.raised e).exitCode
+
+/-- `click.open_file(filename, mode)`: open a file as a stream; `-` is
+standard input, or standard output for a writing mode. The handle reads and
+writes bytes (`h.read 1024`, `h.write chunk`) and text (`h.putStr`). -/
+def openFile (filename : String) (mode : String := "r") : ClickM IO.FS.Stream := do
+  let writing := mode.toList.any (fun c => c == 'w' || c == 'a' || c == 'x')
+  if filename == "-" then
     return ← if writing then IO.getStdout else IO.getStdin
-  let mode : IO.FS.Mode :=
-    if f.mode.toList.contains 'a' then .append
-    else if f.mode.toList.contains 'x' then .writeNew
+  let m : IO.FS.Mode :=
+    if mode.toList.contains 'a' then .append
+    else if mode.toList.contains 'x' then .writeNew
     else if writing then .write
-    else if f.mode.toList.contains '+' then .readWrite
+    else if mode.toList.contains '+' then .readWrite
     else .read
-  match ← (IO.FS.Handle.mk f.name mode).toBaseIO with
+  match ← (IO.FS.Handle.mk filename m).toBaseIO with
   | .ok h => pure (IO.FS.Stream.ofHandle h)
-  | .error e => throw (.fileError f.name (toString e))
+  | .error e => throw (.fileError filename (toString e))
+
+/-- A `File` value opened as click's `File.convert` does: in its mode. -/
+def _root_.LeanClick.FileArg.stream (f : FileArg) : ClickM IO.FS.Stream := openFile f.name f.mode
 
 /-- Open a `File` value for reading and return its contents (`-` is
 standard input). -/

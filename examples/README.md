@@ -29,3 +29,8 @@ Where the port differs from the Python, the port's first comment says so:
 statically, so there is no `__import__`), and `aliases` loads its config
 in the resolver and the group body (parameter callbacks are pure here),
 and writes the config as text (upstream's binary-mode write fails, UP-042).
+
+`docs/` holds the code of click's README and docs pages, one Lean file
+per page (`docs/quickstart.lean` for `docs/quickstart.md`, and so on),
+each block under its number on the page; the `docs-<page>` programs
+replay the pages' runs against click 8.5.0.

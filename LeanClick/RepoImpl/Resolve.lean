@@ -24,6 +24,9 @@ inductive Raw where
   | multi (xss : List (List String))
   | bool (b : Bool)
   | count (n : Nat)
+  /-- An option given without its value, which prompts for it
+  (`prompt_required=False`). -/
+  | ask
   deriving DecidableEq, Repr, Inhabited
 
 /-- Why processing stopped early. -/
@@ -55,6 +58,7 @@ def cmdRaw (events : List Event) (p : Param) : Option Raw :=
     let vs := occs.filterMap fun o => match o with | .const v => some v | _ => none
     if vs.isEmpty then none else some (.multi (vs.map ([·])))
   | .option _ .count => if occs.isEmpty then none else some (.count occs.length)
+  | .option _ (.optValue _) => vals.getLast?.map fun xs => if xs.isEmpty then .ask else .tokens xs
   | .argument _ => none
 
 /-- Split into chunks of `n`, dropping an incomplete tail (Python's
@@ -226,7 +230,8 @@ def Param.badParameter (p : Param) (msg : String) : UsageError :=
 /-- Does an option prompt, given where its value came from? -/
 def Param.wantsPrompt (p : Param) (raw : Option Raw) (src : Source) : Bool :=
   match p.prompt with
-  | some ps => (raw.isNone || src == .default || src == .defaultMap) && (p.required || ps.required)
+  | some ps => raw == some .ask ||
+      (raw.isNone || src == .default || src == .defaultMap) && (p.required || ps.required)
   | none => false
 
 /-- The value of an absent boolean flag or count, before conversion. -/
@@ -281,7 +286,7 @@ def resolveCore (fs : String → Option FileInfo) (answer : Option String)
     (cmd : Option Raw) (env : Option String) (p : Param) : Except Stop Entry :=
   let rs := pickSource p answer cmd env
   if p.wantsPrompt rs.1 rs.2 && rs.2 != .prompt then
-    .error (.prompt "" p (match rs.1.or (implicitRaw p) with
+    .error (.prompt "" p (match (if rs.1 == some .ask then defaultRaw p else rs.1).or (implicitRaw p) with
       | some (.tokens [d]) => some d
       | some (.bool b) => some (if b then "true" else "false")
       | _ => none))

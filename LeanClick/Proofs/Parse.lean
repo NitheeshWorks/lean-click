@@ -301,17 +301,18 @@ theorem lookupLong_unique (tbl : List Spelling) (o : String) (x : Spelling)
   rw [List.filter_reverse, this]
   simp
 
-theorem wantsPrompt_cmdline (p : Param) (r : Raw) : p.wantsPrompt (some r) .commandline = false := by
+theorem wantsPrompt_cmdline (p : Param) (r : Raw) (hr : r ≠ .ask) :
+    p.wantsPrompt (some r) .commandline = false := by
   unfold Param.wantsPrompt
   split
-  · simp
+  · simp [hr]
   · rfl
 
 @[simp] theorem PValue.isMissing_one {t : ParamType} (x : t.Carrier) : (PValue.one x).isMissing = false := rfl
 
-theorem pickSource_cmdline (p : Param) (ans : Option String) (r : Raw) (env : Option String) :
-    pickSource p ans (some r) env = (some r, .commandline) := by
-  simp [pickSource, consume, wantsPrompt_cmdline]
+theorem pickSource_cmdline (p : Param) (ans : Option String) (r : Raw) (env : Option String)
+    (hr : r ≠ .ask) : pickSource p ans (some r) env = (some r, .commandline) := by
+  simp [pickSource, consume, wantsPrompt_cmdline p r hr]
 
 theorem filter_opt_singleton : ∀ (tbl : List Spelling), (tbl.map (·.opt)).Nodup →
     ∀ x ∈ tbl, tbl.filter (fun sp => sp.opt == x.opt) = [x]
@@ -399,14 +400,14 @@ theorem resolveParam_boolFlag (fs : String → Option FileInfo) (ans : Option St
   have h := hcore
   clear hcore
   obtain ⟨name, decl, type, required, default, envvar, help, metavar, hidden, showDefault,
-    showEnvvar, showChoices, prompt, eager, exposeValue, allowFromAutoenv, callback, typeCheck, shellComplete, fromDefaultMap, h_bool, h_count⟩ := p
+    showEnvvar, showChoices, prompt, eager, exposeValue, allowFromAutoenv, callback, typeCheck, dynamicDefault, shellComplete, fromDefaultMap, h_bool, h_count⟩ := p
   simp only at hd hea
   subst hd hea
   have ht : type = .bool := h_bool rfl
   subst ht
   unfold resolveCore at h
-  simp only [pickSource_cmdline, wantsPrompt_cmdline, Bool.false_and, Bool.false_eq_true,
-    ite_false] at h
+  simp only [pickSource_cmdline _ _ (.bool b) _ (by simp), wantsPrompt_cmdline _ (.bool b) (by simp),
+    Bool.false_and, Bool.false_eq_true, ite_false] at h
   unfold finishParam at h
   simp only [Param.shape, Option.or] at h
   rw [show convertShape fs ParamType.bool Shape.single (Raw.bool b) = .ok ⟨.one b, trivial⟩ from rfl] at h

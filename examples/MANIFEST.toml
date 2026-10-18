@@ -1,11 +1,41 @@
-# click's examples/, ported one to one; checked by
-# stack-tools/check-examples.py. Printed output of every ported program is
-# compared with click 8.5.0 running the original (tests/golden/click.json).
+# click's examples/ and the Python code blocks of its README and docs pages,
+# ported one to one; checked by stack-tools/check-examples.py. Printed
+# output of every ported program is compared with click 8.5.0 running the
+# original (tests/golden/click.json). A docs block is cited as
+# docs/<page>.md#block-<n>, numbered by tests/golden/docblocks.py (which
+# also counts the click:run blocks, so the code blocks' numbers have gaps).
 
 [meta]
 upstream = "click"
 sources = ["examples"]
-helpers = ["examples/complex/complex/environment.lean"]
+helpers = ["examples/complex/complex/environment.lean", "examples/docs/runner.lean"]
+doc_pages = [
+  "README.md",
+  "docs/quickstart.md",
+  "docs/options.md",
+  "docs/advanced.md",
+  "docs/arguments.md",
+  "docs/commands-and-groups.md",
+  "docs/commands.md",
+  "docs/documentation.md",
+  "docs/exceptions.md",
+  "docs/entry-points.md",
+  "docs/extending-click.md",
+  "docs/faqs.md",
+  "docs/handling-files.md",
+  "docs/index.md",
+  "docs/option-decorators.md",
+  "docs/parameters.md",
+  "docs/parameter-types.md",
+  "docs/prompts.md",
+  "docs/testing.md",
+  "docs/complex.md",
+  "docs/shell-completion.md",
+  "docs/standalone-apps.md",
+  "docs/support-multiple-versions.md",
+  "docs/unicode-support.md",
+  "docs/utils.md",
+]
 
 [[example]]
 upstream = "examples/README"
@@ -212,3 +242,1045 @@ status = "ported"
 upstream = "examples/validation/pyproject.toml"
 status = "excluded"
 reason = "packaging; the program is the `validation` lean_exe in lakefile.toml"
+
+# docs pages (examples/docs/<page>.lean, one program per page)
+
+[[example]]
+upstream = "README.md#block-1"
+lean = "examples/docs/readme.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-readme (block-1)"
+
+[[example]]
+upstream = "docs/quickstart.md#block-1"
+lean = "examples/docs/quickstart.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-quickstart (block-3, block-4)"
+
+[[example]]
+upstream = "docs/quickstart.md#block-2"
+lean = "examples/docs/quickstart.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/quickstart.md#block-5"
+lean = "examples/docs/quickstart.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/quickstart.md#block-6"
+lean = "examples/docs/quickstart.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/quickstart.md#block-7"
+lean = "examples/docs/quickstart.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/quickstart.md#block-8"
+lean = "examples/docs/quickstart.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/quickstart.md#block-9"
+lean = "examples/docs/quickstart.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/quickstart.md#block-10"
+lean = "examples/docs/quickstart.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-quickstart (block-11)"
+
+[[example]]
+upstream = "docs/options.md#block-1"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-2)"
+
+[[example]]
+upstream = "docs/options.md#block-3"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-4)"
+
+[[example]]
+upstream = "docs/options.md#block-5"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-6, block-7)"
+
+[[example]]
+upstream = "docs/options.md#block-8"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-9)"
+
+[[example]]
+upstream = "docs/options.md#block-10"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-11)"
+
+[[example]]
+upstream = "docs/options.md#block-12"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-13)"
+
+[[example]]
+upstream = "docs/options.md#block-14"
+lean = "examples/docs/options.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/options.md#block-15"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-16)"
+
+[[example]]
+upstream = "docs/options.md#block-17"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-18)"
+
+[[example]]
+upstream = "docs/options.md#block-19"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-20)"
+
+[[example]]
+upstream = "docs/options.md#block-21"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-22)"
+
+[[example]]
+upstream = "docs/options.md#block-23"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-24)"
+
+[[example]]
+upstream = "docs/options.md#block-25"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-26)"
+
+[[example]]
+upstream = "docs/options.md#block-27"
+lean = "examples/docs/options.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/options.md#block-28"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-29)"
+
+[[example]]
+upstream = "docs/options.md#block-30"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-31)"
+
+[[example]]
+upstream = "docs/options.md#block-32"
+lean = "examples/docs/options.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/options.md#block-33"
+lean = "examples/docs/options.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/options.md#block-34"
+lean = "examples/docs/options.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/options.md#block-35"
+lean = "examples/docs/options.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/options.md#block-36"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-37)"
+
+[[example]]
+upstream = "docs/options.md#block-38"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-39)"
+
+[[example]]
+upstream = "docs/options.md#block-40"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-41)"
+
+[[example]]
+upstream = "docs/options.md#block-42"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-43)"
+
+[[example]]
+upstream = "docs/options.md#block-44"
+lean = "examples/docs/options.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-options (block-45)"
+
+[[example]]
+upstream = "docs/advanced.md#block-1"
+lean = "examples/docs/advanced.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-advanced (block-2)"
+
+[[example]]
+upstream = "docs/advanced.md#block-3"
+lean = "examples/docs/advanced.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-advanced (block-4)"
+
+[[example]]
+upstream = "docs/advanced.md#block-5"
+status = "excluded"
+reason = "the callback opens a URL (urllib.request.urlopen): parameter callbacks in this port are pure functions (Value -> Except CallbackError Value; theorem LeanClick.parse_callbackResult), so a callback cannot do I/O, and Lean core has no HTTP client"
+
+[[example]]
+upstream = "docs/advanced.md#block-6"
+status = "excluded"
+reason = "the callback opens a URL (urllib.request.urlopen): parameter callbacks in this port are pure functions (Value -> Except CallbackError Value; theorem LeanClick.parse_callbackResult), so a callback cannot do I/O, and Lean core has no HTTP client"
+
+[[example]]
+upstream = "docs/advanced.md#block-7"
+status = "excluded"
+reason = "token_normalize_func is excluded: the scanner theorems are stated for exact spellings (docs/traceability.toml excluded.token-normalize)"
+
+[[example]]
+upstream = "docs/advanced.md#block-9"
+lean = "examples/docs/advanced.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-advanced (block-10)"
+
+[[example]]
+upstream = "docs/advanced.md#block-11"
+lean = "examples/docs/advanced.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-advanced (block-12)"
+
+[[example]]
+upstream = "docs/advanced.md#block-13"
+lean = "examples/docs/advanced.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/advanced.md#block-14"
+lean = "examples/docs/advanced.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/advanced.md#block-15"
+lean = "examples/docs/advanced.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/advanced.md#block-16"
+lean = "examples/docs/advanced.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/arguments.md#block-1"
+lean = "examples/docs/arguments.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-arguments (block-2)"
+
+[[example]]
+upstream = "docs/arguments.md#block-3"
+lean = "examples/docs/arguments.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-arguments (block-4)"
+
+[[example]]
+upstream = "docs/arguments.md#block-5"
+lean = "examples/docs/arguments.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-arguments (block-6)"
+
+[[example]]
+upstream = "docs/arguments.md#block-7"
+lean = "examples/docs/arguments.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-arguments (block-8)"
+
+[[example]]
+upstream = "docs/arguments.md#block-9"
+lean = "examples/docs/arguments.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-arguments (block-10)"
+
+[[example]]
+upstream = "docs/arguments.md#block-11"
+lean = "examples/docs/arguments.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-arguments (block-12)"
+
+[[example]]
+upstream = "docs/commands-and-groups.md#block-1"
+lean = "examples/docs/commands_and_groups.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands-and-groups (block-2)"
+
+[[example]]
+upstream = "docs/commands-and-groups.md#block-3"
+lean = "examples/docs/commands_and_groups.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands-and-groups (block-4)"
+
+[[example]]
+upstream = "docs/commands-and-groups.md#block-5"
+lean = "examples/docs/commands_and_groups.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands-and-groups (block-6)"
+
+[[example]]
+upstream = "docs/commands-and-groups.md#block-7"
+lean = "examples/docs/commands_and_groups.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands-and-groups (block-8, block-9)"
+
+[[example]]
+upstream = "docs/commands-and-groups.md#block-10"
+lean = "examples/docs/commands_and_groups.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands-and-groups (block-11)"
+
+[[example]]
+upstream = "docs/commands-and-groups.md#block-12"
+lean = "examples/docs/commands_and_groups.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands-and-groups (block-13)"
+
+[[example]]
+upstream = "docs/commands-and-groups.md#block-14"
+lean = "examples/docs/commands_and_groups.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands-and-groups (block-15)"
+
+[[example]]
+upstream = "docs/commands-and-groups.md#block-16"
+lean = "examples/docs/commands_and_groups.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands-and-groups (block-17)"
+
+[[example]]
+upstream = "docs/commands-and-groups.md#block-18"
+lean = "examples/docs/commands_and_groups.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands-and-groups (block-19)"
+
+[[example]]
+upstream = "docs/commands-and-groups.md#block-20"
+lean = "examples/docs/commands_and_groups.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands-and-groups (block-21)"
+
+[[example]]
+upstream = "docs/commands-and-groups.md#block-22"
+lean = "examples/docs/commands_and_groups.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands-and-groups (block-23)"
+
+[[example]]
+upstream = "docs/commands-and-groups.md#block-24"
+lean = "examples/docs/commands_and_groups.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/commands-and-groups.md#block-25"
+lean = "examples/docs/commands_and_groups.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/commands-and-groups.md#block-26"
+lean = "examples/docs/commands_and_groups.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/commands-and-groups.md#block-27"
+lean = "examples/docs/commands_and_groups.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands-and-groups (block-28)"
+
+[[example]]
+upstream = "docs/commands.md#block-1"
+lean = "examples/docs/commands.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands (block-2)"
+
+[[example]]
+upstream = "docs/commands.md#block-3"
+lean = "examples/docs/commands.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/commands.md#block-4"
+lean = "examples/docs/commands.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/commands.md#block-5"
+lean = "examples/docs/commands.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands (block-6)"
+
+[[example]]
+upstream = "docs/commands.md#block-7"
+lean = "examples/docs/commands.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands (block-8)"
+
+[[example]]
+upstream = "docs/commands.md#block-9"
+lean = "examples/docs/commands.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands (block-9)"
+
+[[example]]
+upstream = "docs/commands.md#block-10"
+lean = "examples/docs/commands.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/commands.md#block-11"
+lean = "examples/docs/commands.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands (block-12)"
+
+[[example]]
+upstream = "docs/commands.md#block-13"
+lean = "examples/docs/commands.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/commands.md#block-14"
+lean = "examples/docs/commands.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/commands.md#block-15"
+lean = "examples/docs/commands.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-commands (block-16)"
+
+[[example]]
+upstream = "docs/documentation.md#block-1"
+lean = "examples/docs/documentation.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-documentation (block-2)"
+
+[[example]]
+upstream = "docs/documentation.md#block-3"
+lean = "examples/docs/documentation.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-documentation (block-4)"
+
+[[example]]
+upstream = "docs/documentation.md#block-5"
+lean = "examples/docs/documentation.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-documentation (block-6)"
+
+[[example]]
+upstream = "docs/documentation.md#block-7"
+lean = "examples/docs/documentation.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-documentation (block-8)"
+
+[[example]]
+upstream = "docs/documentation.md#block-9"
+lean = "examples/docs/documentation.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-documentation (block-10)"
+
+[[example]]
+upstream = "docs/documentation.md#block-11"
+lean = "examples/docs/documentation.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-documentation (block-12)"
+
+[[example]]
+upstream = "docs/documentation.md#block-13"
+lean = "examples/docs/documentation.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-documentation (block-14)"
+
+[[example]]
+upstream = "docs/documentation.md#block-15"
+lean = "examples/docs/documentation.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-documentation (block-16)"
+
+[[example]]
+upstream = "docs/documentation.md#block-17"
+lean = "examples/docs/documentation.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-documentation (block-18)"
+
+[[example]]
+upstream = "docs/documentation.md#block-19"
+lean = "examples/docs/documentation.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-documentation (block-20)"
+
+[[example]]
+upstream = "docs/documentation.md#block-21"
+lean = "examples/docs/documentation.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-documentation (block-22)"
+
+[[example]]
+upstream = "docs/documentation.md#block-23"
+lean = "examples/docs/documentation.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-documentation (block-24)"
+
+[[example]]
+upstream = "docs/documentation.md#block-25"
+lean = "examples/docs/documentation.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-documentation (block-26)"
+
+[[example]]
+upstream = "docs/documentation.md#block-27"
+lean = "examples/docs/documentation.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-documentation (block-28)"
+
+[[example]]
+upstream = "docs/exceptions.md#block-1"
+lean = "examples/docs/exceptions.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/exceptions.md#block-2"
+lean = "examples/docs/exceptions.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/exceptions.md#block-3"
+lean = "examples/docs/exceptions.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/exceptions.md#block-4"
+lean = "examples/docs/exceptions.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-exceptions (block-5, block-6)"
+
+[[example]]
+upstream = "docs/exceptions.md#block-7"
+lean = "examples/docs/exceptions.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-exceptions (block-8)"
+
+[[example]]
+upstream = "docs/entry-points.md#block-1"
+lean = "examples/docs/entry_points.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/extending-click.md#block-1"
+status = "excluded"
+reason = "PluginGroup imports command modules from a folder at run time (importlib); a Lean program is linked ahead of time, so its commands are listed statically, as examples/complex/complex/cli.lean does for click's complex example (docs/traceability.toml dev.static-plugins)"
+
+[[example]]
+upstream = "docs/extending-click.md#block-2"
+status = "excluded"
+reason = "PluginGroup imports command modules from a folder at run time (importlib); a Lean program is linked ahead of time, so its commands are listed statically, as examples/complex/complex/cli.lean does for click's complex example (docs/traceability.toml dev.static-plugins)"
+
+[[example]]
+upstream = "docs/extending-click.md#block-3"
+lean = "examples/docs/extending_click.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/extending-click.md#block-4"
+lean = "examples/docs/extending_click.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/faqs.md#block-1"
+lean = "examples/docs/faqs.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/faqs.md#block-2"
+lean = "examples/docs/faqs.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/faqs.md#block-3"
+lean = "examples/docs/faqs.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/faqs.md#block-4"
+status = "excluded"
+reason = "inspects Python's text-stream encoding (sys.stdout.encoding); Lean writes UTF-8 bytes and has no stream encoding to inspect"
+
+[[example]]
+upstream = "docs/faqs.md#block-5"
+lean = "examples/docs/faqs.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-faqs (block-5)"
+
+[[example]]
+upstream = "docs/faqs.md#block-6"
+status = "excluded"
+reason = "configures Python's readline module for prompt line editing; this port's prompts read standard input lines without readline"
+
+[[example]]
+upstream = "docs/faqs.md#block-7"
+lean = "examples/docs/faqs.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-faqs (block-7)"
+
+[[example]]
+upstream = "docs/faqs.md#block-8"
+lean = "examples/docs/faqs.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-faqs (block-8)"
+
+[[example]]
+upstream = "docs/handling-files.md#block-1"
+lean = "examples/docs/handling_files.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-handling-files (block-2)"
+
+[[example]]
+upstream = "docs/handling-files.md#block-3"
+lean = "examples/docs/handling_files.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-handling-files (block-4)"
+
+[[example]]
+upstream = "docs/index.md#block-1"
+lean = "examples/docs/index.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-index (block-2, block-3)"
+
+[[example]]
+upstream = "docs/option-decorators.md#block-1"
+lean = "examples/docs/option_decorators.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/option-decorators.md#block-3"
+lean = "examples/docs/option_decorators.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/option-decorators.md#block-4"
+lean = "examples/docs/option_decorators.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-option-decorators (block-5)"
+
+[[example]]
+upstream = "docs/option-decorators.md#block-6"
+lean = "examples/docs/option_decorators.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/parameters.md#block-1"
+lean = "examples/docs/parameters.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-parameters (block-2, block-3)"
+
+[[example]]
+upstream = "docs/parameter-types.md#block-1"
+lean = "examples/docs/parameter_types.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-parameter-types (block-2)"
+
+[[example]]
+upstream = "docs/parameter-types.md#block-3"
+lean = "examples/docs/parameter_types.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-parameter-types (block-4)"
+
+[[example]]
+upstream = "docs/parameter-types.md#block-5"
+lean = "examples/docs/parameter_types.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-parameter-types (block-6)"
+
+[[example]]
+upstream = "docs/parameter-types.md#block-7"
+lean = "examples/docs/parameter_types.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/prompts.md#block-1"
+lean = "examples/docs/prompts.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-prompts (block-2)"
+
+[[example]]
+upstream = "docs/prompts.md#block-3"
+lean = "examples/docs/prompts.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-prompts (block-4)"
+
+[[example]]
+upstream = "docs/prompts.md#block-5"
+lean = "examples/docs/prompts.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/prompts.md#block-6"
+lean = "examples/docs/prompts.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/prompts.md#block-7"
+lean = "examples/docs/prompts.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-prompts (block-8)"
+
+[[example]]
+upstream = "docs/prompts.md#block-9"
+lean = "examples/docs/prompts.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/prompts.md#block-10"
+lean = "examples/docs/prompts.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/prompts.md#block-11"
+lean = "examples/docs/prompts.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/prompts.md#block-12"
+lean = "examples/docs/prompts.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-prompts (block-13)"
+
+[[example]]
+upstream = "docs/testing.md#block-1"
+lean = "examples/docs/testing.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-testing (block-2)"
+
+[[example]]
+upstream = "docs/testing.md#block-2"
+status = "excluded"
+reason = "the test is the golden run docs/testing.md#block-2 in tests/golden/click.json (generate.py runs the app as the test does; tests/Conformance.lean replays it against examples/docs/testing.lean)"
+
+[[example]]
+upstream = "docs/testing.md#block-3"
+lean = "examples/docs/testing.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-testing (block-4)"
+
+[[example]]
+upstream = "docs/testing.md#block-4"
+status = "excluded"
+reason = "the test is the golden run docs/testing.md#block-4 in tests/golden/click.json (generate.py runs the app as the test does; tests/Conformance.lean replays it against examples/docs/testing.lean)"
+
+[[example]]
+upstream = "docs/testing.md#block-5"
+lean = "examples/docs/testing.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-testing (block-6)"
+
+[[example]]
+upstream = "docs/testing.md#block-6"
+status = "excluded"
+reason = "the test is the golden run docs/testing.md#block-6 in tests/golden/click.json (generate.py runs the app as the test does; tests/Conformance.lean replays it against examples/docs/testing.lean)"
+
+[[example]]
+upstream = "docs/testing.md#block-7"
+lean = "examples/docs/testing.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-testing (block-8)"
+
+[[example]]
+upstream = "docs/testing.md#block-8"
+status = "excluded"
+reason = "the test is the golden run docs/testing.md#block-8 in tests/golden/click.json (generate.py runs the app as the test does; tests/Conformance.lean replays it against examples/docs/testing.lean)"
+
+[[example]]
+upstream = "docs/testing.md#block-9"
+lean = "examples/docs/testing.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-testing (block-10)"
+
+[[example]]
+upstream = "docs/testing.md#block-10"
+status = "excluded"
+reason = "the test is the golden run docs/testing.md#block-10 in tests/golden/click.json (generate.py runs the app as the test does; tests/Conformance.lean replays it against examples/docs/testing.lean)"
+
+[[example]]
+upstream = "docs/testing.md#block-11"
+status = "excluded"
+reason = "CliRunner(capture=\"fd\"): this port has no in-process runner; programs are tested as real processes (tests/golden/click.json, tests/Conformance.lean), which capture file-descriptor output by construction"
+
+[[example]]
+upstream = "docs/complex.md#block-1"
+lean = "examples/docs/complex.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-complex (block-1)"
+
+[[example]]
+upstream = "docs/complex.md#block-2"
+lean = "examples/docs/complex.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/complex.md#block-3"
+lean = "examples/docs/complex.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/complex.md#block-4"
+lean = "examples/docs/complex.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/complex.md#block-5"
+lean = "examples/docs/complex.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-complex (block-5)"
+
+[[example]]
+upstream = "docs/complex.md#block-6"
+lean = "examples/docs/complex.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/complex.md#block-7"
+lean = "examples/docs/complex.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-complex (block-7)"
+
+[[example]]
+upstream = "docs/complex.md#block-8"
+status = "excluded"
+reason = "LazyGroup imports subcommand modules by dotted path when first looked up (importlib); a Lean program is linked ahead of time, so the lazy subcommands of blocks 9 to 12 are listed in their groups' commands (examples/docs/complex.lean)"
+
+[[example]]
+upstream = "docs/complex.md#block-9"
+lean = "examples/docs/complex.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-complex (block-9)"
+
+[[example]]
+upstream = "docs/complex.md#block-10"
+lean = "examples/docs/complex.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/complex.md#block-11"
+lean = "examples/docs/complex.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/complex.md#block-12"
+lean = "examples/docs/complex.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/complex.md#block-13"
+lean = "examples/docs/complex.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-complex (block-13)"
+
+[[example]]
+upstream = "docs/shell-completion.md#block-1"
+lean = "examples/docs/shell_completion.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-shell-completion (block-1)"
+
+[[example]]
+upstream = "docs/shell-completion.md#block-2"
+lean = "examples/docs/shell_completion.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-shell-completion (block-2, block-3)"
+
+[[example]]
+upstream = "docs/shell-completion.md#block-3"
+lean = "examples/docs/shell_completion.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/shell-completion.md#block-4"
+lean = "examples/docs/shell_completion.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/shell-completion.md#block-5"
+lean = "examples/docs/shell_completion.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/standalone-apps.md#block-1"
+lean = "examples/docs/standalone_apps.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-standalone-apps (block-1)"
+
+[[example]]
+upstream = "docs/standalone-apps.md#block-2"
+status = "excluded"
+reason = "packaging: the entry script that calls main(); the program is the docs-standalone-apps lean_exe in lakefile.toml"
+
+[[example]]
+upstream = "docs/support-multiple-versions.md#block-1"
+status = "excluded"
+reason = "a compatibility shim for click < 8.2's ParamType.get_metavar signature; this port has one API version, so there is nothing to shim"
+
+[[example]]
+upstream = "docs/support-multiple-versions.md#block-2"
+status = "excluded"
+reason = "a compatibility shim for click < 8.2's ParamType.get_metavar signature; this port has one API version, so there is nothing to shim"
+
+[[example]]
+upstream = "docs/unicode-support.md#block-1"
+status = "excluded"
+reason = "replaces Python's sys.stdin/sys.stdout with io.StringIO, the case the page warns against; Lean's streams are byte streams with no text layer to replace"
+
+[[example]]
+upstream = "docs/unicode-support.md#block-2"
+status = "excluded"
+reason = "wraps byte buffers in io.TextIOWrapper to stand in for Python's standard streams; Lean's streams are byte streams with no text layer to replace"
+
+[[example]]
+upstream = "docs/utils.md#block-1"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-2"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-3"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-4"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-5"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-6"
+lean = "examples/docs/utils.lean"
+status = "ported"
+output = "tests/golden/click.json::process docs-utils (block-6)"
+
+[[example]]
+upstream = "docs/utils.md#block-7"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-8"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-9"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-10"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-11"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-12"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-13"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-14"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-15"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-16"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-17"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-18"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-19"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-20"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-21"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-22"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-23"
+lean = "examples/docs/utils.lean"
+status = "ported"
+
+[[example]]
+upstream = "docs/utils.md#block-24"
+lean = "examples/docs/utils.lean"
+status = "ported"

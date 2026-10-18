@@ -22,11 +22,6 @@ def abspath (p : String) : IO String := do
   let cwd ← IO.currentDir
   return normalizePath (if p.startsWith "/" then p else cwd.toString ++ "/" ++ p)
 
-/-- Python's `repr` of a tuple of strings. -/
-def pyTuple : List String → String
-  | [x] => s!"({Text.pyRepr x},)"
-  | xs => "(" ++ ", ".intercalate (xs.map Text.pyRepr) ++ ")"
-
 /-- Clones a repository.
 
 This will clone the repository at SRC into the folder DEST.  If DEST
@@ -93,7 +88,7 @@ click_command commit
         if msg.isEmpty then echo "Aborted! Empty commit message"; return
         pure msg
     else pure ("\n".intercalate message)
-  echo s!"Files to be committed: {pyTuple files}"
+  echo s!"Files to be committed: {Text.pyTuple files}"
   echo s!"Commit message:\n{msg}"
 
 /-- Copies one or multiple files to a new location.  This copies all
