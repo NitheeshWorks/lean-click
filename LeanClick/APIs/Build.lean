@@ -67,9 +67,9 @@ def flagValue (decls : List String) (const : String) (type : ParamType := .strin
   { name, decl := .option opts (.constFlag const multiple), type }
 
 /-- A counting flag, `click.option(..., count=True)`. -/
-def count (decls : List String) : Param :=
+def count (decls : List String) (bounds : IntBounds := countBounds) : Param :=
   let (name, opts, _) := parseDecls decls
-  { name, decl := .option opts .count, type := .intRange countBounds }
+  { name, decl := .option opts .count, type := .intRange bounds }
 
 /-- A positional argument, `click.argument(name, ...)`. Required unless it
 has a default or takes `nargs=-1`, as in click. -/

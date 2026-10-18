@@ -78,8 +78,8 @@ structure PromptSpec where
 any other source (click converts its defaults too); a multi-value default is
 the flat token list, chunked by `nargs`.
 
-Invariants: a boolean flag has type `bool`; a count has type
-`IntRange(min=0)`. -/
+Invariants: a boolean flag has type `bool`; a count has an `IntRange`
+type (`IntRange(min=0)` unless declared otherwise). -/
 structure Param where
   name : String
   decl : Decl
@@ -98,9 +98,9 @@ structure Param where
   exposeValue : Bool := true
   allowFromAutoenv : Bool := true
   h_bool : decl.isBoolFlag = true → type = .bool := by
-    first | decide | simp [Decl.isBoolFlag] | (intro h; simp_all [Decl.isBoolFlag])
-  h_count : decl.isCount = true → type = .intRange countBounds := by
-    first | decide | simp [Decl.isCount] | (intro h; simp_all [Decl.isCount])
+    first | decide | (simp [Decl.isBoolFlag]; done) | (intro h; simp_all [Decl.isBoolFlag])
+  h_count : decl.isCount = true → type.isIntRange = true := by
+    first | decide | (simp [Decl.isCount, ParamType.isIntRange]; done) | (intro h; simp_all [Decl.isCount, ParamType.isIntRange])
 
 /-- Where a parameter's value came from (click's `ParameterSource`), in
 precedence order. -/

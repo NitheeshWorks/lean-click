@@ -109,6 +109,10 @@ inductive ParamType where
   | floatRange (bounds : FloatBounds)
   deriving DecidableEq, Repr, Inhabited
 
+def ParamType.isIntRange : ParamType → Bool
+  | .intRange _ => true
+  | _ => false
+
 /-- The Lean type a parsed value of each parameter type inhabits. The
 refinements are the point: `choice` values are members of the list and
 range values carry their bounds proof. -/

@@ -1,6 +1,6 @@
 import LeanClick.APIs
 import LeanClick.Terminal
-import LeanClick.Proofs.Verified
+
 
 /-!
 # LeanClick
